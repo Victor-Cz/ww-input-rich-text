@@ -179,9 +179,8 @@
 
             <BubbleMenu v-if="richEditor" :editor="richEditor" :tippy-options="{
                 duration: 100,
-                placement: 'auto',
-                //offset: [-200, 160], // Mets 16, 24 ou même plus pour tester
-                appendTo: () => document.querySelector('editor-scroll-container'),
+                placement: 'top',
+                offset: [-200, 160], // Mets 16, 24 ou même plus pour tester
             }">
                 <div class="bubble-menu">
                     <button v-for="action in actions" :key="action.name" @click.prevent="toggle(action.name)"
