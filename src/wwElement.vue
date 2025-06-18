@@ -904,26 +904,25 @@ export default {
         display: flex;
         gap: 2px;
         padding: 2px;
-        border-radius: 6px;
+        border-radius: 8px;
         background: #fff;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
         user-select: none;
-        border: "1px solid #ebebeb" !important;
     }
 
     .btn {
         cursor: pointer;
         border: none;
         background: transparent;
-        padding: 4px;
+        padding: 8px;
         border-radius: 4px;
         display: flex;
         align-items: center;
         justify-content: center;
         transition: background-color 0.2s, box-shadow 0.2s;
         border: "1px solid #33333300";
-        width: 24px;
-        height: 24px;
+        width: 28px;
+        height: 28px;
     }
 
     .btn:hover {
