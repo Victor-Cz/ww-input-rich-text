@@ -180,7 +180,7 @@
             <BubbleMenu v-if="richEditor" :editor="richEditor" :tippy-options="{
                 duration: 100,
                 placement: 'top',
-                offset: [-200, 160], // Mets 16, 24 ou même plus pour tester
+                //offset: [-200, 160], // Mets 16, 24 ou même plus pour tester
             }">
                 <div class="bubble-menu">
                     <button v-for="action in actions" :key="action.name" @click.prevent="toggle(action.name)"
@@ -979,10 +979,6 @@ export default {
 
 <style lang="scss">
 .ww-rich-text {
-    [data-tippy-root] {
-        position: relative !important;
-    }
-
     .bubble-menu {
         display: flex;
         gap: 2px;
