@@ -12,44 +12,21 @@
                 <span class="separator" v-if="menu.textType"></span>
 
                 <!-- Bold, Italic, Underline -->
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    @click="toggleBold"
-                    :class="{ 'is-active': richEditor.isActive('bold') }"
-                    :disabled="!isEditable"
-                    v-if="menu.bold"
-                >
+                <button type="button" class="ww-rich-text__menu-item" @click="toggleBold"
+                    :class="{ 'is-active': richEditor.isActive('bold') }" :disabled="!isEditable" v-if="menu.bold">
                     <i class="fas fa-bold"></i>
                 </button>
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    @click="toggleItalic"
-                    :class="{ 'is-active': richEditor.isActive('italic') }"
-                    :disabled="!isEditable"
-                    v-if="menu.italic"
-                >
+                <button type="button" class="ww-rich-text__menu-item" @click="toggleItalic"
+                    :class="{ 'is-active': richEditor.isActive('italic') }" :disabled="!isEditable" v-if="menu.italic">
                     <i class="fas fa-italic"></i>
                 </button>
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    @click="toggleUnderline"
-                    :class="{ 'is-active': richEditor.isActive('underline') }"
-                    :disabled="!isEditable"
-                    v-if="menu.underline"
-                >
+                <button type="button" class="ww-rich-text__menu-item" @click="toggleUnderline"
+                    :class="{ 'is-active': richEditor.isActive('underline') }" :disabled="!isEditable"
+                    v-if="menu.underline">
                     <i class="fas fa-underline"></i>
                 </button>
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    @click="toggleStrike"
-                    :class="{ 'is-active': richEditor.isActive('strike') }"
-                    :disabled="!isEditable"
-                    v-if="menu.strike"
-                >
+                <button type="button" class="ww-rich-text__menu-item" @click="toggleStrike"
+                    :class="{ 'is-active': richEditor.isActive('strike') }" :disabled="!isEditable" v-if="menu.strike">
                     <i class="fas fa-strikethrough"></i>
                 </button>
 
@@ -57,259 +34,142 @@
                 <span class="separator" v-if="menu.bold || menu.italic || menu.underline || menu.strike"></span>
 
                 <!-- Text align -->
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    @click="setTextAlign('left')"
-                    :class="{ 'is-active': richEditor.isActive({ textAlign: 'left' }) }"
-                    :disabled="!isEditable"
-                    v-if="menu.alignLeft"
-                >
+                <button type="button" class="ww-rich-text__menu-item" @click="setTextAlign('left')"
+                    :class="{ 'is-active': richEditor.isActive({ textAlign: 'left' }) }" :disabled="!isEditable"
+                    v-if="menu.alignLeft">
                     <i class="fas fa-align-left"></i>
                 </button>
 
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    @click="setTextAlign('center')"
-                    :class="{ 'is-active': richEditor.isActive({ textAlign: 'center' }) }"
-                    :disabled="!isEditable"
-                    v-if="menu.alignCenter"
-                >
+                <button type="button" class="ww-rich-text__menu-item" @click="setTextAlign('center')"
+                    :class="{ 'is-active': richEditor.isActive({ textAlign: 'center' }) }" :disabled="!isEditable"
+                    v-if="menu.alignCenter">
                     <i class="fas fa-align-center"></i>
                 </button>
 
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    @click="setTextAlign('right')"
-                    :class="{ 'is-active': richEditor.isActive({ textAlign: 'right' }) }"
-                    :disabled="!isEditable"
-                    v-if="menu.alignRight"
-                >
+                <button type="button" class="ww-rich-text__menu-item" @click="setTextAlign('right')"
+                    :class="{ 'is-active': richEditor.isActive({ textAlign: 'right' }) }" :disabled="!isEditable"
+                    v-if="menu.alignRight">
                     <i class="fas fa-align-right"></i>
                 </button>
 
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    @click="setTextAlign('justify')"
-                    :class="{ 'is-active': richEditor.isActive({ textAlign: 'justify' }) }"
-                    :disabled="!isEditable"
-                    v-if="menu.alignJustify"
-                >
+                <button type="button" class="ww-rich-text__menu-item" @click="setTextAlign('justify')"
+                    :class="{ 'is-active': richEditor.isActive({ textAlign: 'justify' }) }" :disabled="!isEditable"
+                    v-if="menu.alignJustify">
                     <i class="fas fa-align-justify"></i>
                 </button>
 
-                <span
-                    class="separator"
-                    v-if="menu.alignLeft || menu.alignCenter || menu.alignRight || menu.alignJustify"
-                ></span>
+                <span class="separator"
+                    v-if="menu.alignLeft || menu.alignCenter || menu.alignRight || menu.alignJustify"></span>
 
                 <!-- Color -->
-                <label
-                    class="ww-rich-text__menu-item"
-                    :for="`rich-color-${randomUid}`"
-                    @click="richEditor.commands.focus()"
-                    v-if="menu.textColor"
-                >
+                <label class="ww-rich-text__menu-item" :for="`rich-color-${randomUid}`"
+                    @click="richEditor.commands.focus()" v-if="menu.textColor">
                     <i class="fas fa-palette"></i>
-                    <input
-                        :id="`rich-color-${randomUid}`"
-                        type="color"
-                        @input="setColor($event.target.value)"
-                        :value="richEditor.getAttributes('textStyle').color"
-                        style="display: none"
-                        :disabled="!isEditable"
-                    />
+                    <input :id="`rich-color-${randomUid}`" type="color" @input="setColor($event.target.value)"
+                        :value="richEditor.getAttributes('textStyle').color" style="display: none"
+                        :disabled="!isEditable" />
                 </label>
 
                 <span class="separator" v-if="menu.textColor"></span>
 
                 <!-- List (Bullet, number) -->
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    @click="toggleBulletList"
-                    :class="{ 'is-active': richEditor.isActive('bulletList') }"
-                    :disabled="!isEditable"
-                    v-if="menu.bulletList"
-                >
+                <button type="button" class="ww-rich-text__menu-item" @click="toggleBulletList"
+                    :class="{ 'is-active': richEditor.isActive('bulletList') }" :disabled="!isEditable"
+                    v-if="menu.bulletList">
                     <i class="fas fa-list-ul"></i>
                 </button>
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    @click="toggleOrderedList"
-                    :class="{ 'is-active': richEditor.isActive('orderedList') }"
-                    :disabled="!isEditable"
-                    v-if="menu.orderedList"
-                >
+                <button type="button" class="ww-rich-text__menu-item" @click="toggleOrderedList"
+                    :class="{ 'is-active': richEditor.isActive('orderedList') }" :disabled="!isEditable"
+                    v-if="menu.orderedList">
                     <i class="fas fa-list-ol"></i>
                 </button>
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    @click="toggleTaskList"
-                    :class="{ 'is-active': richEditor.isActive('taskList') }"
-                    :disabled="!isEditable"
-                    v-if="menu.taskList"
-                >
+                <button type="button" class="ww-rich-text__menu-item" @click="toggleTaskList"
+                    :class="{ 'is-active': richEditor.isActive('taskList') }" :disabled="!isEditable"
+                    v-if="menu.taskList">
                     <i class="fas fa-check-square"></i>
                 </button>
 
                 <!-- Table -->
                 <span class="separator" v-if="menu.table"></span>
 
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    :class="{ 'is-highlighted': richEditor.isActive('table') }"
-                    @click="insertTable"
-                    :disabled="!isEditable"
-                    v-if="menu.table"
-                >
+                <button type="button" class="ww-rich-text__menu-item"
+                    :class="{ 'is-highlighted': richEditor.isActive('table') }" @click="insertTable"
+                    :disabled="!isEditable" v-if="menu.table">
                     <table-icon icon="table-insert" />
                 </button>
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    :class="{ 'is-highlighted': richEditor.isActive('table') }"
-                    @click="insertRow('before')"
-                    :disabled="!isEditable"
-                    v-if="menu.table && richEditor.isActive('table')"
-                >
+                <button type="button" class="ww-rich-text__menu-item"
+                    :class="{ 'is-highlighted': richEditor.isActive('table') }" @click="insertRow('before')"
+                    :disabled="!isEditable" v-if="menu.table && richEditor.isActive('table')">
                     <table-icon icon="row-insert-before" />
                 </button>
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    :class="{ 'is-highlighted': richEditor.isActive('table') }"
-                    @click="insertRow('after')"
-                    :disabled="!isEditable"
-                    v-if="menu.table && richEditor.isActive('table')"
-                >
+                <button type="button" class="ww-rich-text__menu-item"
+                    :class="{ 'is-highlighted': richEditor.isActive('table') }" @click="insertRow('after')"
+                    :disabled="!isEditable" v-if="menu.table && richEditor.isActive('table')">
                     <table-icon icon="row-insert-after" />
                 </button>
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    :class="{ 'is-highlighted': richEditor.isActive('table') }"
-                    @click="insertColumn('before')"
-                    :disabled="!isEditable"
-                    v-if="menu.table && richEditor.isActive('table')"
-                >
+                <button type="button" class="ww-rich-text__menu-item"
+                    :class="{ 'is-highlighted': richEditor.isActive('table') }" @click="insertColumn('before')"
+                    :disabled="!isEditable" v-if="menu.table && richEditor.isActive('table')">
                     <table-icon icon="column-inster-before" />
                 </button>
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    :class="{ 'is-highlighted': richEditor.isActive('table') }"
-                    @click="insertColumn('after')"
-                    :disabled="!isEditable"
-                    v-if="menu.table && richEditor.isActive('table')"
-                >
+                <button type="button" class="ww-rich-text__menu-item"
+                    :class="{ 'is-highlighted': richEditor.isActive('table') }" @click="insertColumn('after')"
+                    :disabled="!isEditable" v-if="menu.table && richEditor.isActive('table')">
                     <table-icon icon="column-insert-after" />
                 </button>
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    :class="{ 'is-highlighted': richEditor.isActive('table') }"
-                    @click="deleteRow"
-                    :disabled="!isEditable"
-                    v-if="menu.table && richEditor.isActive('table')"
-                >
+                <button type="button" class="ww-rich-text__menu-item"
+                    :class="{ 'is-highlighted': richEditor.isActive('table') }" @click="deleteRow"
+                    :disabled="!isEditable" v-if="menu.table && richEditor.isActive('table')">
                     <table-icon icon="row-delete" />
                 </button>
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    :class="{ 'is-highlighted': richEditor.isActive('table') }"
-                    @click="deleteColumn"
-                    :disabled="!isEditable"
-                    v-if="menu.table && richEditor.isActive('table')"
-                >
+                <button type="button" class="ww-rich-text__menu-item"
+                    :class="{ 'is-highlighted': richEditor.isActive('table') }" @click="deleteColumn"
+                    :disabled="!isEditable" v-if="menu.table && richEditor.isActive('table')">
                     <table-icon icon="column-delete" />
                 </button>
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    :class="{ 'is-highlighted': richEditor.isActive('table') }"
-                    @click="deleteTable"
-                    :disabled="!isEditable"
-                    v-if="menu.table && richEditor.isActive('table')"
-                >
+                <button type="button" class="ww-rich-text__menu-item"
+                    :class="{ 'is-highlighted': richEditor.isActive('table') }" @click="deleteTable"
+                    :disabled="!isEditable" v-if="menu.table && richEditor.isActive('table')">
                     <table-icon icon="table-delete" />
                 </button>
 
                 <span class="separator" v-if="menu.bulletList || menu.orderedList || menu.taskList"></span>
 
                 <!-- Link -->
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    @click="setLink()"
-                    :class="{ 'is-active': richEditor.isActive('link') }"
-                    :disabled="!isEditable"
-                    v-if="menu.link"
-                >
+                <button type="button" class="ww-rich-text__menu-item" @click="setLink()"
+                    :class="{ 'is-active': richEditor.isActive('link') }" :disabled="!isEditable" v-if="menu.link">
                     <i class="fas fa-link"></i>
                 </button>
 
                 <!-- Image -->
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    @click="setImage()"
-                    :disabled="!isEditable"
-                    v-if="menu.image"
-                >
+                <button type="button" class="ww-rich-text__menu-item" @click="setImage()" :disabled="!isEditable"
+                    v-if="menu.image">
                     <i class="fas fa-image"></i>
                 </button>
 
                 <!-- Code -->
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    @click="toggleCodeBlock"
-                    :class="{ 'is-active': richEditor.isActive('codeBlock') }"
-                    :disabled="!isEditable"
-                    v-if="menu.codeBlock"
-                >
+                <button type="button" class="ww-rich-text__menu-item" @click="toggleCodeBlock"
+                    :class="{ 'is-active': richEditor.isActive('codeBlock') }" :disabled="!isEditable"
+                    v-if="menu.codeBlock">
                     <i class="fas fa-code"></i>
                 </button>
 
                 <!-- Quote -->
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    @click="toggleBlockquote"
-                    :class="{ 'is-active': richEditor.isActive('blockquote') }"
-                    :disabled="!isEditable"
-                    v-if="menu.blockquote"
-                >
+                <button type="button" class="ww-rich-text__menu-item" @click="toggleBlockquote"
+                    :class="{ 'is-active': richEditor.isActive('blockquote') }" :disabled="!isEditable"
+                    v-if="menu.blockquote">
                     <i class="fas fa-quote-left"></i>
                 </button>
 
                 <span class="separator" v-if="menu.link || menu.image || menu.codeBlock || menu.blockquote"></span>
 
                 <!-- Undo/Redo -->
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    @click="undo"
-                    :disabled="!isEditable"
-                    v-if="menu.undo"
-                >
+                <button type="button" class="ww-rich-text__menu-item" @click="undo" :disabled="!isEditable"
+                    v-if="menu.undo">
                     <i class="fas fa-undo"></i>
                 </button>
-                <button
-                    type="button"
-                    class="ww-rich-text__menu-item"
-                    @click="redo"
-                    :disabled="!isEditable"
-                    v-if="menu.redo"
-                >
+                <button type="button" class="ww-rich-text__menu-item" @click="redo" :disabled="!isEditable"
+                    v-if="menu.redo">
                     <i class="fas fa-redo"></i>
                 </button>
             </div>
@@ -317,17 +177,15 @@
 
             <editor-content class="ww-rich-text__input" :editor="richEditor" :style="richStyles" />
 
-            <BubbleMenu
-  v-if="richEditor"
-  :editor="richEditor"
-  :tippy-options="{ duration: 100 }"
->
-  <!-- Le contenu du menu contextuel, par exemple : -->
-  <button @click="toggleBold" :class="{ 'is-active': richEditor.isActive('bold') }">Gras</button>
-  <button @click="toggleItalic" :class="{ 'is-active': richEditor.isActive('italic') }">Italique</button>
-  <!-- Ajoute d'autres boutons si besoin -->
-</BubbleMenu>
-            
+            <BubbleMenu v-if="editor" :editor="editor">
+                <div class="bubble-menu">
+                    <button v-for="action in actions" :key="action.name" @click.prevent="toggle(action.name)"
+                        :class="{ 'is-active': editor.isActive(action.name) }" class="btn" :title="action.title">
+                        <span v-html="action.icon" />
+                    </button>
+                </div>
+            </BubbleMenu>
+
         </template>
     </div>
 </template>
@@ -423,7 +281,7 @@ export default {
 
         const randomUid = wwLib.wwUtils.getUid();
 
-        const useForm = inject('_wwForm:useForm', () => {});
+        const useForm = inject('_wwForm:useForm', () => { });
 
         const fieldName = computed(() => props.content.fieldName);
         const validation = computed(() => props.content.validation);
@@ -451,6 +309,19 @@ export default {
     data: () => ({
         richEditor: null,
         loading: false,
+        actions: [
+            {
+                name: "bold",
+                title: "Gras",
+                icon: `<svg width="18" height="18" viewBox="0 0 24 24" ...>...</svg>`,
+            },
+            {
+                name: "italic",
+                title: "Italique",
+                icon: `<svg width="18" height="18" viewBox="0 0 24 24" ...>...</svg>`,
+            },
+            // Ajoute toutes tes actions ici
+        ],
     }),
 
     watch: {
@@ -551,12 +422,12 @@ export default {
                 textAlign: this.richEditor.isActive({ textAlign: 'left' })
                     ? 'left'
                     : this.richEditor.isActive({ textAlign: 'center' })
-                      ? 'center'
-                      : this.richEditor.isActive({ textAlign: 'right' })
-                        ? 'right'
-                        : this.richEditor.isActive({ textAlign: 'justify' })
-                          ? 'justify'
-                          : false,
+                        ? 'center'
+                        : this.richEditor.isActive({ textAlign: 'right' })
+                            ? 'right'
+                            : this.richEditor.isActive({ textAlign: 'justify' })
+                                ? 'justify'
+                                : false,
                 table: this.richEditor.isActive('table'),
             };
         },
@@ -777,6 +648,16 @@ export default {
         },
     },
     methods: {
+        toggle(format) {
+            const markTypes = ["bold", "italic", "underline", "strike", "code"];
+            const nodeTypes = ["bulletList", "orderedList", "blockquote", "codeBlock"];
+
+            if (markTypes.includes(format)) {
+                this.editor.chain().focus().toggleMark(format).run();
+            } else if (nodeTypes.includes(format)) {
+                this.editor.chain().focus().toggleNode(format, "paragraph").run();
+            }
+        },
         loadEditor() {
             if (this.loading) return;
             this.loading = true;
@@ -820,20 +701,20 @@ export default {
                     Markdown.configure({ breaks: true }),
                     Image.configure({ ...this.editorConfig.image }),
                     this.editorConfig.mention.enabled &&
-                        Mention.configure({
-                            HTMLAttributes: {
-                                class: 'mention',
-                            },
-                            suggestion: {
-                                items: ({ query }) =>
-                                    this.editorConfig.mention.list
-                                        .filter(({ label }) => label.toLowerCase().startsWith(query.toLowerCase()))
-                                        .slice(0, this.mentionListLength),
-                                render: suggestion.render,
-                                allowSpaces: this.editorConfig.mention.allowSpaces,
-                                char: this.editorConfig.mention.char,
-                            },
-                        }),
+                    Mention.configure({
+                        HTMLAttributes: {
+                            class: 'mention',
+                        },
+                        suggestion: {
+                            items: ({ query }) =>
+                                this.editorConfig.mention.list
+                                    .filter(({ label }) => label.toLowerCase().startsWith(query.toLowerCase()))
+                                    .slice(0, this.mentionListLength),
+                            render: suggestion.render,
+                            allowSpaces: this.editorConfig.mention.allowSpaces,
+                            char: this.editorConfig.mention.char,
+                        },
+                    }),
                 ],
                 onCreate: () => {
                     this.setValue(this.getContent());
@@ -1012,6 +893,7 @@ export default {
 
     &.editing .ww-rich-text__input {
         position: relative;
+
         &::before {
             content: '';
             position: absolute;
@@ -1022,6 +904,7 @@ export default {
 
     &.editing .native-menu {
         position: relative;
+
         &::before {
             content: '';
             position: absolute;
@@ -1049,6 +932,7 @@ export default {
         gap: 4px;
         overflow-x: auto;
         min-height: 32px;
+
         select {
             padding: 8px;
             appearance: none;
@@ -1057,28 +941,34 @@ export default {
             cursor: pointer;
             color: var(--menu-color);
             background-color: transparent;
+
             &:hover {
                 background-color: rgb(245, 245, 245);
             }
         }
+
         &-item {
             padding: 2px;
             color: var(--menu-color);
             cursor: pointer;
             text-align: center;
             border-radius: 4px;
+
             i {
                 width: 24px;
             }
+
             .icon {
                 color: var(--menu-color);
                 display: flex;
                 width: 24px;
                 max-height: 16px;
             }
+
             &:hover {
                 background-color: rgb(245, 245, 245);
             }
+
             &.is-active {
                 color: white;
                 background-color: var(--menu-color);
@@ -1099,10 +989,12 @@ export default {
         text-align: var(--p-textAlign);
         color: var(--p-color);
         line-height: var(--p-lineHeight);
+
         &-focused {
             outline: unset;
         }
-        > * + * {
+
+        >*+* {
             margin-top: 0.75em;
         }
 
@@ -1125,6 +1017,7 @@ export default {
             margin-top: var(--h1-margin-top);
             margin-bottom: var(--h1-margin-bottom);
         }
+
         h2 {
             font-size: var(--h2-fontSize);
             font-family: var(--h2-fontFamily);
@@ -1135,6 +1028,7 @@ export default {
             margin-top: var(--h2-margin-top);
             margin-bottom: var(--h2-margin-bottom);
         }
+
         h3 {
             font-size: var(--h3-fontSize);
             font-family: var(--h3-fontFamily);
@@ -1145,6 +1039,7 @@ export default {
             margin-top: var(--h3-margin-top);
             margin-bottom: var(--h3-margin-bottom);
         }
+
         h4 {
             font-size: var(--h4-fontSize);
             font-family: var(--h4-fontFamily);
@@ -1155,6 +1050,7 @@ export default {
             margin-top: var(--h4-margin-top);
             margin-bottom: var(--h4-margin-bottom);
         }
+
         h5 {
             font-size: var(--h5-fontSize);
             font-family: var(--h5-fontFamily);
@@ -1165,6 +1061,7 @@ export default {
             margin-top: var(--h5-margin-top);
             margin-bottom: var(--h5-margin-bottom);
         }
+
         h6 {
             font-size: var(--h6-fontSize);
             font-family: var(--h6-fontFamily);
@@ -1175,6 +1072,7 @@ export default {
             margin-top: var(--h6-margin-top);
             margin-bottom: var(--h6-margin-bottom);
         }
+
         p {
             font-size: var(--p-fontSize);
             font-family: var(--p-fontFamily);
@@ -1185,6 +1083,7 @@ export default {
             margin-top: var(--p-margin-top);
             margin-bottom: var(--p-margin-bottom);
         }
+
         a {
             display: initial;
             text-decoration: var(--a-underline);
@@ -1196,7 +1095,7 @@ export default {
             line-height: var(--a-lineHeight);
             cursor: pointer;
         }
-     
+
 
         .mention {
             border: var(--mention-borderSize) solid var(--mention-color);
@@ -1227,7 +1126,7 @@ export default {
                 position: relative;
                 vertical-align: top;
 
-                > * {
+                >* {
                     margin-bottom: 0;
                 }
             }
@@ -1326,13 +1225,13 @@ export default {
             li {
                 display: flex;
 
-                > label {
+                >label {
                     flex: 0 0 auto;
                     margin-right: var(--ww-spacing-01);
                     user-select: none;
                 }
 
-                > div {
+                >div {
                     flex: 1 1 auto;
                 }
 
@@ -1341,7 +1240,7 @@ export default {
                     display: list-item;
                 }
 
-                ul[data-type='taskList'] > li {
+                ul[data-type='taskList']>li {
                     display: flex;
                 }
 
