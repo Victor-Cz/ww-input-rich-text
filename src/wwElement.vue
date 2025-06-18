@@ -332,7 +332,6 @@ export default {
             // Ajoute toutes tes actions ici
         ],
     }),
-
     watch: {
         'content.initialValue'(value) {
             if (value !== this.getContent()) {
@@ -662,9 +661,9 @@ export default {
             const nodeTypes = ["bulletList", "orderedList", "blockquote", "codeBlock"];
 
             if (markTypes.includes(format)) {
-                this.editor.chain().focus().toggleMark(format).run();
+                this.richEditor.chain().focus().toggleMark(format).run();
             } else if (nodeTypes.includes(format)) {
-                this.editor.chain().focus().toggleNode(format, "paragraph").run();
+                this.richEditor.chain().focus().toggleNode(format, "paragraph").run();
             }
         },
         loadEditor() {
