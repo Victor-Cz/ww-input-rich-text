@@ -979,6 +979,10 @@ export default {
 
 <style lang="scss">
 .ww-rich-text {
+    .tippy-box {
+        position: relative !important;
+    }
+
     .bubble-menu {
         display: flex;
         gap: 2px;
