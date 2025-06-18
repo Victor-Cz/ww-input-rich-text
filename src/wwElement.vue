@@ -908,7 +908,7 @@ export default {
         background: #fff;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
         user-select: none;
-        border: "1px solid #ebebeb";
+        border: "1px solid #ebebeb" !important;
     }
 
     .btn {
