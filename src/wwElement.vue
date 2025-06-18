@@ -989,6 +989,7 @@ export default {
         this.loadEditor();
 
         const container = document.getElementById('editor-scroll-container')
+        console.log('container:', container)
         container.addEventListener('scroll', () => {
             const tippyInstance = this.richEditor?.options?.element?._tippy
             if (tippyInstance) {
