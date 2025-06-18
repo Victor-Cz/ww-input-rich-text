@@ -939,6 +939,10 @@ export default {
         stroke: #fff;
     }
 
+    .bubble-menu .btn svg {
+        vertical-align: middle;
+    }
+
     --menu-color: unset;
     flex-direction: column;
 
