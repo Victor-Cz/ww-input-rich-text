@@ -180,24 +180,8 @@
             <BubbleMenu v-if="richEditor" :editor="richEditor" :tippy-options="{
                 duration: 100,
                 placement: 'top',
-                appendTo: () => document.getElementById('editor-scroll-container'),
-                popperOptions: {
-                    modifiers: [
-                        {
-                            name: 'preventOverflow',
-                            options: {
-                                boundary: document.getElementById('editor-scroll-container'),
-                            },
-                        },
-                        {
-                            name: 'eventListeners',
-                            options: {
-                                scroll: true,
-                                resize: true,
-                            },
-                        },
-                    ],
-                },
+                appendTo: () => document.body,
+                //offset: [-200, 160], // Mets 16, 24 ou même plus pour tester
             }">
                 <div class="bubble-menu">
                     <button v-for="action in actions" :key="action.name" @click.prevent="toggle(action.name)"
@@ -987,15 +971,6 @@ export default {
     },
     mounted() {
         this.loadEditor();
-
-        const container = document.getElementById('editor-scroll-container')
-        console.log('container:', container)
-        container.addEventListener('scroll', () => {
-            const tippyInstance = this.richEditor?.options?.element?._tippy
-            if (tippyInstance) {
-                tippyInstance.popperInstance.update()
-            }
-        })
     },
     beforeUnmount() {
         if (this.richEditor) this.richEditor.destroy();
