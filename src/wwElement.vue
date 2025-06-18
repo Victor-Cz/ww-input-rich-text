@@ -179,8 +179,9 @@
 
             <BubbleMenu v-if="richEditor" :editor="richEditor" :tippy-options="{
                 duration: 100,
-                placement: 'top',
-                offset: [-200, 160] // Mets 16, 24 ou même plus pour tester
+                placement: 'auto',
+                offset: [0, 0], // Mets 16, 24 ou même plus pour tester
+                sticky: true,
             }">
                 <div class="bubble-menu">
                     <button v-for="action in actions" :key="action.name" @click.prevent="toggle(action.name)"
@@ -727,24 +728,7 @@ export default {
             return wwLib.wwUtils.getLengthUnit(this.content.debounceDelay)[0];
         },
     },
-    mounted() {
-        window.addEventListener('scroll', this.updateBubbleMenuPosition, true);
-    },
-
-    beforeUnmount() {
-        window.removeEventListener('scroll', this.updateBubbleMenuPosition, true);
-    },
     methods: {
-        updateBubbleMenuPosition() {
-            if (this.richEditor && this.richEditor.view) {
-                const bubbleMenu = this.richEditor.options.extensions.find(
-                    ext => ext.name === 'bubbleMenu'
-                );
-                if (bubbleMenu && bubbleMenu.tippy) {
-                    bubbleMenu.tippy.popperInstance.update();
-                }
-            }
-        },
         toggle(format) {
             const markTypes = ["bold", "italic", "underline", "strike", "code"];
             if (markTypes.includes(format)) {
@@ -762,7 +746,6 @@ export default {
                 this.richEditor.chain().focus().toggleCodeBlock().run();
             }
         },
-
         loadEditor() {
             if (this.loading) return;
             this.loading = true;
