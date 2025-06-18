@@ -180,7 +180,8 @@
             <BubbleMenu v-if="richEditor" :editor="richEditor" :tippy-options="{
                 duration: 100,
                 placement: 'top',
-                offset: [-200, 160], // Mets 16, 24 ou même plus pour tester
+                offset: [0, 12],
+                //offset: [-200, 160], // Mets 16, 24 ou même plus pour tester
                 appendTo: () => document.body,
             }">
                 <div class="bubble-menu">
