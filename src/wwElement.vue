@@ -182,23 +182,6 @@
                 placement: 'top',
                 offset: [-200, 160], // Mets 16, 24 ou même plus pour tester
                 appendTo: () => document.querySelector('#editor-scroll-container'),
-                popperOptions: {
-                    modifiers: [
-                        {
-                            name: 'preventOverflow',
-                            options: {
-                                boundary: 'clippingParents', // ou document.querySelector('#scrollContainer')
-                            },
-                        },
-                        {
-                            name: 'eventListeners',
-                            options: {
-                                scroll: true,
-                                resize: true,
-                            },
-                        },
-                    ],
-                },
             }">
                 <div class="bubble-menu">
                     <button v-for="action in actions" :key="action.name" @click.prevent="toggle(action.name)"
