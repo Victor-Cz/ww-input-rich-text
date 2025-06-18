@@ -179,9 +179,8 @@
 
             <BubbleMenu v-if="richEditor" :editor="richEditor" :tippy-options="{
                 duration: 100,
-                placement: 'top', // position au-dessus du texte
-                offset: [0, 0],   // décale horizontalement/verticalement [x, y]
-                arrow: false,     // retire la flèche si besoin
+                placement: 'top',
+                offset: [0, 16] // Mets 16, 24 ou même plus pour tester
             }">
                 <div class="bubble-menu">
                     <button v-for="action in actions" :key="action.name" @click.prevent="toggle(action.name)"
