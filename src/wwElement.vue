@@ -316,12 +316,24 @@
             <wwElement class="ww-rich-text__menu" v-else-if="content.customMenu" v-bind="content.customMenuElement" />
 
             <editor-content class="ww-rich-text__input" :editor="richEditor" :style="richStyles" />
+
+            <BubbleMenu
+  v-if="richEditor"
+  :editor="richEditor"
+  :tippy-options="{ duration: 100 }"
+>
+  <!-- Le contenu du menu contextuel, par exemple : -->
+  <button @click="toggleBold" :class="{ 'is-active': richEditor.isActive('bold') }">Gras</button>
+  <button @click="toggleItalic" :class="{ 'is-active': richEditor.isActive('italic') }">Italique</button>
+  <!-- Ajoute d'autres boutons si besoin -->
+</BubbleMenu>
+            
         </template>
     </div>
 </template>
 
 <script>
-import { Editor, EditorContent } from '@tiptap/vue-3';
+import { Editor, EditorContent, BubbleMenu } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import Mention from '@tiptap/extension-mention';
 import TextStyle from '@tiptap/extension-text-style';
@@ -368,6 +380,7 @@ export default {
     components: {
         EditorContent,
         TableIcon,
+        BubbleMenu,
     },
     props: {
         content: { type: Object, required: true },
