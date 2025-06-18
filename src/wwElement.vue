@@ -181,7 +181,7 @@
                 duration: 100,
                 placement: 'top',
                 offset: [-200, 160], // Mets 16, 24 ou même plus pour tester
-                appendTo: () => document.body,
+                appendTo: () => document.querySelector('#editor-scroll-container'),
                 popperOptions: {
                     modifiers: [
                         {
