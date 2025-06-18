@@ -902,8 +902,8 @@ export default {
 .ww-rich-text {
     .bubble-menu {
         display: flex;
-        gap: 6px;
-        padding: 6px 3px;
+        gap: 2px;
+        padding: 2px;
         border-radius: 6px;
         background: #fff;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
@@ -915,8 +915,8 @@ export default {
         cursor: pointer;
         border: none;
         background: transparent;
-        padding: 6px;
-        border-radius: 6px;
+        padding: 4px;
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
