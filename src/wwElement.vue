@@ -181,6 +181,24 @@
                 duration: 100,
                 placement: 'top',
                 offset: [-200, 160], // Mets 16, 24 ou même plus pour tester
+                appendTo: () => document.body,
+                popperOptions: {
+                    modifiers: [
+                        {
+                            name: 'preventOverflow',
+                            options: {
+                                boundary: 'clippingParents', // ou document.querySelector('#scrollContainer')
+                            },
+                        },
+                        {
+                            name: 'eventListeners',
+                            options: {
+                                scroll: true,
+                                resize: true,
+                            },
+                        },
+                    ],
+                },
             }">
                 <div class="bubble-menu">
                     <button v-for="action in actions" :key="action.name" @click.prevent="toggle(action.name)"
@@ -980,7 +998,6 @@ export default {
 <style lang="scss">
 .ww-rich-text {
     .bubble-menu {
-        position: absolute;
         display: flex;
         gap: 2px;
         padding: 2px;
