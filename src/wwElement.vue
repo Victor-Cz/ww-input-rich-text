@@ -979,7 +979,7 @@ export default {
 
 <style lang="scss">
 .ww-rich-text {
-    .data-tippy-root {
+    [data-tippy-root] {
         position: relative !important;
     }
 
