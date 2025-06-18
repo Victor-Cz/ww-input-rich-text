@@ -181,7 +181,7 @@
                 duration: 100,
                 placement: 'top',
                 offset: [-200, 160], // Mets 16, 24 ou même plus pour tester
-                appendTo: () => document.querySelector('#editor-scroll-container'),
+                appendTo: () => document.querySelector('editor-scroll-container'),
             }">
                 <div class="bubble-menu">
                     <button v-for="action in actions" :key="action.name" @click.prevent="toggle(action.name)"
