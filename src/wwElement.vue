@@ -982,6 +982,8 @@ export default {
 <style lang="scss">
 .ww-rich-text {
     .bubble-menu {
+        position: relative;
+        z-index: 9999 !important;
         display: flex;
         gap: 2px;
         padding: 2px;
