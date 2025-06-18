@@ -318,7 +318,7 @@ export default {
             {
                 name: "bold",
                 title: "Gras",
-                icon: `    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                icon: `    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
          xmlns="http://www.w3.org/2000/svg" stroke="#000" stroke-width="2"
          stroke-linecap="round" stroke-linejoin="round">
       <path d="M6 4h8a4 4 0 0 1 0 8H6zm0 8h9a4 4 0 0 1 0 8H6z"/>
@@ -327,7 +327,7 @@ export default {
             {
                 name: "italic",
                 title: "Italique",
-                icon: `    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                icon: `    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
          xmlns="http://www.w3.org/2000/svg" stroke="#000" stroke-width="2"
          stroke-linecap="round" stroke-linejoin="round">
       <path d="M6 4h8a4 4 0 0 1 0 8H6zm0 8h9a4 4 0 0 1 0 8H6z"/>
@@ -916,7 +916,7 @@ export default {
         border: none;
         background: transparent;
         padding: 4px;
-        border-radius: 8px;
+        border-radius: 4px;
         display: flex;
         align-items: center;
         justify-content: center;
