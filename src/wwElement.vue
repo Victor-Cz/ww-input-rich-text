@@ -177,10 +177,11 @@
 
             <editor-content class="ww-rich-text__input" :editor="richEditor" :style="richStyles" />
 
-            <BubbleMenu v-if="editor" :editor="editor">
+            <BubbleMenu v-if="richEditor" :editor="richEditor" :tippy-options="{ duration: 100 }">
                 <div class="bubble-menu">
                     <button v-for="action in actions" :key="action.name" @click.prevent="toggle(action.name)"
-                        :class="{ 'is-active': editor.isActive(action.name) }" class="btn" :title="action.title">
+                        :class="{ 'is-active': richEditor.isActive(action.name) }" :title="action.title" class="btn"
+                        type="button">
                         <span v-html="action.icon" />
                     </button>
                 </div>
@@ -313,12 +314,20 @@ export default {
             {
                 name: "bold",
                 title: "Gras",
-                icon: `<svg width="18" height="18" viewBox="0 0 24 24" ...>...</svg>`,
+                icon: `    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+         xmlns="http://www.w3.org/2000/svg" stroke="#000" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 4h8a4 4 0 0 1 0 8H6zm0 8h9a4 4 0 0 1 0 8H6z"/>
+    </svg>`,
             },
             {
                 name: "italic",
                 title: "Italique",
-                icon: `<svg width="18" height="18" viewBox="0 0 24 24" ...>...</svg>`,
+                icon: `    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+         xmlns="http://www.w3.org/2000/svg" stroke="#000" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 4h8a4 4 0 0 1 0 8H6zm0 8h9a4 4 0 0 1 0 8H6z"/>
+    </svg>`,
             },
             // Ajoute toutes tes actions ici
         ],
@@ -888,6 +897,41 @@ export default {
 
 <style lang="scss">
 .ww-rich-text {
+    .bubble-menu {
+        display: flex;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+        user-select: none;
+    }
+
+    .btn {
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        padding: 6px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.2s, box-shadow 0.2s;
+    }
+
+    .btn:hover {
+        background-color: #f0f0f0;
+        box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .is-active {
+        background-color: #333;
+    }
+
+    .is-active svg {
+        stroke: #fff;
+    }
+
     --menu-color: unset;
     flex-direction: column;
 
