@@ -180,7 +180,7 @@
             <BubbleMenu v-if="richEditor" :editor="richEditor" :tippy-options="{
                 duration: 100,
                 placement: 'top',
-                offset: [-110, 110] // Mets 16, 24 ou même plus pour tester
+                offset: [-140, 110] // Mets 16, 24 ou même plus pour tester
             }">
                 <div class="bubble-menu">
                     <button v-for="action in actions" :key="action.name" @click.prevent="toggle(action.name)"
@@ -318,7 +318,7 @@ export default {
             {
                 name: "bold",
                 title: "Gras",
-                icon: `    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                icon: `    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
          xmlns="http://www.w3.org/2000/svg" stroke="#000" stroke-width="2"
          stroke-linecap="round" stroke-linejoin="round">
       <path d="M6 4h8a4 4 0 0 1 0 8H6zm0 8h9a4 4 0 0 1 0 8H6z"/>
@@ -327,7 +327,7 @@ export default {
             {
                 name: "italic",
                 title: "Italique",
-                icon: `    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                icon: `    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
          xmlns="http://www.w3.org/2000/svg" stroke="#000" stroke-width="2"
          stroke-linecap="round" stroke-linejoin="round">
       <path d="M6 4h8a4 4 0 0 1 0 8H6zm0 8h9a4 4 0 0 1 0 8H6z"/>
@@ -903,7 +903,7 @@ export default {
     .bubble-menu {
         display: flex;
         gap: 8px;
-        padding: 8px 12px;
+        padding: 8px;
         border-radius: 8px;
         background: #fff;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
@@ -920,11 +920,12 @@ export default {
         align-items: center;
         justify-content: center;
         transition: background-color 0.2s, box-shadow 0.2s;
+        border: "1px solid #33333300";
     }
 
     .btn:hover {
         background-color: #f0f0f0;
-        box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+        border: "1px solid #2483E2";
     }
 
     .is-active {
