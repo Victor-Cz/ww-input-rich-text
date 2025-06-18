@@ -369,6 +369,33 @@ export default {
       <path d="M8 6.00067L21 6.00139M8 12.0007L21 12.0015M8 18.0007L21 18.0015M3.5 6H3.51M3.5 12H3.51M3.5 18H3.51M4 6C4 6.27614 3.77614 6.5 3.5 6.5C3.22386 6.5 3 6.27614 3 6C3 5.72386 3.22386 5.5 3.5 5.5C3.77614 5.5 4 5.72386 4 6ZM4 12C4 12.2761 3.77614 12.5 3.5 12.5C3.22386 12.5 3 12.2761 3 12C3 11.7239 3.22386 11.5 3.5 11.5C3.77614 11.5 4 11.7239 4 12ZM4 18C4 18.2761 3.77614 18.5 3.5 18.5C3.22386 18.5 3 18.2761 3 18C3 17.7239 3.22386 17.5 3.5 17.5C3.77614 17.5 4 17.7239 4 18Z" />
     </svg>`,
             },
+            {
+                name: "orderedList",
+                title: "Ordered List",
+                icon: `    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+         xmlns="http://www.w3.org/2000/svg" stroke="#000" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 6L21 6.00066M10 12L21 12.0007M10 18L21 18.0007M3 5L5 4V10M5 10H3M5 10H7M7 20H3L6.41274 17.0139C6.78593 16.6873 7 16.2156 7 15.7197C7 14.7699 6.23008 14 5.28033 14H5C4.06808 14 3.28503 14.6374 3.06301 15.5" />
+    </svg>`,
+            },
+            {
+                name: "blockquote",
+                title: "Block Quote",
+                icon: `    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+         xmlns="http://www.w3.org/2000/svg" stroke="#000" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15.9082 12.3714H20.5982C20.5182 17.0414 19.5982 17.8114 16.7282 19.5114C16.3982 19.7114 16.2882 20.1314 16.4882 20.4714C16.6882 20.8014 17.1082 20.9114 17.4482 20.7114C20.8282 18.7114 22.0082 17.4914 22.0082 11.6714V6.28141C22.0082 4.57141 20.6182 3.19141 18.9182 3.19141H15.9182C14.1582 3.19141 12.8282 4.52141 12.8282 6.28141V9.28141C12.8182 11.0414 14.1482 12.3714 15.9082 12.3714Z" />
+    </svg>`,
+            },
+            {
+                name: "codeBlock",
+                title: "Code Block",
+                icon: `    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+         xmlns="http://www.w3.org/2000/svg" stroke="#000" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9.5 5H9a2 2 0 0 0-2 2v2c0 1-.6 3-3 3 1 0 3 .6 3 3v2a2 2 0 0 0 2 2h.5m5-14h.5a2 2 0 0 1 2 2v2c0 1 .6 3 3 3-1 0-3 .6-3 3v2a2 2 0 0 1-2 2h-.5" />
+    </svg>`,
+            },
         ],
     }),
     watch: {
@@ -939,7 +966,7 @@ export default {
         display: flex;
         gap: 2px;
         padding: 2px;
-        border-radius: 8px;
+        border-radius: 6px;
         background: #fff;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
         user-select: none;
