@@ -213,6 +213,11 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
 
+import BulletList from '@tiptap/extension-bullet-list'
+import OrderedList from '@tiptap/extension-ordered-list'
+import Blockquote from '@tiptap/extension-blockquote'
+import CodeBlock from '@tiptap/extension-code-block'
+
 import { computed, inject } from 'vue';
 import suggestion from './suggestion.js';
 import { Markdown } from 'tiptap-markdown';
@@ -762,6 +767,10 @@ export default {
                     TableCell,
                     TableHeader,
                     TableRow,
+                    BulletList,
+                    OrderedList,
+                    Blockquote,
+                    CodeBlock,
                     TaskList,
                     TaskItem.configure({
                         nested: true,
