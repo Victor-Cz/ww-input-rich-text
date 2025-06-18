@@ -180,6 +180,15 @@
             <BubbleMenu v-if="richEditor" :editor="richEditor" :tippy-options="{
                 duration: 100,
                 placement: 'top',
+                boundary: 'window',
+                appendTo: 'parent',
+                popperOptions: {
+                    modifiers: {
+                        flip: {
+                            boundariesElement: 'scrollParent',
+                        },
+                    },
+                },
                 //offset: [-200, 160], // Mets 16, 24 ou même plus pour tester
             }">
                 <div class="bubble-menu">
@@ -980,7 +989,6 @@ export default {
 <style lang="scss">
 .ww-rich-text {
     .bubble-menu {
-        position: fixed;
         display: flex;
         gap: 2px;
         padding: 2px;
