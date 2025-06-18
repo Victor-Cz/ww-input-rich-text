@@ -922,6 +922,8 @@ export default {
         justify-content: center;
         transition: background-color 0.2s, box-shadow 0.2s;
         border: "1px solid #33333300";
+        width: 24px;
+        height: 24px;
     }
 
     .btn:hover {
