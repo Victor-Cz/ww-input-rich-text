@@ -10,12 +10,13 @@
             <div class="selected-text-content">{{ storedSelection }}</div>
         </div>
 
-        <!-- Sélecteur de type de modification -->
+        <!-- Sélecteur de type de modification - dropdown collapsible -->
         <div class="modification-type-dropdown" v-if="!isLoading && !isProposal">
-            <div class="dropdown-header">
-                <span>Types de modification</span>
+            <div class="dropdown-header" @click="toggleDropdown">
+                <span>{{ selectedModificationType ? modificationTypes[selectedModificationType].label : 'Choisir un type' }}</span>
+                <i class="fas fa-chevron-down" :class="{ 'rotated': isDropdownOpen }"></i>
             </div>
-            <div class="dropdown-options">
+            <div class="dropdown-options" v-show="isDropdownOpen">
                 <button 
                     v-for="(type, key) in modificationTypes" 
                     :key="key"
@@ -115,6 +116,7 @@ export default {
             isLoading: false,
             isProposal: false,
             selectedModificationType: null,
+            isDropdownOpen: false, // Pour contrôler l'ouverture/fermeture de la dropdown
             // Configuration des types de modifications
             modificationTypes: {
                 modify: {
@@ -201,6 +203,9 @@ export default {
             // Le menu est visible seulement si il est explicitement ouvert
             this.isVisible = this.isFocused;
         },
+        toggleDropdown() {
+            this.isDropdownOpen = !this.isDropdownOpen;
+        },
         submitPrompt() {
             if (this.aiPrompt.trim() && this.selectedModificationType) {
                 this.isLoading = true;
@@ -266,6 +271,7 @@ export default {
             this.storedSelectionRange = null;
             this.hasSelection = false;
             this.selectedModificationType = null;
+            this.isDropdownOpen = false; // Fermer la dropdown
         },
         applyResponse(response) {
             const action = this.modificationTypes[this.selectedModificationType].action;
@@ -339,6 +345,7 @@ export default {
         },
         selectModificationType(typeKey) {
             this.selectedModificationType = typeKey;
+            this.isDropdownOpen = false; // Fermer la dropdown après sélection
             this.isVisible = true;
             this.isFocused = true;
             this.updateVisibility();
@@ -400,18 +407,41 @@ export default {
 }
 
 .dropdown-header {
-    font-size: 12px;
-    font-weight: 600;
-    color: #6c757d;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #495057;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.dropdown-header:hover {
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.dropdown-header i {
+    transition: transform 0.2s;
+}
+
+.dropdown-header i.rotated {
+    transform: rotate(180deg);
 }
 
 .dropdown-options {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
+    margin-top: 4px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background: white;
+    overflow: hidden;
 }
 
 .dropdown-option {
