@@ -164,10 +164,18 @@ export default {
     mounted() {
         // Écouter les clics en dehors du menu pour le masquer
         document.addEventListener('mousedown', this.onClickOutside);
+        
+        // Écouter le blur de l'éditeur pour nettoyer les strikes
+        this.richEditor.on('blur', this.onEditorBlur);
     },
     beforeUnmount() {
         // Nettoyer les écouteurs
         document.removeEventListener('mousedown', this.onClickOutside);
+        
+        // Nettoyer l'écouteur de l'éditeur
+        if (this.richEditor && this.richEditor.off) {
+            this.richEditor.off('blur', this.onEditorBlur);
+        }
 
         this.storedSelection = null;
         this.storedSelectionRange = null;
@@ -428,6 +436,10 @@ export default {
                 // Fermer le menu si on clique en dehors
                 this.closeMenu();
             }
+        },
+
+        onEditorBlur() {
+            this.closeMenu();
         },
 
         getSelectedTypeLabel() {
