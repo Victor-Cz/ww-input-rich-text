@@ -61,6 +61,10 @@ export default {
             type: String,
             default: '#007bff',
         },
+        hasStarted: {
+            type: Boolean,
+            default: false,
+        },
     },
     computed: {
         primaryColor() {
@@ -180,6 +184,7 @@ export default {
                 return;
             }
 
+            this.hasStarted = true;
             this.isLoading = true;
 
             const finalPrompt = this.buildFinalPrompt();
@@ -281,19 +286,17 @@ export default {
             this.closeMenu();
         },
         hideMenu() {
-            if (this.aiResponse === '' && !this.isLoading) {
-                this.closeMenu();
+            if (this.hasStarted) {
                 return;
             }
 
-            this.isVisible = false;
-            this.isFocused = false;
-            this.isDropdownOpen = false;
+            this.closeMenu();
         },
         closeMenu() {
             this.isVisible = false;
             this.isFocused = false;
             this.isLoading = false;
+            this.hasStarted = false;
             this.storedSelection = null;
             this.storedSelectionRange = null;
             this.selectedModificationType = null;
@@ -308,11 +311,11 @@ export default {
         },
         applyResponse(response) {
             const action = this.modificationTypes[this.selectedModificationType].action;
-            
+
             // Formater le texte avec la même logique que pour l'affichage
             const position = this.getSuggestionPosition();
             const formattedResponse = this.formatSuggestionText(response, position);
-            
+
             switch (action) {
                 case 'replace': this.replaceSelection(formattedResponse); break;
                 case 'insert-before': this.insertBeforeSelection(formattedResponse); break;
@@ -610,7 +613,7 @@ export default {
 }
 
 .ai-submit-button:disabled {
-    background: var(--primary-color-inactive)!important;
+    background: var(--primary-color-inactive) !important;
     cursor: not-allowed;
 }
 
