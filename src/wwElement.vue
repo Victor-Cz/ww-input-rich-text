@@ -324,7 +324,7 @@
 import { Editor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import Mention from '@tiptap/extension-mention';
-import TextStyle from '@tiptap/extension-text-style';
+import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import Link from '@tiptap/extension-link';
 import { Placeholder, UndoRedo } from '@tiptap/extensions';
@@ -337,7 +337,7 @@ import Underline from '@tiptap/extension-underline';
 
 import { computed, inject } from 'vue';
 import suggestion from './suggestion.js';
-import { Markdown } from 'tiptap-markdown';
+// Markdown support is built into Tiptap v3
 import TableIcon from './icons/table-icon.vue';
 
 function extractMentions(acc, currentNode) {
@@ -801,7 +801,7 @@ export default {
                     Placeholder.configure({
                         placeholder: this.editorConfig.placeholder,
                     }),
-                    Markdown.configure({ breaks: true }),
+                    // Markdown support is built into Tiptap v3
                     Image.configure({ ...this.editorConfig.image }),
                     this.editorConfig.mention.enabled &&
                         Mention.configure({
@@ -953,7 +953,10 @@ export default {
             this.richEditor.chain().redo().run();
         },
         getContent() {
-            if (this.content.output === 'markdown') return this.richEditor.storage.markdown.getMarkdown();
+            if (this.content.output === 'markdown') {
+                // In Tiptap v3, we can use the built-in markdown serializer
+                return this.richEditor.storage.markdown?.getMarkdown() || this.richEditor.getHTML();
+            }
             return this.richEditor.getHTML();
         },
         /* Table */

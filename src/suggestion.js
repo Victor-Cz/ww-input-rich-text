@@ -1,5 +1,5 @@
 import { VueRenderer } from '@tiptap/vue-3';
-import tippy from 'tippy.js';
+import { computePosition, flip, shift, offset } from '@floating-ui/dom';
 
 import MentionList from './MentionList.vue';
 
@@ -7,6 +7,7 @@ export default {
     render: () => {
         let component;
         let popup;
+        let popupElement;
 
         return {
             onStart: props => {
@@ -19,15 +20,15 @@ export default {
                     return;
                 }
 
-                popup = tippy('body', {
-                    getReferenceClientRect: props.clientRect,
-                    appendTo: () => wwLib.getFrontDocument().body,
-                    content: component.element,
-                    showOnCreate: true,
-                    interactive: true,
-                    trigger: 'manual',
-                    placement: 'bottom-start',
-                });
+                // Create popup element
+                popupElement = document.createElement('div');
+                popupElement.style.position = 'absolute';
+                popupElement.style.zIndex = '1000';
+                popupElement.appendChild(component.element);
+                document.body.appendChild(popupElement);
+
+                // Position the popup
+                this.updatePosition(props.clientRect);
             },
 
             onUpdate(props) {
@@ -37,15 +38,12 @@ export default {
                     return;
                 }
 
-                popup[0].setProps({
-                    getReferenceClientRect: props.clientRect,
-                });
+                this.updatePosition(props.clientRect);
             },
 
             onKeyDown(props) {
                 if (props.event.key === 'Escape') {
-                    popup[0].hide();
-
+                    this.hidePopup();
                     return true;
                 }
 
@@ -53,8 +51,40 @@ export default {
             },
 
             onExit() {
-                popup[0].destroy();
+                this.hidePopup();
                 component.destroy();
+            },
+
+            updatePosition(clientRect) {
+                if (!popupElement) return;
+
+                const referenceElement = {
+                    getBoundingClientRect: () => ({
+                        top: clientRect.top,
+                        left: clientRect.left,
+                        right: clientRect.right,
+                        bottom: clientRect.bottom,
+                        width: clientRect.width,
+                        height: clientRect.height,
+                    }),
+                };
+
+                computePosition(referenceElement, popupElement, {
+                    placement: 'bottom-start',
+                    middleware: [offset(4), flip(), shift()],
+                }).then(({ x, y }) => {
+                    Object.assign(popupElement.style, {
+                        left: `${x}px`,
+                        top: `${y}px`,
+                    });
+                });
+            },
+
+            hidePopup() {
+                if (popupElement) {
+                    popupElement.remove();
+                    popupElement = null;
+                }
             },
         };
     },
