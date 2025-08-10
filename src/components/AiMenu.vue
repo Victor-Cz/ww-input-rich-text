@@ -185,11 +185,26 @@ export default {
 
         // Écouter les clics en dehors du menu pour le masquer
         document.addEventListener('mousedown', this.onClickOutside);
+
+        const { from, to } = this.richEditor.state.selection;
+        this.hasSelection = from !== to;
+
+        // Stocker le texte sélectionné quand il y en a un
+        if (this.hasSelection) {
+            this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
+            this.storedSelectionRange = { from, to };
+            console.log('AiMenu - Déclencher le surlignage:', { from, to });
+            this.richEditor.commands.highlightRange(from, to);
+        }
     },
     beforeUnmount() {
         // Nettoyer les écouteurs
         this.richEditor.off('selectionUpdate', this.onSelectionUpdate);
         document.removeEventListener('mousedown', this.onClickOutside);
+
+        this.storedSelection = null;
+        this.storedSelectionRange = null;
+        this.richEditor.commands.clearHighlight()
     },
     methods: {
         onSelectionUpdate() {
