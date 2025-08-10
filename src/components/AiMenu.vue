@@ -281,6 +281,11 @@ export default {
             this.closeMenu();
         },
         hideMenu() {
+            if (!this.aiResponse && !this.isLoading) {
+                this.closeMenu();
+                return;
+            }
+
             this.isVisible = false;
             this.isFocused = false;
             this.isDropdownOpen = false;
