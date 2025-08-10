@@ -22,31 +22,20 @@
                         </div>
                     </div>
                 </div>
-                <button @click="submitPrompt" class="ai-submit-button" title="Envoyer le prompt"
-                    :disabled="isSubmitDisabled">
-                    <div class="icon-arrow-sm-right" aria-hidden="true"></div>
-                </button>
-            </div>
-        </div>
-
-        <!-- Affichage de la proposition AI -->
-        <div class="ai-proposal-container" v-if="isProposal">
-            <div class="proposal-header">
-                <span class="proposal-label">Proposition AI :</span>
-            </div>
-            <div class="proposal-content">
-                <input :value="aiResponse" type="text" class="ai-proposal-input" :readonly="isReadOnly" @focus="onFocus"
-                    @blur="onBlur" />
-            </div>
-            <div class="proposal-actions">
-                <button @click="validateProposal" class="proposal-validate-button" title="Valider la proposition">
-                    <i class="fas fa-check"></i>
-                    Valider
-                </button>
-                <button @click="rejectProposal" class="proposal-reject-button" title="Rejeter la proposition">
-                    <i class="fas fa-times"></i>
-                    Rejeter
-                </button>
+                <div class="ai-action-buttons">
+                    <button @click="validateProposal" class="ai-validate-button" title="Valider la proposition"
+                        :disabled="!aiResponse" v-if="aiResponse">
+                        <div class="icon-check" aria-hidden="true"></div>
+                    </button>
+                    <button @click="rejectProposal" class="ai-reject-button" title="Rejeter la proposition"
+                        :disabled="!aiResponse" v-if="aiResponse">
+                        <div class="icon-x" aria-hidden="true"></div>
+                    </button>
+                    <button @click="submitPrompt" class="ai-submit-button" title="Envoyer le prompt"
+                        :disabled="isSubmitDisabled">
+                        <div class="icon-arrow-sm-right" aria-hidden="true"></div>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -107,7 +96,6 @@ export default {
             storedSelection: null,
             storedSelectionRange: null,
             isLoading: false,
-            isProposal: false,
             selectedModificationType: null,
             isDropdownOpen: false, // Pour contrôler l'ouverture/fermeture de la dropdown
             // Configuration des types de modifications
@@ -238,7 +226,6 @@ export default {
 
             // Stocker la réponse pour validation ultérieure
             this.aiResponse = response;
-            this.isProposal = true;
         },
 
         getSuggestionPosition() {
@@ -289,7 +276,6 @@ export default {
         },
         resetProposal() {
             this.aiResponse = '';
-            this.isProposal = false;
         },
         closeMenu() {
             this.isVisible = false;
@@ -517,7 +503,7 @@ export default {
 
 .ai-input {
     flex: 1;
-    padding: 12px 32px 32px 12px;
+    padding: 12px 12px 48px 12px;
     border-radius: 12px;
     font-size: 14px;
     color: #495057;
@@ -570,89 +556,75 @@ export default {
     background: var(--primary-color-active);
 }
 
-/* Styles pour la proposition AI */
-.ai-proposal-container {
-    margin-bottom: 16px;
-}
-
-.proposal-header {
-    margin-bottom: 12px;
-}
-
-.proposal-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #6c757d;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.proposal-content {
-    margin-bottom: 16px;
-}
-
-.ai-proposal-input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 2px solid #8b5cf6;
-    border-radius: 6px;
-    font-size: 14px;
-    color: #8b5cf6;
-    background: #faf5ff;
-    font-weight: 500;
-}
-
-.ai-proposal-input:focus {
-    outline: none;
-    border-color: #7c3aed;
-    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-}
-
-.proposal-actions {
+/* Conteneur des boutons d'action */
+.ai-action-buttons {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
     display: flex;
-    gap: 8px;
+    gap: 6px;
+    align-items: center;
+    z-index: 1001;
 }
 
-.proposal-validate-button,
-.proposal-reject-button {
-    flex: 1;
-    padding: 10px 16px;
+/* Boutons de validation et rejet */
+.ai-validate-button,
+.ai-reject-button {
+    padding: 8px 8px;
     border: none;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 600;
+    border-radius: 9px;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    min-width: 40px;
+    height: 32px;
+    font-size: 14px;
 }
 
-.proposal-validate-button {
+.ai-validate-button {
     background: #10b981;
     color: white;
 }
 
-.proposal-validate-button:hover {
+.ai-validate-button:hover:not(:disabled) {
     background: #059669;
 }
 
-.proposal-validate-button:active {
+.ai-validate-button:active:not(:disabled) {
     background: #047857;
 }
 
-.proposal-reject-button {
+.ai-validate-button:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.ai-reject-button {
     background: #ef4444;
     color: white;
 }
 
-.proposal-reject-button:hover {
+.ai-reject-button:hover:not(:disabled) {
     background: #dc2626;
 }
 
-.proposal-reject-button:active {
+.ai-reject-button:active:not(:disabled) {
     background: #b91c1c;
+}
+
+.ai-reject-button:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Ajuster la position du bouton submit */
+.ai-submit-button {
+    position: static;
+    margin-left: 0;
 }
 
 /* État de chargement */

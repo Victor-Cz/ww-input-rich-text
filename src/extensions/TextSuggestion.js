@@ -51,7 +51,7 @@ export const TextSuggestion = Extension.create({
       const span = document.createElement('span')
       span.className = options.className
       span.style.cssText = `
-        color: ${options.color};
+        color: ${options.color} !important;
       `
       span.textContent = text
       return span
