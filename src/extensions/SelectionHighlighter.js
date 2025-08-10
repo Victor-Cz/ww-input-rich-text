@@ -10,11 +10,14 @@ export const SelectionHighlighter = Extension.create({
       new Plugin({
         state: {
           init() {
+            console.log('SelectionHighlighter - Plugin initialisé');
             return DecorationSet.empty
           },
           apply(tr, old) {
             // Récupérer le storedSelection depuis les métadonnées de la transaction
             const storedSelection = tr.getMeta('storedSelection')
+            
+            console.log('SelectionHighlighter - storedSelection:', storedSelection);
             
             if (!storedSelection) {
               return DecorationSet.empty
@@ -26,6 +29,7 @@ export const SelectionHighlighter = Extension.create({
               { style: 'background-color: yellow;' }
             )
 
+            console.log('SelectionHighlighter - decoration créée:', deco);
             return DecorationSet.create(tr.doc, [deco])
           },
         },
