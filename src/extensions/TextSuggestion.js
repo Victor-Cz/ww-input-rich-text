@@ -66,7 +66,7 @@ export const TextSuggestion = Extension.create({
         
         for (let i = 0; i < words.length; i += 5) {
           const chunkWords = words.slice(i, i + 5)
-          const chunk = chunkWords.join('')
+          const chunk = chunkWords.join(' ')
           
           // Ajouter un espace après le chunk (sauf pour le dernier)
           if (i + 5 < words.length) {
