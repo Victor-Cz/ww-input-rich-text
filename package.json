@@ -2,7 +2,8 @@
     "name": "ww-rich-text-v2",
     "version": "3.0.1",
     "scripts": {
-        "build": "weweb build",
+        "build": "weweb build -- name=ww-rich-text-v2 type=wwobject",
+        "build:weweb": "weweb build",
         "serve": "weweb serve"
     },
     "devDependencies": {
