@@ -187,14 +187,7 @@ export default {
 
             const finalPrompt = this.buildFinalPrompt();
             const action = this.modificationTypes[this.selectedModificationType].action;
-            console.log('AI Prompt submitted:', {
-                prompt: finalPrompt,
-                modificationType: this.selectedModificationType,
-                action: action,
-                selectedText: this.storedSelection,
-                selectionRange: this.storedSelectionRange,
-                timestamp: new Date().toISOString()
-            });
+
 
             // Émettre l'événement vers le composant parent
             this.$emit('ai-prompt', {
@@ -210,18 +203,11 @@ export default {
         setResponse(response) {
             this.isLoading = false;
             if (!response) {
-                console.log('AI Response received but no content to apply');
                 return;
             }
 
-            console.log('setResponse called with:', response);
-            console.log('aiResponse before displaySuggestion:', this.aiResponse);
-
             // Utiliser TextSuggestion pour afficher la proposition dans l'éditeur
             this.displaySuggestion(response);
-            
-            console.log('aiResponse after displaySuggestion:', this.aiResponse);
-            console.log('AI Response displayed as suggestion:', response);
         },
 
         displaySuggestion(response) {
@@ -243,7 +229,6 @@ export default {
 
             // Stocker la réponse pour validation ultérieure
             this.aiResponse = response;
-            console.log('aiResponse set to:', this.aiResponse);
         },
 
         getSuggestionPosition() {
@@ -285,7 +270,6 @@ export default {
             // Réinitialiser et fermer le menu
             this.resetProposal();
             this.closeMenu();
-            console.log('AI Proposal validated and applied:', this.aiResponse);
         },
         rejectProposal() {
             // Rejeter la proposition et fermer le menu
@@ -295,7 +279,6 @@ export default {
 
             this.resetProposal();
             this.closeMenu();
-            console.log('AI Proposal rejected');
         },
         resetProposal() {
             this.aiResponse = '';
@@ -315,14 +298,19 @@ export default {
         },
         applyResponse(response) {
             const action = this.modificationTypes[this.selectedModificationType].action;
+            
+            // Formater le texte avec la même logique que pour l'affichage
+            const position = this.getSuggestionPosition();
+            const formattedResponse = this.formatSuggestionText(response, position);
+            
             switch (action) {
-                case 'replace': this.replaceSelection(response); break;
-                case 'insert-before': this.insertBeforeSelection(response); break;
-                case 'insert-after': this.insertAfterSelection(response); break;
-                case 'replace-all': this.replaceAllText(response); break;
-                case 'append': this.appendToEnd(response); break;
-                case 'prepend': this.prependToBeginning(response); break;
-                default: console.warn('Action non reconnue:', action); this.replaceSelection(response);
+                case 'replace': this.replaceSelection(formattedResponse); break;
+                case 'insert-before': this.insertBeforeSelection(formattedResponse); break;
+                case 'insert-after': this.insertAfterSelection(formattedResponse); break;
+                case 'replace-all': this.replaceAllText(formattedResponse); break;
+                case 'append': this.appendToEnd(formattedResponse); break;
+                case 'prepend': this.prependToBeginning(formattedResponse); break;
+                default: console.warn('Action non reconnue:', action); this.replaceSelection(formattedResponse);
             }
         },
         openWithType(typeKey) {
@@ -337,7 +325,6 @@ export default {
             if (from !== to) {
                 this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
                 this.storedSelectionRange = { from, to };
-                console.log('AiMenu - Sélection enregistrée et surlignée:', { from, to });
                 this.richEditor.commands.highlightRange(from, to);
             }
         },
@@ -373,16 +360,14 @@ export default {
         insertBeforeSelection(text) {
             if (this.storedSelectionRange) {
                 const { from } = this.storedSelectionRange;
-                const formattedText = this.formatTextWithSpaces(text, 'before', from);
-                this.richEditor.chain().focus().insertContentAt(from, formattedText).run();
+                this.richEditor.chain().focus().insertContentAt(from, text).run();
             }
         },
 
         insertAfterSelection(text) {
             if (this.storedSelectionRange) {
                 const { to } = this.storedSelectionRange;
-                const formattedText = this.formatTextWithSpaces(text, 'after', to);
-                this.richEditor.chain().focus().insertContentAt(to, formattedText).run();
+                this.richEditor.chain().focus().insertContentAt(to, text).run();
             }
         },
 
@@ -392,63 +377,11 @@ export default {
 
         appendToEnd(text) {
             const docSize = this.richEditor.state.doc.content.size;
-            const formattedText = this.formatTextWithSpaces(text, 'append', docSize);
-            this.richEditor.chain().focus().insertContentAt(docSize, formattedText).run();
+            this.richEditor.chain().focus().insertContentAt(docSize, text).run();
         },
 
         prependToBeginning(text) {
-            const formattedText = this.formatTextWithSpaces(text, 'prepend', 0);
-            this.richEditor.chain().focus().insertContentAt(0, formattedText).run();
-        },
-
-        // Méthode pour formater le texte avec des espaces intelligents
-        formatTextWithSpaces(text, position, insertPos) {
-            if (!text || typeof text !== 'string') return text;
-
-            let formattedText = text.trim(); // Supprimer les espaces en début/fin
-
-            // Obtenir le contexte autour de la position d'insertion
-            const doc = this.richEditor.state.doc;
-            const beforeChar = insertPos > 0 ? doc.textBetween(insertPos - 1, insertPos) : '';
-            const afterChar = insertPos < doc.content.size ? doc.textBetween(insertPos, insertPos + 1) : '';
-
-            switch (position) {
-                case 'before':
-                    // Insertion avant la sélection
-                    if (beforeChar && !this.isWhitespace(beforeChar) && !this.isPunctuation(beforeChar)) {
-                        formattedText += ' '; // Ajouter un espace si pas d'espace avant
-                    }
-                    if (afterChar && !this.isWhitespace(afterChar) && !this.isPunctuation(afterChar)) {
-                        formattedText = ' ' + formattedText; // Ajouter un espace si pas d'espace après
-                    }
-                    break;
-
-                case 'after':
-                    // Insertion après la sélection
-                    if (beforeChar && !this.isWhitespace(beforeChar) && !this.isPunctuation(beforeChar)) {
-                        formattedText = ' ' + formattedText; // Ajouter un espace si pas d'espace avant
-                    }
-                    if (afterChar && !this.isWhitespace(afterChar) && !this.isPunctuation(afterChar)) {
-                        formattedText += ' '; // Ajouter un espace si pas d'espace après
-                    }
-                    break;
-
-                case 'prepend':
-                    // Insertion au début du document
-                    if (afterChar && !this.isWhitespace(afterChar) && !this.isPunctuation(afterChar)) {
-                        formattedText += ' '; // Ajouter un espace si pas d'espace après
-                    }
-                    break;
-
-                case 'append':
-                    // Insertion à la fin du document
-                    if (beforeChar && !this.isWhitespace(beforeChar) && !this.isPunctuation(beforeChar)) {
-                        formattedText = ' ' + formattedText; // Ajouter un espace si pas d'espace avant
-                    }
-                    break;
-            }
-
-            return formattedText;
+            this.richEditor.chain().focus().insertContentAt(0, text).run();
         },
 
         // Méthode pour formater le texte de suggestion avec des espaces intelligents

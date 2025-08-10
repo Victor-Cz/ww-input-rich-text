@@ -11,6 +11,7 @@ export const TextStrike = Extension.create({
     return {
       ranges: [], // [{ from: number, to: number }]
       className: 'text-strike', // optionnel, pour style CSS
+      color: 'var(--primary-color)',
     }
   },
 
@@ -26,7 +27,7 @@ export const TextStrike = Extension.create({
             const decorations = options.ranges.map(({ from, to }) =>
               Decoration.inline(from, to, {
                 class: options.className,
-                style: 'text-decoration: line-through; !important',
+                style: `text-decoration: line-through; !important; text-decoration-color: ${options.color} !important;`,
               }),
             )
             return DecorationSet.create(instance.doc, decorations)
@@ -38,7 +39,7 @@ export const TextStrike = Extension.create({
               const decorations = meta.ranges.map(({ from, to }) =>
                 Decoration.inline(from, to, {
                   class: options.className,
-                  style: 'text-decoration: line-through; !important',
+                  style: `text-decoration: line-through; !important; text-decoration-color: ${options.color} !important;`,
                 }),
               )
               return DecorationSet.create(tr.doc, decorations)

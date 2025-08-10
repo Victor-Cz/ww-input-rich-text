@@ -719,7 +719,8 @@ export default {
                     }),
                     TextStrike.configure({
                         defaultStrikeColor: 'var(--primary-color)',
-                        ranges:  [{ from: 0, to: 10, color: 'var(--primary-color)' }],
+                        ranges:  [],
+                        color: 'var(--primary-color)',
                     }),
                 ],
                 onCreate: () => {
