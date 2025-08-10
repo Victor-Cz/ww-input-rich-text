@@ -6,35 +6,38 @@
     >
 
 
-        <!-- Sélecteur de type de modification - dropdown collapsible -->
-        <div class="modification-type-dropdown" v-if="!isLoading && !isProposal">
-            <div class="dropdown-header" @click="toggleDropdown">
-                <span>{{ selectedModificationType ? modificationTypes[selectedModificationType].label : 'Choisir un type' }}</span>
-                <i class="fas fa-chevron-down" :class="{ 'rotated': isDropdownOpen }"></i>
-            </div>
-            <div class="dropdown-options" v-show="isDropdownOpen">
-                <button 
-                    v-for="(type, key) in modificationTypes" 
-                    :key="key"
-                    class="dropdown-option"
-                    @click="selectModificationType(key)"
-                >
-                    {{ type.label }}
-                </button>
-            </div>
-        </div>
+
 
                     <!-- Input pour les prompts AI -->
             <div class="ai-input-container" v-if="!isLoading">
-                <input
-                    v-model="aiPrompt"
-                    type="text"
-                    :placeholder="getPromptPlaceholder()"
-                    class="ai-input"
-                    @keyup.enter="submitPrompt"
-                    @focus="onFocus"
-                    @blur="onBlur"
-                />
+                <div class="ai-input-wrapper">
+                    <input
+                        v-model="aiPrompt"
+                        type="text"
+                        :placeholder="getPromptPlaceholder()"
+                        class="ai-input"
+                        @keyup.enter="submitPrompt"
+                        @focus="onFocus"
+                        @blur="onBlur"
+                    />
+                    <div class="modification-type-dropdown">
+                        <div class="dropdown-header" @click="toggleDropdown">
+                            <i class="fas fa-microphone"></i>
+                            <span>{{ selectedModificationType ? selectedModificationType.label : 'Choisir un type' }}</span>
+                            <i class="fas fa-chevron-down" :class="{ 'rotated': isDropdownOpen }"></i>
+                        </div>
+                        <div class="dropdown-options" v-show="isDropdownOpen">
+                            <div
+                                v-for="(type, key) in modificationTypes"
+                                :key="key"
+                                class="dropdown-option"
+                                @click="selectModificationType(key)"
+                            >
+                                {{ type.label }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
         <!-- Affichage de la proposition AI -->
@@ -442,24 +445,24 @@ export default {
 }
 
 .modification-type-dropdown {
-    position: absolute;
-    bottom: 16px;
-    left: 16px;
+    position: relative;
+    margin-top: 8px;
     z-index: 1001;
 }
 
 .dropdown-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 10px 12px;
+    gap: 8px;
+    padding: 6px 10px;
     border: 1px solid #dee2e6;
-    border-radius: 6px;
-    font-size: 14px;
+    border-radius: 4px;
+    font-size: 13px;
     color: #495057;
-    background: white;
+    background: #f8f9fa;
     cursor: pointer;
     transition: border-color 0.2s, box-shadow 0.2s;
+    width: fit-content;
 }
 
 .dropdown-header:hover {
@@ -477,9 +480,8 @@ export default {
 
 .dropdown-options {
     position: absolute;
-    top: calc(100% + 4px);
+    bottom: calc(100% + 4px);
     left: 0;
-    right: 0;
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -489,6 +491,7 @@ export default {
     overflow: hidden;
     z-index: 1000;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    min-width: 200px;
 }
 
 .dropdown-option {
@@ -517,6 +520,14 @@ export default {
 .ai-input-container {
     display: flex;
     gap: 8px;
+    width: 100%;
+    height: 100%;
+}
+
+.ai-input-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
     width: 100%;
     height: 100%;
 }
@@ -555,6 +566,7 @@ export default {
     align-items: center;
     justify-content: center;
     min-width: 44px;
+    z-index: 1001;
 }
 
 .ai-submit-button:hover {
