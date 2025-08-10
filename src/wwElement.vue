@@ -181,7 +181,8 @@
                     <i class="fas fa-magic"></i>
                 </button>
             </div>
-            <div class="ww-rich-text__menu" v-else-if="content.customMenu" v-html="content.customMenuElement?.html || ''" v-bind="content.customMenuElement?.props || {}" />
+            <div class="ww-rich-text__menu" v-else-if="content.customMenu"
+                v-html="content.customMenuElement?.html || ''" v-bind="content.customMenuElement?.props || {}" />
 
             <editor-content class="ww-rich-text__input" :editor="richEditor" :style="richStyles" />
 
@@ -207,6 +208,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import TaskList from '@tiptap/extension-task-list';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import Underline from '@tiptap/extension-underline';
+import { SelectionHighlighter } from './extensions/SelectionHighlighter.js';
 
 import AiMenu from './components/AiMenu.vue';
 
@@ -680,7 +682,7 @@ export default {
                     }),
                     Markdown.configure({ breaks: true }),
                     Image.configure({ ...this.editorConfig.image }),
-        
+
                     this.editorConfig.mention.enabled &&
                     Mention.configure({
                         HTMLAttributes: {
@@ -696,6 +698,7 @@ export default {
                             char: this.editorConfig.mention.char,
                         },
                     }),
+                    SelectionHighlighter,
                 ],
                 onCreate: () => {
                     this.setValue(this.getContent());
@@ -1258,7 +1261,7 @@ export default {
         cursor: inherit;
     }
 
-    
+
 
 
 }
