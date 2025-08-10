@@ -223,8 +223,11 @@ export default {
             // Déterminer la position de la suggestion selon la méthode et la sélection
             const position = this.getSuggestionPosition();
 
+            // Formater le texte de la suggestion avec des espaces intelligents
+            const formattedResponse = this.formatSuggestionText(response, position);
+
             // Utiliser la commande updateSuggestion pour afficher la proposition
-            this.richEditor.commands.updateSuggestion(response, position);
+            this.richEditor.commands.updateSuggestion(formattedResponse, position);
 
             // Ajouter un TextStroke sur le texte sélectionné pour montrer ce qui va être modifié
             const action = this.modificationTypes[this.selectedModificationType]?.action;
@@ -365,14 +368,16 @@ export default {
         insertBeforeSelection(text) {
             if (this.storedSelectionRange) {
                 const { from } = this.storedSelectionRange;
-                this.richEditor.chain().focus().insertContentAt(from, text).run();
+                const formattedText = this.formatTextWithSpaces(text, 'before', from);
+                this.richEditor.chain().focus().insertContentAt(from, formattedText).run();
             }
         },
 
         insertAfterSelection(text) {
             if (this.storedSelectionRange) {
                 const { to } = this.storedSelectionRange;
-                this.richEditor.chain().focus().insertContentAt(to, text).run();
+                const formattedText = this.formatTextWithSpaces(text, 'after', to);
+                this.richEditor.chain().focus().insertContentAt(to, formattedText).run();
             }
         },
 
@@ -381,11 +386,95 @@ export default {
         },
 
         appendToEnd(text) {
-            this.richEditor.chain().focus().insertContentAt(this.richEditor.state.doc.content.size, text).run();
+            const docSize = this.richEditor.state.doc.content.size;
+            const formattedText = this.formatTextWithSpaces(text, 'append', docSize);
+            this.richEditor.chain().focus().insertContentAt(docSize, formattedText).run();
         },
 
         prependToBeginning(text) {
-            this.richEditor.chain().focus().insertContentAt(0, text).run();
+            const formattedText = this.formatTextWithSpaces(text, 'prepend', 0);
+            this.richEditor.chain().focus().insertContentAt(0, formattedText).run();
+        },
+
+        // Méthode pour formater le texte avec des espaces intelligents
+        formatTextWithSpaces(text, position, insertPos) {
+            if (!text || typeof text !== 'string') return text;
+
+            let formattedText = text.trim(); // Supprimer les espaces en début/fin
+
+            // Obtenir le contexte autour de la position d'insertion
+            const doc = this.richEditor.state.doc;
+            const beforeChar = insertPos > 0 ? doc.textBetween(insertPos - 1, insertPos) : '';
+            const afterChar = insertPos < doc.content.size ? doc.textBetween(insertPos, insertPos + 1) : '';
+
+            switch (position) {
+                case 'before':
+                    // Insertion avant la sélection
+                    if (beforeChar && !this.isWhitespace(beforeChar) && !this.isPunctuation(beforeChar)) {
+                        formattedText += ' '; // Ajouter un espace si pas d'espace avant
+                    }
+                    if (afterChar && !this.isWhitespace(afterChar) && !this.isPunctuation(afterChar)) {
+                        formattedText = ' ' + formattedText; // Ajouter un espace si pas d'espace après
+                    }
+                    break;
+
+                case 'after':
+                    // Insertion après la sélection
+                    if (beforeChar && !this.isWhitespace(beforeChar) && !this.isPunctuation(beforeChar)) {
+                        formattedText = ' ' + formattedText; // Ajouter un espace si pas d'espace avant
+                    }
+                    if (afterChar && !this.isWhitespace(afterChar) && !this.isPunctuation(afterChar)) {
+                        formattedText += ' '; // Ajouter un espace si pas d'espace après
+                    }
+                    break;
+
+                case 'prepend':
+                    // Insertion au début du document
+                    if (afterChar && !this.isWhitespace(afterChar) && !this.isPunctuation(afterChar)) {
+                        formattedText += ' '; // Ajouter un espace si pas d'espace après
+                    }
+                    break;
+
+                case 'append':
+                    // Insertion à la fin du document
+                    if (beforeChar && !this.isWhitespace(beforeChar) && !this.isPunctuation(beforeChar)) {
+                        formattedText = ' ' + formattedText; // Ajouter un espace si pas d'espace avant
+                    }
+                    break;
+            }
+
+            return formattedText;
+        },
+
+        // Méthode pour formater le texte de suggestion avec des espaces intelligents
+        formatSuggestionText(text, position) {
+            if (!text || typeof text !== 'string') return text;
+
+            let formattedText = text.trim(); // Supprimer les espaces en début/fin
+
+            // Obtenir le contexte autour de la position d'insertion
+            const doc = this.richEditor.state.doc;
+            const beforeChar = position > 0 ? doc.textBetween(position - 1, position) : '';
+            const afterChar = position < doc.content.size ? doc.textBetween(position, position + 1) : '';
+
+            // Ajouter des espaces selon le contexte
+            if (beforeChar && !this.isWhitespace(beforeChar) && !this.isPunctuation(beforeChar)) {
+                formattedText = ' ' + formattedText; // Espace avant si nécessaire
+            }
+            if (afterChar && !this.isWhitespace(afterChar) && !this.isPunctuation(afterChar)) {
+                formattedText += ' '; // Espace après si nécessaire
+            }
+
+            return formattedText;
+        },
+
+        // Méthodes utilitaires pour analyser le contexte
+        isWhitespace(char) {
+            return /\s/.test(char);
+        },
+
+        isPunctuation(char) {
+            return /[.,;:!?()[\]{}"'`]/.test(char);
         },
 
         onClickOutside(event) {
