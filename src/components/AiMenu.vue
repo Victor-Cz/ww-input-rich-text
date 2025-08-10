@@ -207,17 +207,13 @@ export default {
                 this.storedSelectionRange = { from, to };
                 
                 // Déclencher le surlignage via l'extension SelectionHighlighter
-                this.richEditor.view.dispatch(
-                    this.richEditor.view.state.tr.setMeta('storedSelection', { from, to })
-                );
+                this.richEditor.commands.highlightRange(from, to);
             } else {
                 this.storedSelection = null;
                 this.storedSelectionRange = null;
                 
                 // Retirer le surlignage
-                this.richEditor.view.dispatch(
-                    this.richEditor.view.state.tr.setMeta('storedSelection', null)
-                );
+                this.richEditor.commands.highlightRange(null, null);
             }
         },
         updateVisibility() {
