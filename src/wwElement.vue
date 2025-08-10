@@ -700,13 +700,13 @@ export default {
                         },
                     }),
                     SelectionHighlighter.configure({
-                        defaultColor: 'var(--primary-color-1A)',
+                        defaultColor: '007bff',
                     }),
                     TextSuggestion.configure({
                         suggestionText: 'Suggestion',
                         position: 1,
                         className: 'suggestion-label',
-                        color: 'var(--primary-color)',
+                        color: '#007bff',
                     }),
                 ],
                 onCreate: () => {
