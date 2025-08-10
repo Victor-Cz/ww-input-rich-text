@@ -800,9 +800,6 @@ export default {
         toggleItalic() {
             this.richEditor.chain().focus().toggleItalic().run();
         },
-        toggleUnderline() {
-            this.richEditor.chain().focus().toggleUnderline().run();
-        },
         toggleStrike() {
             this.richEditor.chain().focus().toggleStrike().run();
         },
