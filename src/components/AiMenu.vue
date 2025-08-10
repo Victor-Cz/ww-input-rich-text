@@ -173,6 +173,11 @@ export default {
     },
     methods: {
         onSelectionUpdate() {
+            // Ne traiter la sélection que si le menu est ouvert
+            if (!this.isVisible) {
+                return;
+            }
+
             const { from, to } = this.richEditor.state.selection;
             this.hasSelection = from !== to;
 
@@ -188,9 +193,6 @@ export default {
                 // Retirer le surlignage
                 this.removeHighlight();
             }
-
-            // Ne pas mettre à jour la visibilité automatiquement
-            // this.updateVisibility();
         },
         updateVisibility() {
             // Le menu est visible seulement si il est explicitement ouvert
@@ -292,9 +294,12 @@ export default {
             this.updateVisibility();
         },
         onFocus() {
+            // Ne rien faire lors du focus pour éviter la réouverture automatique
+            // Le menu ne s'ouvre que via openMenu() ou openWithType()
         },
         onBlur() {
-            this.closeMenu();
+            // Ne pas fermer automatiquement le menu lors de la perte de focus
+            // Le menu ne se fermera que via onClickOutside ou closeMenu explicite
         },
         getPromptPlaceholder() {
             if (this.selectedModificationType && this.modificationTypes[this.selectedModificationType]) {
@@ -341,13 +346,11 @@ export default {
             this.isDropdownOpen = false; // Fermer la dropdown après sélection
             this.isVisible = true;
             this.isFocused = true;
-            this.updateVisibility();
         },
         
         openMenu() {
             this.isVisible = true;
             this.isFocused = true;
-            this.updateVisibility();
         },
         
         highlightSelection() {
