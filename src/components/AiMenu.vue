@@ -22,9 +22,9 @@
                     ></textarea>
                     <div class="modification-type-dropdown">
                         <div class="dropdown-header" @click="toggleDropdown">
-                            <i class="fa-solid fa-sparkles"></i>
+                            <i class="lucide lucide-sparkles"></i>
                             <span>{{ getSelectedTypeLabel() }}</span>
-                            <i class="fas fa-chevron-down" :class="{ 'rotated': isDropdownOpen }"></i>
+                            <i class="lucide lucide-chevron-down" :class="{ 'rotated': isDropdownOpen }"></i>
                         </div>
                         <div class="dropdown-options" v-show="isDropdownOpen">
                             <div
@@ -43,7 +43,7 @@
                         title="Envoyer le prompt"
                         :disabled="!aiPrompt.trim() || !selectedModificationType"
                     >
-                        <i class="fas fa-paper-plane"></i>
+                        <i class="lucide lucide-arrow-right"></i>
                     </button>
                 </div>
             </div>
@@ -511,7 +511,7 @@ export default {
 }
 
 .dropdown-option {
-    padding: 3px 6px;
+    padding: 5px 8px;
     border-radius: 8px;
     font-size: 14px;
     color: #495057;
@@ -546,7 +546,7 @@ export default {
 
 .ai-input {
     flex: 1;
-    padding: 8px 32px 32px 8px;
+    padding: 12px 32px 32px 12px;
     border-radius: 12px;
     font-size: 14px;
     color: #495057;
