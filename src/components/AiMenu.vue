@@ -585,7 +585,7 @@ export default {
 }
 
 .ai-submit-button:disabled {
-    background: var(--primary-color-inactive);
+    background: var(--primary-color-inactive)!important;
     cursor: not-allowed;
 }
 
