@@ -1,5 +1,12 @@
 <template>
-    <div class="ww-rich-text" :class="{ '-readonly': isReadonly, editing: isEditing }" data-capture>
+    <div class="ww-rich-text" :class="{ '-readonly': isReadonly, editing: isEditing }" data-capture :style="{
+        '--primary-color': content.parameterAiMenuPrimaryColor ?? '#007bff',
+        '--primary-color-1A': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '1A',
+        '--primary-color-inactive': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '4D',
+        '--primary-color-40': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '66',
+        '--primary-color-active': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '99',
+        '--primary-color-hover': (content.parameterAiMenuPrimaryColor ?? '#007bff') + 'CC',
+    }">
         <template v-if="richEditor">
             <div class="ww-rich-text__menu native-menu" v-if="!hideMenu && !content.customMenu" :style="menuStyles">
                 <!-- Texte type (normal, ...) -->
@@ -700,13 +707,13 @@ export default {
                         },
                     }),
                     SelectionHighlighter.configure({
-                        defaultColor: '007bff',
+                        defaultColor: 'var(--primary-color-1A)',
                     }),
                     TextSuggestion.configure({
                         suggestionText: 'Suggestion',
                         position: 1,
                         className: 'suggestion-label',
-                        color: '#007bff',
+                        color: 'var(--primary-color)',
                     }),
                 ],
                 onCreate: () => {

@@ -1,12 +1,5 @@
 <template>
-    <div class="bubble-menu" v-show="isVisible" :class="{ 'is-focused': isFocused }" :style="{
-        '--primary-color': primaryColor,
-        '--primary-color-1A': primaryColor + '1A', // 10%
-        '--primary-color-inactive': primaryColor + '4D', // 30%
-        '--primary-color-40': primaryColor + '66', // 40%
-        '--primary-color-active': primaryColor + '99', // 60%
-        '--primary-color-hover': primaryColor + 'CC', // 80%
-    }">
+    <div class="bubble-menu" v-show="isVisible" :class="{ 'is-focused': isFocused }">
 
 
 
