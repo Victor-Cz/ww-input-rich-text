@@ -177,10 +177,8 @@
 
             <editor-content class="ww-rich-text__input" :editor="richEditor" :style="richStyles" />
 
-            <!-- BubbleMenu pour afficher le menu AI au niveau du texte sélectionné -->
-            <bubble-menu :editor="richEditor" v-if="richEditor" :tippy-options="{ placement: 'top', offset: [0, 10] }">
-                <ai-menu :rich-editor="richEditor" />
-            </bubble-menu>
+            <!-- Utilisation du composant AiMenu personnalisé -->
+            <ai-menu :rich-editor="richEditor" v-if="richEditor" />
         </template>
     </div>
 </template>
@@ -199,7 +197,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import TaskList from '@tiptap/extension-task-list';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import Underline from '@tiptap/extension-underline';
-import { BubbleMenu } from '@tiptap/vue-3/menus';
+
 
 import AiMenu from './components/AiMenu.vue';
 
@@ -233,7 +231,6 @@ export default {
             components: {
             EditorContent,
             TableIcon,
-            BubbleMenu,
             AiMenu,
         },
     props: {
