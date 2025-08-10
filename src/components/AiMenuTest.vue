@@ -2,7 +2,7 @@
     <div 
         class="bubble-menu" 
         v-show="isVisible"
-        :class="{ 'is-focused': isFocused }"
+        :class="{ 'has-focus': hasFocus }"
     >
         <!-- Input pour les prompts AI -->
         <div class="ai-input-container">
@@ -12,8 +12,8 @@
                 placeholder="Entrez votre prompt AI..."
                 class="ai-input"
                 @keyup.enter="submitPrompt"
-                @focus="onFocus"
-                @blur="onBlur"
+                @focus="onInputFocus"
+                @blur="onInputBlur"
             />
             <button
                 @click="submitPrompt"
@@ -83,88 +83,80 @@ export default {
             type: Object,
             required: true,
         },
+        hasSelection: {
+            type: Boolean,
+            default: false,
+        },
+        selectedText: {
+            type: String,
+            default: '',
+        },
     },
     data() {
         return {
             aiPrompt: '',
             isVisible: false,
-            isFocused: false,
-            hasSelection: false,
+            hasFocus: false,
         };
     },
-    mounted() {
-        // Écouter les changements de sélection dans l'éditeur
-        this.richEditor.on('selectionUpdate', this.onSelectionUpdate);
-        
-        // Écouter les clics en dehors du menu pour le masquer
-        document.addEventListener('click', this.onClickOutside);
-    },
-    beforeUnmount() {
-        // Nettoyer les écouteurs
-        this.richEditor.off('selectionUpdate', this.onSelectionUpdate);
-        document.removeEventListener('click', this.onClickOutside);
+    watch: {
+        hasSelection(newValue) {
+            if (newValue) {
+                this.isVisible = true;
+                this.maintainSelection();
+            } else if (!this.hasFocus) {
+                this.isVisible = false;
+                this.clearSelectionHighlight();
+            }
+        },
+        hasFocus(newValue) {
+            if (!newValue && !this.hasSelection) {
+                this.isVisible = false;
+                this.clearSelectionHighlight();
+            }
+        },
     },
     methods: {
-        onSelectionUpdate() {
-            const { from, to } = this.richEditor.state.selection;
-            this.hasSelection = from !== to;
-            this.updateVisibility();
-        },
-        
-        onFocus() {
-            this.isFocused = true;
-            this.updateVisibility();
-            
-            // Ajouter une classe au body pour maintenir la sélection
-            if (this.hasSelection) {
-                document.body.classList.add('ai-menu-focused');
-            }
-        },
-        
-        onBlur() {
-            this.isFocused = false;
-            this.updateVisibility();
-            
-            // Retirer la classe du body
-            document.body.classList.remove('ai-menu-focused');
-        },
-        
-        onClickOutside(event) {
-            // Vérifier si le clic est en dehors du menu
-            if (!this.$el.contains(event.target)) {
-                this.isFocused = false;
-                this.updateVisibility();
-                document.body.classList.remove('ai-menu-focused');
-            }
-        },
-        
-        updateVisibility() {
-            // Le menu est visible si du texte est sélectionné OU si le menu est focus
-            this.isVisible = this.hasSelection || this.isFocused;
-        },
-        
         setLink() {
             const url = window.prompt('URL:')
             if (url) {
                 this.richEditor.chain().focus().setLink({ href: url }).run()
             }
         },
-        
         submitPrompt() {
             if (this.aiPrompt.trim()) {
                 // Déclencher l'événement WeWeb pour le prompt AI
                 this.$wwTriggerEvent('ai-prompt-submitted', {
                     prompt: this.aiPrompt.trim(),
-                    selection: this.richEditor.state.selection.content().content.size > 0 
-                        ? this.richEditor.state.doc.textBetween(
-                            this.richEditor.state.selection.from,
-                            this.richEditor.state.selection.to
-                        )
-                        : null
+                    selection: this.selectedText || null
                 });
                 
                 // Vider l'input
                 this.aiPrompt = '';
+            }
+        },
+        onInputFocus() {
+            this.hasFocus = true;
+            this.maintainSelection();
+        },
+        onInputBlur() {
+            this.hasFocus = false;
+        },
+        maintainSelection() {
+            if (this.hasSelection && this.richEditor) {
+                // Maintenir la sélection active en ajoutant une classe au parent
+                const parentElement = this.richEditor.view.dom.closest('.ww-rich-text');
+                if (parentElement) {
+                    parentElement.classList.add('has-ai-menu-open');
+                }
+            }
+        },
+        clearSelectionHighlight() {
+            if (this.richEditor) {
+                const parentElement = this.richEditor.view.dom.closest('.ww-rich-text');
+                if (parentElement) {
+                    parentElement.classList.remove('has-ai-menu-open');
+                }
             }
         },
     },
@@ -183,29 +175,10 @@ export default {
     gap: 8px;
     z-index: 1000;
     min-width: 280px;
-    transition: opacity 0.2s ease, visibility 0.2s ease;
-    
-    &:not(.is-focused) {
-        opacity: 0.9;
-    }
-    
-    &.is-focused {
-        opacity: 1;
-        border-color: #3b82f6;
-        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1), 0 2px 4px -1px rgba(59, 130, 246, 0.06);
-    }
-}
 
-// Styles globaux pour le body quand le menu AI est focalisé
-:global(body.ai-menu-focused) {
-    .ww-rich-text .ProseMirror {
-        ::selection {
-            background-color: rgba(59, 130, 246, 0.3) !important;
-        }
-        
-        ::-moz-selection {
-            background-color: rgba(59, 130, 246, 0.3) !important;
-        }
+    &.has-focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
 }
 

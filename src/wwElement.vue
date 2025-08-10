@@ -1227,5 +1227,16 @@ export default {
     &.-readonly .ProseMirror {
         cursor: inherit;
     }
+    
+    // Styles pour le menu AI focalisé
+    &.ai-menu-focused .ProseMirror {
+        ::selection {
+            background-color: rgba(59, 130, 246, 0.3);
+        }
+        
+        ::-moz-selection {
+            background-color: rgba(59, 130, 246, 0.3);
+        }
+    }
 }
 </style>
