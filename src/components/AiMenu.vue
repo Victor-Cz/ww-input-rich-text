@@ -284,6 +284,11 @@ export default {
 
             this.closeMenu();
         },
+        hideMenu() {
+            this.isVisible = false;
+            this.isFocused = false;
+            this.isDropdownOpen = false;
+        },
         closeMenu() {
             this.isVisible = false;
             this.isFocused = false;
@@ -443,7 +448,7 @@ export default {
             // Vérifier si le clic est en dehors du menu AI
             const aiMenuElement = this.$el;
             if (aiMenuElement && !aiMenuElement.contains(event.target)) {
-                this.closeMenu();
+                this.hideMenu();
             }
         },
 
