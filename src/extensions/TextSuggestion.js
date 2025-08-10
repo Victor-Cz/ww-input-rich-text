@@ -88,6 +88,8 @@ export const TextSuggestion = Extension.create({
                 opacity: 0;
                 transition: opacity 0.2s ease;
                 display: inline-block;
+                margin-right: 3px;
+                margin-left: 3px;
               `
               
               span.appendChild(chunkSpan)
