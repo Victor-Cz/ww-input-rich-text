@@ -16,13 +16,35 @@ export const TextSuggestion = Extension.create({
     }
   },
 
+  addCommands() {
+    return {
+      updateSuggestion: (text, position) => ({ tr, dispatch }) => {
+        if (dispatch) {
+          tr.setMeta(textSuggestionKey, { 
+            type: 'update', 
+            text, 
+            position: position || this.options.position 
+          })
+        }
+        return true
+      },
+
+      clearSuggestion: () => ({ tr, dispatch }) => {
+        if (dispatch) {
+          tr.setMeta(textSuggestionKey, { type: 'clear' })
+        }
+        return true
+      },
+    }
+  },
+
   addProseMirrorPlugins() {
     const options = this.options
 
     // Fonction qui crée le widget DOM avec les options capturées
-    function createWidget() {
+    function createWidget(text) {
       // Vérifier si suggestionText existe avant de créer le widget
-      if (!options.suggestionText) {
+      if (!text) {
         return null
       }
       
@@ -31,7 +53,7 @@ export const TextSuggestion = Extension.create({
       span.style.cssText = `
         color: ${options.color};
       `
-      span.textContent = options.suggestionText
+      span.textContent = text
       return span
     }
 
@@ -42,7 +64,7 @@ export const TextSuggestion = Extension.create({
         state: {
           init(config, instance) {
             // 'instance.doc' est le document initial
-            const widget = createWidget()
+            const widget = createWidget(options.suggestionText)
             
             // Ne créer la décoration que si le widget existe
             if (widget) {
@@ -56,6 +78,23 @@ export const TextSuggestion = Extension.create({
           },
 
           apply(tr, old) {
+            const meta = tr.getMeta(textSuggestionKey)
+            
+            if (meta) {
+              if (meta.type === 'update') {
+                const widget = createWidget(meta.text)
+                if (widget) {
+                  return DecorationSet.create(tr.doc, [
+                    Decoration.widget(meta.position, widget),
+                  ])
+                } else {
+                  return DecorationSet.empty
+                }
+              } else if (meta.type === 'clear') {
+                return DecorationSet.empty
+              }
+            }
+            
             return old.map(tr.mapping, tr.doc)
           },
         },

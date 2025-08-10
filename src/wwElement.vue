@@ -1,11 +1,12 @@
 <template>
     <div class="ww-rich-text" :class="{ '-readonly': isReadonly, editing: isEditing }" data-capture :style="{
         '--primary-color': content.parameterAiMenuPrimaryColor ?? '#007bff',
-        '--primary-color-1A': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '1A',
-        '--primary-color-inactive': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '4D',
-        '--primary-color-40': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '66',
-        '--primary-color-active': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '99',
-        '--primary-color-hover': (content.parameterAiMenuPrimaryColor ?? '#007bff') + 'CC',
+        '--primary-color-1A': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '1A', // 10%
+        '--primary-color-33': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '33', // 20%
+        '--primary-color-inactive': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '4D', // 30%
+        '--primary-color-40': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '66', // 40%
+        '--primary-color-active': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '99', // 60%
+        '--primary-color-hover': (content.parameterAiMenuPrimaryColor ?? '#007bff') + 'CC', // 80%
     }">
         <template v-if="richEditor">
             <div class="ww-rich-text__menu native-menu" v-if="!hideMenu && !content.customMenu" :style="menuStyles">
@@ -707,10 +708,10 @@ export default {
                         },
                     }),
                     SelectionHighlighter.configure({
-                        defaultColor: 'var(--primary-color-1A)',
+                        defaultColor: 'var(--primary-color-33)',
                     }),
                     TextSuggestion.configure({
-                        suggestionText: 'Suggestion',
+                        suggestionText: null,
                         position: 1,
                         className: 'suggestion-label',
                         color: 'var(--primary-color)',

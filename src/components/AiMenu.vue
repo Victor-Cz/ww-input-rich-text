@@ -11,7 +11,7 @@
                     @keyup.enter="submitPrompt" @focus="onFocus" @blur="onBlur" rows="3"></textarea>
                 <div class="modification-type-dropdown">
                     <div class="dropdown-header" @click="toggleDropdown">
-                        <div class="icon-collection" aria-hidden="true"></div>
+                        <div class="icon-cog" aria-hidden="true"></div>
                         <span>{{ getSelectedTypeLabel() }}</span>
                         <div class="icon-chevron-down" :class="{ 'rotated': isDropdownOpen }" aria-hidden="true"></div>
                     </div>
@@ -181,7 +181,8 @@ export default {
 
         this.storedSelection = null;
         this.storedSelectionRange = null;
-        this.richEditor.commands.clearHighlight()
+        this.richEditor.commands.clearHighlight();
+        this.richEditor.commands.clearSuggestion();
     },
     methods: {
         toggleDropdown() {
@@ -223,12 +224,54 @@ export default {
                 return;
             }
 
-            // Afficher la proposition au lieu de l'appliquer directement
+            // Utiliser TextSuggestion pour afficher la proposition dans l'éditeur
+            this.displaySuggestion(response);
+            console.log('AI Response displayed as suggestion:', response);
+        },
+
+        displaySuggestion(response) {
+            // Déterminer la position de la suggestion selon la méthode et la sélection
+            const position = this.getSuggestionPosition();
+
+            // Utiliser la commande updateSuggestion pour afficher la proposition
+            this.richEditor.commands.updateSuggestion(response, position);
+
+            // Stocker la réponse pour validation ultérieure
             this.aiResponse = response;
             this.isProposal = true;
-            console.log('AI Response displayed as proposal:', response);
         },
+
+        getSuggestionPosition() {
+            const action = this.modificationTypes[this.selectedModificationType]?.action;
+
+            if (action === 'replace' && this.storedSelectionRange) {
+                // Pour le remplacement, placer après la sélection
+                return this.storedSelectionRange.to;
+            } else if (action === 'insert-before' && this.storedSelectionRange) {
+                // Pour l'insertion avant, placer avant la sélection
+                return this.storedSelectionRange.from;
+            } else if (action === 'insert-after' && this.storedSelectionRange) {
+                // Pour l'insertion après, placer après la sélection
+                return this.storedSelectionRange.to;
+            } else if (action === 'replace-all') {
+                // Pour le remplacement global, placer à la fin
+                return this.richEditor.state.doc.content.size;
+            } else if (action === 'append') {
+                // Pour l'ajout, placer à la fin
+                return this.richEditor.state.doc.content.size;
+            } else if (action === 'prepend') {
+                // Pour l'ajout au début, placer au début
+                return 0;
+            } else {
+                // Par défaut, placer après la sélection ou à la fin
+                return this.storedSelectionRange?.to || this.richEditor.state.doc.content.size;
+            }
+        },
+
         validateProposal() {
+            // Effacer la suggestion
+            this.richEditor.commands.clearSuggestion();
+
             // Appliquer la proposition à l'éditeur
             this.applyResponse(this.aiResponse);
 
@@ -239,6 +282,7 @@ export default {
         },
         rejectProposal() {
             // Rejeter la proposition et fermer le menu
+            this.richEditor.commands.clearSuggestion();
             this.resetProposal();
             this.closeMenu();
             console.log('AI Proposal rejected');
@@ -255,8 +299,9 @@ export default {
             this.selectedModificationType = null;
             this.isDropdownOpen = false; // Fermer la dropdown
 
-            // Nettoyer le surlignage lors de la fermeture du menu
+            // Nettoyer le surlignage et la suggestion lors de la fermeture du menu
             this.richEditor.commands.clearHighlight();
+            this.richEditor.commands.clearSuggestion();
         },
         applyResponse(response) {
             const action = this.modificationTypes[this.selectedModificationType].action;
