@@ -717,7 +717,6 @@ export default {
                 },
             });
             this.loading = false;
-            console.log(editor.extensionManager.extensions.map(ext => ext.name))
         },
         handleOnUpdate() {
             let htmlValue = this.getContent();

@@ -5,14 +5,15 @@ export const SelectionHighlighter = Extension.create({
 
   addCommands() {
     return {
-      insertHello:
-        () =>
-        ({ commands }) => {
-          return commands.insertContent('Hello World')
-        },
+      insertHello: () => ({ commands }) => {
+        return commands.insertContent('Hello World')
+      },
+    }
+  },
+
+  addKeyboardShortcuts() {
+    return {
+      'Ctrl-h': () => this.editor.commands.insertHello(),
     }
   },
 })
-
-// Utilisation :
-editor.commands.insertHello()
