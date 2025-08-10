@@ -413,6 +413,7 @@ export default {
 
 .modification-type-dropdown {
     margin-bottom: 16px;
+    position: relative;
 }
 
 .dropdown-header {
@@ -443,6 +444,10 @@ export default {
 }
 
 .dropdown-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -451,6 +456,7 @@ export default {
     border-radius: 6px;
     background: white;
     overflow: hidden;
+    z-index: 1000;
 }
 
 .dropdown-option {
