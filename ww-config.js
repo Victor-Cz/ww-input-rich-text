@@ -98,6 +98,7 @@ export default {
         { name: 'mention:click', label: { en: 'On mention click' }, event: { mention: { id: '', label: '' } } },
         { name: 'focus', label: { en: 'On focus' }, event: { value: '' } },
         { name: 'blur', label: { en: 'On blur' }, event: { value: '' } },
+        { name: 'ai-prompt', label: { en: 'On AI prompt', fr: 'Sur prompt IA' }, event: { prompt: '', selectedText: '', timestamp: '' } },
     ],
     actions: [
         { label: 'Focus Rich text', action: 'focusEditor' },
@@ -229,6 +230,20 @@ export default {
         {
             label: 'Delete Table',
             action: 'deleteTable',
+        },
+        {
+            label: 'Open AI Menu',
+            action: 'openAiMenu',
+        },
+        {
+            label: 'Set AI Response',
+            action: 'setResponse',
+            args: [
+                {
+                    name: 'Response',
+                    type: 'Text',
+                },
+            ],
         },
     ],
     properties: {

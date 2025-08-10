@@ -177,8 +177,8 @@
 
             <editor-content class="ww-rich-text__input" :editor="richEditor" :style="richStyles" />
 
-            <!-- Utilisation du composant AiMenu personnalisé -->
-            <ai-menu :rich-editor="richEditor" v-if="richEditor" />
+                        <!-- Utilisation du composant AiMenu personnalisé -->
+                        <ai-menu ref="aiMenu" :rich-editor="richEditor" v-if="richEditor" />
         </template>
     </div>
 </template>
@@ -847,6 +847,25 @@ export default {
         },
         deleteTable() {
             this.richEditor.chain().focus().deleteTable().run();
+        },
+        
+        // AI Menu actions
+        openAiMenu() {
+            // Déclencher l'événement pour ouvrir le menu AI
+            this.$emit('trigger-event', { 
+                name: 'ai-menu-opened', 
+                event: { 
+                    timestamp: new Date().toISOString(),
+                    source: 'action'
+                } 
+            });
+        },
+        
+        setResponse(response) {
+            // Appeler la méthode setResponse du composant AiMenu
+            if (this.$refs.aiMenu) {
+                this.$refs.aiMenu.setResponse(response);
+            }
         },
     },
     mounted() {

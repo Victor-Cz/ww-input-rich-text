@@ -11,7 +11,7 @@
         </div>
         
         <!-- Input pour les prompts AI -->
-        <div class="ai-input-container">
+        <div class="ai-input-container" v-if="!isLoading">
             <input
                 v-model="aiPrompt"
                 type="text"
@@ -28,6 +28,12 @@
             >
                 <i class="fas fa-magic"></i>
             </button>
+        </div>
+
+        <!-- État de chargement -->
+        <div class="ai-loading-container" v-if="isLoading">
+            <div class="ai-loading-spinner"></div>
+            <div class="ai-loading-text">Traitement en cours...</div>
         </div>
     </div>
 </template>
@@ -48,6 +54,7 @@ export default {
             isFocused: false,
             hasSelection: false,
             storedSelection: null,
+            isLoading: false,
         };
     },
     mounted() {
@@ -118,15 +125,33 @@ export default {
         
         submitPrompt() {
             if (this.aiPrompt.trim()) {
-                // Déclencher l'événement WeWeb pour le prompt AI
-                this.$wwTriggerEvent('ai-prompt-submitted', {
+                // Activer l'état de chargement
+                this.isLoading = true;
+                
+                // Log pour debug
+                console.log('AI Prompt submitted:', {
                     prompt: this.aiPrompt.trim(),
-                    selection: this.storedSelection
+                    selectedText: this.storedSelection,
+                    timestamp: new Date().toISOString()
+                });
+                
+                // Déclencher l'événement WeWeb pour le prompt AI
+                this.$wwTriggerEvent('ai-prompt', {
+                    prompt: this.aiPrompt.trim(),
+                    selectedText: this.storedSelection,
+                    timestamp: new Date().toISOString()
                 });
                 
                 // Vider l'input
                 this.aiPrompt = '';
             }
+        },
+
+        // Méthode appelée par l'action WeWeb setResponse
+        setResponse(response) {
+            this.isLoading = false;
+            // Ici on pourrait traiter la réponse si nécessaire
+            console.log('AI Response received:', response);
         },
     },
 };
@@ -251,6 +276,35 @@ export default {
     i {
         font-size: 14px;
     }
+}
+
+// État de chargement
+.ai-loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+}
+
+.ai-loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #e2e8f0;
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.ai-loading-text {
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .separator {
