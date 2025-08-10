@@ -61,10 +61,6 @@ export default {
             type: String,
             default: '#007bff',
         },
-        hasStarted: {
-            type: Boolean,
-            default: false,
-        },
     },
     computed: {
         primaryColor() {
@@ -98,6 +94,7 @@ export default {
             storedSelection: null,
             storedSelectionRange: null,
             isLoading: false,
+            hasStarted: false,
             selectedModificationType: null,
             isDropdownOpen: false, // Pour contrôler l'ouverture/fermeture de la dropdown
             // Configuration des types de modifications
