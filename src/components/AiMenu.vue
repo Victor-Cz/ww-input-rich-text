@@ -543,7 +543,7 @@ export default {
 }
 
 .ai-input:focus {
-    outline: none;
+    outline: 1px solid var(--primary-color);
     border: none;
 }
 
