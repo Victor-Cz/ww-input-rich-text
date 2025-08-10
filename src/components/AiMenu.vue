@@ -214,8 +214,13 @@ export default {
                 return;
             }
 
+            console.log('setResponse called with:', response);
+            console.log('aiResponse before displaySuggestion:', this.aiResponse);
+
             // Utiliser TextSuggestion pour afficher la proposition dans l'éditeur
             this.displaySuggestion(response);
+            
+            console.log('aiResponse after displaySuggestion:', this.aiResponse);
             console.log('AI Response displayed as suggestion:', response);
         },
 
@@ -236,11 +241,9 @@ export default {
                 this.richEditor.commands.setStrike(0, this.richEditor.state.doc.content.size);
             }
 
-            // Stocker la réponse pour validation ultérieure et s'assurer que Vue prend en compte la mise à jour
-            this.$nextTick(() => {
-                this.aiResponse = response;
-                console.log('aiResponse set to:', this.aiResponse);
-            });
+            // Stocker la réponse pour validation ultérieure
+            this.aiResponse = response;
+            console.log('aiResponse set to:', this.aiResponse);
         },
 
         getSuggestionPosition() {
