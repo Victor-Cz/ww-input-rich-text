@@ -657,21 +657,9 @@ export default {
     },
     methods: {
         loadEditor() {
-            console.log('🚀 Début de loadEditor');
-            if (this.loading) {
-                console.log('⚠️ Déjà en cours de chargement, sortie');
-                return;
-            }
+            if (this.loading) return;
             this.loading = true;
-            console.log('🔄 Destruction de l\'ancien éditeur si existant');
             if (this.richEditor) this.richEditor.destroy();
-            
-            console.log('📝 Création du nouvel éditeur avec config:', {
-                content: String(this.content.initialValue || ''),
-                editable: this.isEditable,
-                autofocus: this.editorConfig.autofocus
-            });
-            
             this.richEditor = new Editor({
                 content: String(this.content.initialValue || ''),
                 editable: this.isEditable,
@@ -756,7 +744,6 @@ export default {
                     },
                 },
             });
-            console.log('✅ Éditeur créé avec succès:', this.richEditor);
             this.loading = false;
         },
         handleOnUpdate() {
@@ -921,9 +908,6 @@ export default {
         },
     },
     mounted() {
-        console.log('🔄 Composant monté, chargement de l\'éditeur...');
-        console.log('📋 Content:', this.content);
-        console.log('🔧 Editor config:', this.editorConfig);
         this.loadEditor();
     },
     beforeUnmount() {
