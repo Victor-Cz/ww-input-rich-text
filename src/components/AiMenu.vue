@@ -210,8 +210,6 @@ export default {
             } else {
                 this.storedSelection = null;
                 this.storedSelectionRange = null;
-                // Retirer le surlignage
-                this.removeHighlight();
             }
         },
         updateVisibility() {
@@ -288,9 +286,6 @@ export default {
             this.isProposal = false;
         },
         closeMenu() {
-            // Retirer le surlignage avant de fermer
-            this.removeHighlight();
-
             this.isVisible = false;
             this.isFocused = false;
             this.storedSelection = null;
@@ -381,31 +376,7 @@ export default {
             this.isFocused = true;
         },
 
-        highlightSelection() {
-            if (this.storedSelectionRange) {
-                const { from, to } = this.storedSelectionRange;
-                console.log('Highlighting selection:', { from, to });
 
-                // Appliquer un surlignage jaune au texte sélectionné
-                this.richEditor.chain()
-                    .setTextSelection({ from, to })
-                    .setMark('backgroundColor', '#ffeb3b')
-                    .run();
-
-                console.log('Highlight applied');
-            }
-        },
-
-        removeHighlight() {
-            if (this.storedSelectionRange) {
-                const { from, to } = this.storedSelectionRange;
-                // Retirer le surlignage
-                this.richEditor.chain()
-                    .setTextSelection({ from, to })
-                    .unsetMark('backgroundColor')
-                    .run();
-            }
-        },
 
         onClickOutside(event) {
             // Ne fermer le menu que s'il est déjà ouvert et visible

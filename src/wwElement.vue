@@ -176,8 +176,7 @@
                 <span class="separator" v-if="menu.undo || menu.redo"></span>
 
                 <!-- AI Menu Button -->
-                <button type="button" class="ww-rich-text__menu-item" 
-                    @click="openAiMenu" :disabled="!isEditable"
+                <button type="button" class="ww-rich-text__menu-item" @click="openAiMenu" :disabled="!isEditable"
                     v-if="menu.aiMenu">
                     <i class="fas fa-magic"></i>
                 </button>
@@ -186,15 +185,10 @@
 
             <editor-content class="ww-rich-text__input" :editor="richEditor" :style="richStyles" />
 
-                                    <!-- Utilisation du composant AiMenu personnalisé -->
-            <ai-menu 
-                ref="aiMenu" 
-                :rich-editor="richEditor" 
-                :is-read-only="content.parameterAiMenuReadOnly ?? true"
+            <!-- Utilisation du composant AiMenu personnalisé -->
+            <ai-menu ref="aiMenu" :rich-editor="richEditor" :is-read-only="content.parameterAiMenuReadOnly ?? true"
                 :parameter-ai-menu-primary-color="content.parameterAiMenuPrimaryColor ?? '#007bff'"
-                @ai-prompt="handleAiPrompt"
-                v-if="richEditor" 
-            />
+                @ai-prompt="handleAiPrompt" v-if="richEditor" />
         </template>
     </div>
 </template>
@@ -214,6 +208,7 @@ import TaskList from '@tiptap/extension-task-list';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import Underline from '@tiptap/extension-underline';
 
+import SelectionHighlighter from './extensions/SelectionHighlighter.js';
 
 import AiMenu from './components/AiMenu.vue';
 
@@ -244,11 +239,11 @@ const TAGS_MAP = {
 };
 
 export default {
-            components: {
-            EditorContent,
-            TableIcon,
-            AiMenu,
-        },
+    components: {
+        EditorContent,
+        TableIcon,
+        AiMenu,
+    },
     props: {
         content: { type: Object, required: true },
         uid: { type: String, required: true },
@@ -669,7 +664,7 @@ export default {
                         },
                     }),
                     TextStyle,
-        BackgroundColor,
+                    BackgroundColor,
                     Color,
                     Underline,
                     Table.configure({
@@ -690,6 +685,7 @@ export default {
                     }),
                     Markdown.configure({ breaks: true }),
                     Image.configure({ ...this.editorConfig.image }),
+                    SelectionHighlighter,
                     this.editorConfig.mention.enabled &&
                     Mention.configure({
                         HTMLAttributes: {
@@ -868,7 +864,7 @@ export default {
         deleteTable() {
             this.richEditor.chain().focus().deleteTable().run();
         },
-        
+
         // AI Menu actions
         openAiMenu() {
             // Ouvrir directement le composant AiMenu
@@ -876,7 +872,7 @@ export default {
                 this.$refs.aiMenu.openMenu();
             }
         },
-        
+
         setResponse(response) {
             // Appeler la méthode setResponse du composant AiMenu
             if (this.$refs.aiMenu) {
@@ -1269,17 +1265,8 @@ export default {
     &.-readonly .ProseMirror {
         cursor: inherit;
     }
+
     
-    // Styles pour le menu AI focalisé
-    &.ai-menu-focused .ProseMirror {
-        ::selection {
-            background-color: rgba(59, 130, 246, 0.3);
-        }
-        
-        ::-moz-selection {
-            background-color: rgba(59, 130, 246, 0.3);
-        }
-    }
 
 
 }
