@@ -285,11 +285,13 @@ export default {
         closeMenu() {
             this.isVisible = false;
             this.isFocused = false;
+            this.isLoading = false;
             this.storedSelection = null;
             this.storedSelectionRange = null;
             this.selectedModificationType = null;
-            this.isDropdownOpen = false; // Fermer la dropdown
+            this.isDropdownOpen = false;
             this.aiResponse = '';
+            this.aiPrompt = '';
 
             // Nettoyer le surlignage, la suggestion et le Strike lors de la fermeture du menu
             this.richEditor.commands.clearHighlight();
@@ -424,7 +426,7 @@ export default {
             // Vérifier si le clic est en dehors du menu AI
             const aiMenuElement = this.$el;
             if (aiMenuElement && !aiMenuElement.contains(event.target)) {
-                // Fermer le menu si on clique en dehors
+                console.log('onClickOutside');
                 this.closeMenu();
             }
         },
