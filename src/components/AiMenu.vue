@@ -205,11 +205,19 @@ export default {
             if (this.hasSelection) {
                 this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
                 this.storedSelectionRange = { from, to };
-                // Surligner le texte sélectionné
-                this.highlightSelection();
+                
+                // Déclencher le surlignage du storedSelection
+                this.richEditor.view.dispatch(
+                    this.richEditor.view.state.tr.setMeta('storedSelection', { from, to })
+                );
             } else {
                 this.storedSelection = null;
                 this.storedSelectionRange = null;
+                
+                // Retirer le surlignage
+                this.richEditor.view.dispatch(
+                    this.richEditor.view.state.tr.setMeta('storedSelection', null)
+                );
             }
         },
         updateVisibility() {
