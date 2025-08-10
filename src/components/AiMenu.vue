@@ -390,9 +390,16 @@ export default {
             
             // Vérifier si le clic est en dehors du menu AI
             const aiMenuElement = this.$el;
-            if (aiMenuElement) {
+            if (aiMenuElement && !aiMenuElement.contains(event.target)) {
                 // Fermer le menu si on clique en dehors
                 this.closeMenu();
+            } else {
+                // Si le clic est sur le rich text editor, fermer aussi le menu
+                // car l'utilisateur veut probablement continuer à éditer
+                const richTextElement = this.richEditor.view.dom;
+                if (richTextElement && richTextElement.contains(event.target)) {
+                    this.closeMenu();
+                }
             }
         }
     },
