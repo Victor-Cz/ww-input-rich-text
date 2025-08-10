@@ -22,9 +22,9 @@
                     ></textarea>
                     <div class="modification-type-dropdown">
                         <div class="dropdown-header" @click="toggleDropdown">
-                            <div class="ph ph-sparkle-filled" aria-hidden="true"></div>
+                            <div class="icon-collection" aria-hidden="true"></div>
                             <span>{{ getSelectedTypeLabel() }}</span>
-                            <div class="ph ph-caret-down" :class="{ 'rotated': isDropdownOpen }" aria-hidden="true"></div>
+                            <div class="icon-chevron-down" :class="{ 'rotated': isDropdownOpen }" aria-hidden="true"></div>
                         </div>
                         <div class="dropdown-options" v-show="isDropdownOpen">
                             <div
@@ -43,7 +43,7 @@
                         title="Envoyer le prompt"
                         :disabled="!aiPrompt.trim() || !selectedModificationType"
                     >
-                        <div class="ph ph-arrow-right" aria-hidden="true"></div>
+                        <div class="icon-arrow-sm-right" aria-hidden="true"></div>
                     </button>
                 </div>
             </div>

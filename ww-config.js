@@ -91,6 +91,7 @@ export default {
             [
                 'parameterAiMenu',
                 'parameterAiMenuReadOnly',
+                'parameterAiMenuPrimaryColor',
             ],
         ],
     },
@@ -1640,6 +1641,16 @@ export default {
                 ],
             },
             defaultValue: true,
+        },
+        parameterAiMenuPrimaryColor: {
+            section: 'settings',
+            hidden: content => content.customMenu,
+            label: {
+                en: 'Primary Color',
+            },
+            type: 'Color',
+            defaultValue: '#007bff',
+            bindable: true,
         },
         /* wwEditor:start */
         form: {
