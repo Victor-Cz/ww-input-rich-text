@@ -497,10 +497,9 @@ export default {
 .dropdown-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 12px;
     font-size: 13px;
     color: #495057;
     background: #f8f9fa;
