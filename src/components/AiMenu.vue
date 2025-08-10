@@ -226,6 +226,16 @@ export default {
             // Utiliser la commande updateSuggestion pour afficher la proposition
             this.richEditor.commands.updateSuggestion(response, position);
 
+            // Ajouter un TextStroke sur le texte sélectionné pour montrer ce qui va être modifié
+            const action = this.modificationTypes[this.selectedModificationType]?.action;
+            if (action === 'replace' && this.storedSelectionRange) {
+                // Pour le remplacement de sélection, barrer le texte sélectionné
+                this.richEditor.commands.setTextStroke(this.storedSelectionRange.from, this.storedSelectionRange.to);
+            } else if (action === 'replace-all') {
+                // Pour le remplacement global, barrer tout le contenu du document
+                this.richEditor.commands.setTextStroke(0, this.richEditor.state.doc.content.size);
+            }
+
             // Stocker la réponse pour validation ultérieure
             this.aiResponse = response;
         },
@@ -260,6 +270,7 @@ export default {
         validateProposal() {
             // Effacer la suggestion
             this.richEditor.commands.clearSuggestion();
+            this.richEditor.commands.clearHighlight();
 
             // Appliquer la proposition à l'éditeur
             this.applyResponse(this.aiResponse);
@@ -272,6 +283,8 @@ export default {
         rejectProposal() {
             // Rejeter la proposition et fermer le menu
             this.richEditor.commands.clearSuggestion();
+            this.richEditor.commands.clearHighlight();
+
             this.resetProposal();
             this.closeMenu();
             console.log('AI Proposal rejected');
@@ -287,9 +300,10 @@ export default {
             this.selectedModificationType = null;
             this.isDropdownOpen = false; // Fermer la dropdown
 
-            // Nettoyer le surlignage et la suggestion lors de la fermeture du menu
+            // Nettoyer le surlignage, la suggestion et le TextStroke lors de la fermeture du menu
             this.richEditor.commands.clearHighlight();
             this.richEditor.commands.clearSuggestion();
+            this.richEditor.commands.clearHighlight();
         },
         applyResponse(response) {
             const action = this.modificationTypes[this.selectedModificationType].action;
