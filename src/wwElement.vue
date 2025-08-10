@@ -192,6 +192,7 @@
                 :rich-editor="richEditor" 
                 :is-read-only="content.parameterAiMenuReadOnly ?? true"
                 :parameter-ai-menu-primary-color="content.parameterAiMenuPrimaryColor ?? '#007bff'"
+                @ai-prompt="handleAiPrompt"
                 v-if="richEditor" 
             />
         </template>
@@ -881,6 +882,11 @@ export default {
             if (this.$refs.aiMenu) {
                 this.$refs.aiMenu.setResponse(response);
             }
+        },
+
+        handleAiPrompt(eventData) {
+            // Déclencher l'événement WeWeb 'ai-prompt'
+            this.$wwTriggerEvent('ai-prompt', eventData);
         },
 
 

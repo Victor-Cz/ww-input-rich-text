@@ -241,13 +241,16 @@ export default {
                 selectionRange: this.storedSelectionRange,
                 timestamp: new Date().toISOString()
             });
-            this.$wwTriggerEvent('ai-prompt', {
+            
+            // Émettre l'événement vers le composant parent
+            this.$emit('ai-prompt', {
                 prompt: finalPrompt,
                 modificationType: this.selectedModificationType,
                 action: action,
                 selectedText: this.storedSelection,
                 timestamp: new Date().toISOString()
             });
+            
             this.aiPrompt = '';
         },
         setResponse(response) {
@@ -489,7 +492,7 @@ export default {
 
 .dropdown-header:hover {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px var(--primary-color-1A);
+    box-shadow: 0 0 0 2px var(--primary-color-1A);
 }
 
 .dropdown-header div {
@@ -513,7 +516,7 @@ export default {
     overflow: hidden;
     z-index: 1000;
     padding: 4px;
-    box-shadow: 0 1px 8px var(--primary-color-1A);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     min-width: 180px;
     min-height: 100px;
     background: white;
@@ -571,7 +574,7 @@ export default {
 }
 
 .ai-input:focus {
-    outline: 1px solid var(--primary-color);
+    outline: 2px solid var(--primary-color);
     border: none;
 }
 
