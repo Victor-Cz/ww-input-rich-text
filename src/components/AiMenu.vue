@@ -557,6 +557,7 @@ export default {
     display: flex;
     width: 100%;
     height: 100%;
+    max-height: 96px;
 }
 
 .ai-input-wrapper {
