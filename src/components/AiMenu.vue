@@ -584,6 +584,7 @@ export default {
     background: none;
     outline: none;
     transition: outline 0.2s;
+    font-family: var(--font-family);
 }
 
 .ai-input:focus {
