@@ -684,14 +684,7 @@ export default {
                     }),
                     Markdown.configure({ breaks: true }),
                     Image.configure({ ...this.editorConfig.image }),
-                    SelectionHighlighter.configure({
-                        highlightColor: '#ffeb3b',
-                        highlightStyle: 'background-color',
-                        getHighlightRange: (tr) => {
-                            // Récupérer le storedSelection depuis les métadonnées
-                            return tr.getMeta('storedSelection') || null;
-                        }
-                    }),
+                    SelectionHighlighter,
         
                     this.editorConfig.mention.enabled &&
                     Mention.configure({

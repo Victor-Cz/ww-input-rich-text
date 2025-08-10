@@ -5,14 +5,6 @@ import { Plugin } from 'prosemirror-state'
 export const SelectionHighlighter = Extension.create({
   name: 'selectionHighlighter',
 
-  addOptions() {
-    return {
-      highlightColor: 'yellow',
-      highlightStyle: 'background-color',
-      getHighlightRange: null, // Fonction qui retourne { from, to } ou null
-    }
-  },
-
   addProseMirrorPlugins() {
     return [
       new Plugin({
@@ -21,18 +13,17 @@ export const SelectionHighlighter = Extension.create({
             return DecorationSet.empty
           },
           apply(tr, old) {
-            // Utiliser la fonction personnalisée pour obtenir la plage à surligner
-            const highlightRange = this.options.getHighlightRange ? 
-              this.options.getHighlightRange(tr) : null
+            // Récupérer le storedSelection depuis les métadonnées de la transaction
+            const storedSelection = tr.getMeta('storedSelection')
             
-            if (!highlightRange) {
+            if (!storedSelection) {
               return DecorationSet.empty
             }
 
             const deco = Decoration.inline(
-              highlightRange.from,
-              highlightRange.to,
-              { style: `${this.options.highlightStyle}: ${this.options.highlightColor};` }
+              storedSelection.from,
+              storedSelection.to,
+              { style: 'background-color: yellow;' }
             )
 
             return DecorationSet.create(tr.doc, [deco])
