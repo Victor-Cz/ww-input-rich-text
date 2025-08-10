@@ -23,13 +23,13 @@
                     </div>
                 </div>
                 <div class="ai-action-buttons">
-                    <button @click="validateProposal" class="ai-validate-button" title="Valider la proposition"
-                        :disabled="!aiResponse" v-if="aiResponse">
-                        <div class="icon-check" aria-hidden="true"></div>
-                    </button>
                     <button @click="rejectProposal" class="ai-reject-button" title="Rejeter la proposition"
                         :disabled="!aiResponse" v-if="aiResponse">
-                        <div class="icon-x" aria-hidden="true"></div>
+                        <span class="button-label">Discard</span>
+                    </button>
+                    <button @click="validateProposal" class="ai-validate-button" title="Valider la proposition"
+                        :disabled="!aiResponse" v-if="aiResponse">
+                        <span class="button-label">Apply</span>
                     </button>
                     <button @click="submitPrompt" class="ai-submit-button" title="Envoyer le prompt"
                         :disabled="isSubmitDisabled">
@@ -570,7 +570,7 @@ export default {
 /* Boutons de validation et rejet */
 .ai-validate-button,
 .ai-reject-button {
-    padding: 8px 8px;
+    padding: 8px 12px;
     border: none;
     border-radius: 9px;
     cursor: pointer;
@@ -578,45 +578,56 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 40px;
+    min-width: 60px;
     height: 32px;
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.button-label {
+    white-space: nowrap;
+    user-select: none;
 }
 
 .ai-validate-button {
-    background: #10b981;
+    background: var(--primary-color);
     color: white;
 }
 
 .ai-validate-button:hover:not(:disabled) {
-    background: #059669;
+    background: var(--primary-color-hover);
 }
 
 .ai-validate-button:active:not(:disabled) {
-    background: #047857;
+    background: var(--primary-color-active);
 }
 
 .ai-validate-button:disabled {
-    background: #9ca3af;
+    background: var(--primary-color-inactive);
     cursor: not-allowed;
     opacity: 0.6;
 }
 
 .ai-reject-button {
-    background: #ef4444;
-    color: white;
+    background: #f8f9fa;
+    color: #495057;
+    border: 1px solid #dee2e6;
 }
 
 .ai-reject-button:hover:not(:disabled) {
-    background: #dc2626;
+    background: #e9ecef;
+    border-color: #adb5bd;
 }
 
 .ai-reject-button:active:not(:disabled) {
-    background: #b91c1c;
+    background: #dee2e6;
+    border-color: #adb5bd;
 }
 
 .ai-reject-button:disabled {
-    background: #9ca3af;
+    background: #f8f9fa;
+    color: #adb5bd;
+    border-color: #dee2e6;
     cursor: not-allowed;
     opacity: 0.6;
 }
