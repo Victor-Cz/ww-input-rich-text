@@ -38,11 +38,6 @@
                         <div class="icon-arrow-sm-right" aria-hidden="true"></div>
                     </button>
                 </div>
-                
-                <!-- Debug temporaire -->
-                <div style="position: absolute; top: -25px; left: 0; font-size: 11px; color: #999; background: #f0f0f0; padding: 2px 6px; border-radius: 4px;">
-                    aiResponse: "{{ aiResponse }}" ({{ aiResponse ? aiResponse.length : 0 }} chars)
-                </div>
             </div>
         </div>
 
@@ -234,18 +229,21 @@ export default {
             // Utiliser la commande updateSuggestion pour afficher la proposition
             this.richEditor.commands.updateSuggestion(formattedResponse, position);
 
-            // Ajouter un TextStroke sur le texte sélectionné pour montrer ce qui va être modifié
+            // Ajouter un Strike sur le texte sélectionné pour montrer ce qui va être modifié
             const action = this.modificationTypes[this.selectedModificationType]?.action;
             if (action === 'replace' && this.storedSelectionRange) {
                 // Pour le remplacement de sélection, barrer le texte sélectionné
-                this.richEditor.commands.setTextStroke(this.storedSelectionRange.from, this.storedSelectionRange.to);
+                this.richEditor.commands.setStrike(this.storedSelectionRange.from, this.storedSelectionRange.to);
             } else if (action === 'replace-all') {
                 // Pour le remplacement global, barrer tout le contenu du document
-                this.richEditor.commands.setTextStroke(0, this.richEditor.state.doc.content.size);
+                this.richEditor.commands.setStrike(0, this.richEditor.state.doc.content.size);
             }
 
-            // Stocker la réponse pour validation ultérieure
-            this.aiResponse = response;
+            // Stocker la réponse pour validation ultérieure et s'assurer que Vue prend en compte la mise à jour
+            this.$nextTick(() => {
+                this.aiResponse = response;
+                console.log('aiResponse set to:', this.aiResponse);
+            });
         },
 
         getSuggestionPosition() {
@@ -308,7 +306,7 @@ export default {
             this.selectedModificationType = null;
             this.isDropdownOpen = false; // Fermer la dropdown
 
-            // Nettoyer le surlignage, la suggestion et le TextStroke lors de la fermeture du menu
+            // Nettoyer le surlignage, la suggestion et le Strike lors de la fermeture du menu
             this.richEditor.commands.clearHighlight();
             this.richEditor.commands.clearSuggestion();
             this.richEditor.commands.clearHighlight();

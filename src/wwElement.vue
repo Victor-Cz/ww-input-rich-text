@@ -218,7 +218,7 @@ import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table
 import Underline from '@tiptap/extension-underline';
 import { SelectionHighlighter } from './extensions/SelectionHighlighter.js';
 import { TextSuggestion } from './extensions/TextSuggestion.js';
-import { TextStroke } from './extensions/TextStroke.js';
+import { TextStrike } from './extensions/TextStrike.js';
 
 import AiMenu from './components/AiMenu.vue';
 
@@ -717,9 +717,8 @@ export default {
                         className: 'suggestion-label',
                         color: 'var(--primary-color)',
                     }),
-                    TextStroke.configure({
-                        defaultStrokeColor: 'var(--primary-color)',
-                        defaultStrokeWidth: '1px',
+                    TextStrike.configure({
+                        defaultStrikeColor: 'var(--primary-color)',
                         ranges:  [{ from: 0, to: 10, color: 'var(--primary-color)' }],
                     }),
                 ],
