@@ -9,7 +9,7 @@ export const SelectionHighlighter = Extension.create({
 
   addOptions() {
     return {
-      defaultColor: '#ffeb3b', // couleur par défaut configurable
+      defaultColor: 'var(--primary-color-1A)', // couleur par défaut configurable
     }
   },
 
@@ -38,7 +38,7 @@ export const SelectionHighlighter = Extension.create({
             }
 
             // Utiliser la couleur passée ou la couleur par défaut depuis options
-            const highlightColor = color || '#ffeb3b'
+            const highlightColor = color || 'var(--primary-color-1A)'
 
             const deco = Decoration.inline(from, to, {
               style: `background-color: ${highlightColor};`,

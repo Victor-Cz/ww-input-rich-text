@@ -209,6 +209,7 @@ import TaskList from '@tiptap/extension-task-list';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import Underline from '@tiptap/extension-underline';
 import { SelectionHighlighter } from './extensions/SelectionHighlighter.js';
+import { TextSuggestion } from './extensions/TextSuggestion.js';
 
 import AiMenu from './components/AiMenu.vue';
 
@@ -699,7 +700,12 @@ export default {
                         },
                     }),
                     SelectionHighlighter.configure({
-                        defaultColor: '#a0d911', // vert clair
+                        defaultColor: 'var(--primary-color-1A)',
+                    }),
+                    TextSuggestion.configure({
+                        suggestionText: 'Suggestion',
+                        position: 1,
+                        className: 'suggestion-label',
                     }),
                 ],
                 onCreate: () => {
