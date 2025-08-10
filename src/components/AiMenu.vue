@@ -376,9 +376,8 @@ export default {
 
 <style scoped>
 .bubble-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
+    position: relative;
+    margin-top: 16px;
     background: white;
     border: 1px solid #ddd;
     border-radius: 8px;
