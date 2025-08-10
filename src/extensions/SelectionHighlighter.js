@@ -7,32 +7,15 @@ export const SelectionHighlighter = Extension.create({
     return {
       selectFirstChars: () => ({ editor }) => {
         try {
-          const { state, view } = editor;
-          const { doc } = state;
+          console.log('SelectionHighlighter: Commande exécutée');
           
-          // Trouver le premier nœud de contenu textuel
-          let startPos = 0;
-          let endPos = 0;
+          // Utiliser la commande native de Tiptap pour sélectionner tout
+          editor.commands.selectAll();
           
-          // Parcourir le document pour trouver le premier nœud de texte
-          doc.descendants((node, pos) => {
-            if (node.isText && startPos === 0) {
-              startPos = pos;
-              endPos = Math.min(pos + 10, pos + node.textContent.length);
-              return false; // Arrêter la recherche
-            }
-          });
-          
-          // Si on a trouvé du texte, créer la sélection
-          if (startPos < endPos) {
-            const selection = state.selection.constructor.create(doc, startPos, endPos);
-            const tr = state.tr.setSelection(selection);
-            view.dispatch(tr);
-          }
-          
+          console.log('SelectionHighlighter: Tout sélectionné');
           return true;
         } catch (error) {
-          console.warn('SelectionHighlighter error:', error);
+          console.error('SelectionHighlighter error:', error);
           return false;
         }
       },
