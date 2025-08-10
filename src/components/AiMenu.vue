@@ -1,224 +1,110 @@
 <template>
-    <div v-if="editor">
-        <bubble-menu :editor="editor">
-            <div class="bubble-menu">
-                <button @click="editor.chain().focus().toggleBold().run()"
-                    :class="{ 'is-active': editor.isActive('bold') }">
-                    Bold
-                </button>
-                <button @click="editor.chain().focus().toggleItalic().run()"
-                    :class="{ 'is-active': editor.isActive('italic') }">
-                    Italic
-                </button>
-                <button @click="editor.chain().focus().toggleStrike().run()"
-                    :class="{ 'is-active': editor.isActive('strike') }">
-                    Strike
-                </button>
-            </div>
-        </bubble-menu>
-
-        <floating-menu :editor="editor">
-            <div class="floating-menu">
-                <button @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
-                    :class="{ 'is-active': editor.isActive('heading', { level: 1 }) }">
-                    H1
-                </button>
-                <button @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
-                    :class="{ 'is-active': editor.isActive('heading', { level: 2 }) }">
-                    H2
-                </button>
-                <button @click="editor.chain().focus().toggleBulletList().run()"
-                    :class="{ 'is-active': editor.isActive('bulletList') }">
-                    Bullet list
-                </button>
-            </div>
-        </floating-menu>
+    <div class="bubble-menu">
+        <!-- Bouton Gras -->
+        <button
+            class="bubble-menu__button"
+            :class="{ 'is-active': richEditor.isActive('bold') }"
+            @click="richEditor.chain().focus().toggleBold().run()"
+            title="Gras"
+        >
+            <i class="fas fa-bold"></i>
+        </button>
+        <!-- Bouton Italique -->
+        <button
+            class="bubble-menu__button"
+            :class="{ 'is-active': richEditor.isActive('italic') }"
+            @click="richEditor.chain().focus().toggleItalic().run()"
+            title="Italique"
+        >
+            <i class="fas fa-italic"></i>
+        </button>
+        <!-- Bouton Souligné -->
+        <button
+            class="bubble-menu__button"
+            :class="{ 'is-active': richEditor.isActive('underline') }"
+            @click="richEditor.chain().focus().toggleUnderline().run()"
+            title="Souligné"
+        >
+            <i class="fas fa-underline"></i>
+        </button>
+        <!-- Bouton Barré -->
+        <button
+            class="bubble-menu__button"
+            :class="{ 'is-active': richEditor.isActive('strike') }"
+            @click="richEditor.chain().focus().toggleStrike().run()"
+            title="Barré"
+        >
+            <i class="fas fa-strikethrough"></i>
+        </button>
+        <!-- Bouton Lien -->
+        <button
+            class="bubble-menu__button"
+            :class="{ 'is-active': richEditor.isActive('link') }"
+            @click="setLink"
+            title="Lien"
+        >
+            <i class="fas fa-link"></i>
+        </button>
     </div>
-
-    <editor-content :editor="editor" />
 </template>
 
 <script>
-import StarterKit from '@tiptap/starter-kit'
-import { Editor, EditorContent } from '@tiptap/vue-3'
-import { BubbleMenu, FloatingMenu } from '@tiptap/vue-3/menus'
-
 export default {
-    components: {
-        EditorContent,
-        BubbleMenu,
-        FloatingMenu,
+    name: 'AiMenu',
+    props: {
+        richEditor: {
+            type: Object,
+            required: true,
+        },
     },
-
-    data() {
-        return {
-            editor: null,
-        }
+    methods: {
+        setLink() {
+            const url = window.prompt('URL:')
+            if (url) {
+                this.richEditor.chain().focus().setLink({ href: url }).run()
+            }
+        },
     },
-
-    mounted() {
-        this.editor = new Editor({
-            extensions: [StarterKit],
-            content: `
-          <p>
-            Try to select <em>this text</em> to see what we call the bubble menu.
-          </p>
-          <p>
-            Neat, isn’t it? Add an empty paragraph to see the floating menu.
-          </p>
-        `,
-        })
-    },
-
-    beforeUnmount() {
-        this.editor.destroy()
-    },
-}
+};
 </script>
 
-<style lang="scss">
-/* Basic editor styles */
-.tiptap {
-    :first-child {
-        margin-top: 0;
-    }
-
-    /* List styles */
-    ul,
-    ol {
-        padding: 0 1rem;
-        margin: 1.25rem 1rem 1.25rem 0.4rem;
-
-        li p {
-            margin-top: 0.25em;
-            margin-bottom: 0.25em;
-        }
-    }
-
-    /* Heading styles */
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-        line-height: 1.1;
-        margin-top: 2.5rem;
-        text-wrap: pretty;
-    }
-
-    h1,
-    h2 {
-        margin-top: 3.5rem;
-        margin-bottom: 1.5rem;
-    }
-
-    h1 {
-        font-size: 1.4rem;
-    }
-
-    h2 {
-        font-size: 1.2rem;
-    }
-
-    h3 {
-        font-size: 1.1rem;
-    }
-
-    h4,
-    h5,
-    h6 {
-        font-size: 1rem;
-    }
-
-    /* Code and preformatted text styles */
-    code {
-        background-color: var(--purple-light);
-        border-radius: 0.4rem;
-        color: var(--black);
-        font-size: 0.85rem;
-        padding: 0.25em 0.3em;
-    }
-
-    pre {
-        background: var(--black);
-        border-radius: 0.5rem;
-        color: var(--white);
-        font-family: 'JetBrainsMono', monospace;
-        margin: 1.5rem 0;
-        padding: 0.75rem 1rem;
-
-        code {
-            background: none;
-            color: inherit;
-            font-size: 0.8rem;
-            padding: 0;
-        }
-    }
-
-    blockquote {
-        border-left: 3px solid var(--gray-3);
-        margin: 1.5rem 0;
-        padding-left: 1rem;
-    }
-
-    hr {
-        border: none;
-        border-top: 1px solid var(--gray-2);
-        margin: 2rem 0;
-    }
-}
-
-/* Bubble menu */
+<style lang="scss" scoped>
 .bubble-menu {
-    background-color: var(--white);
-    border: 1px solid var(--gray-1);
-    border-radius: 0.7rem;
-    box-shadow: var(--shadow);
     display: flex;
-    padding: 0.2rem;
-
-    button {
-        background-color: unset;
-
-        &:hover {
-            background-color: var(--gray-3);
-        }
-
-        &.is-active {
-            background-color: var(--purple);
-
-            &:hover {
-                background-color: var(--purple-contrast);
-            }
-        }
-    }
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 4px;
+    gap: 2px;
+    z-index: 1000;
 }
 
-/* Floating menu */
-.floating-menu {
+.bubble-menu__button {
     display: flex;
-    background-color: var(--gray-3);
-    padding: 0.1rem;
-    border-radius: 0.5rem;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #64748b;
 
-    button {
-        background-color: unset;
-        padding: 0.275rem 0.425rem;
-        border-radius: 0.3rem;
+    &:hover {
+        background: #f1f5f9;
+        color: #334155;
+    }
 
-        &:hover {
-            background-color: var(--gray-3);
-        }
+    &.is-active {
+        background: #3b82f6;
+        color: white;
+    }
 
-        &.is-active {
-            background-color: var(--white);
-            color: var(--purple);
-
-            &:hover {
-                color: var(--purple-contrast);
-            }
-        }
+    i {
+        font-size: 14px;
     }
 }
 </style>
