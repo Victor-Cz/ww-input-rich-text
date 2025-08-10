@@ -360,10 +360,10 @@ export default {
         onClickOutside(event) {
             // Vérifier si le clic est en dehors du menu AI
             const aiMenuElement = this.$el;
-            if (aiMenuElement && !aiMenuElement.contains(event.target)) {
-                // Fermer le menu si on clique en dehors
-                this.closeMenu();
-            }
+            // if (aiMenuElement && !aiMenuElement.contains(event.target)) {
+            //     // Fermer le menu si on clique en dehors
+            //     this.closeMenu();
+            // }
         }
     },
 };
