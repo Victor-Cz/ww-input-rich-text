@@ -1,11 +1,12 @@
 {
-    "name": "ww-rich-text",
+    "name": "ww-rich-text-v2",
     "version": "3.0.1",
     "scripts": {
-        "build": "weweb build",
+        "build": "weweb build -- name=ww-rich-text type=wwobject",
         "serve": "weweb serve"
     },
     "devDependencies": {
+        "@vitejs/plugin-vue": "^5.2.4",
         "@vue/eslint-config-prettier": "^6.0.0",
         "@weweb/cli": "latest",
         "eslint": "^7.7.0",
@@ -14,6 +15,7 @@
         "prettier": "^2.1.2"
     },
     "dependencies": {
+        "@floating-ui/dom": "^1.7.3",
         "@tiptap/extension-color": "2.8.0",
         "@tiptap/extension-image": "2.8.0",
         "@tiptap/extension-link": "2.8.0",
