@@ -205,6 +205,7 @@ export default {
             if (this.hasSelection) {
                 this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
                 this.storedSelectionRange = { from, to };
+                console.log('AiMenu - Déclencher le surlignage:', { from, to });
                 this.richEditor.commands.highlightRange(from, to);
             } else {
                 this.storedSelection = null;
