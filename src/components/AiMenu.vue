@@ -102,13 +102,6 @@ export default {
             isDropdownOpen: false, // Pour contrôler l'ouverture/fermeture de la dropdown
             // Configuration des types de modifications
             modificationTypes: {
-                modify: {
-                    label: 'Modifier',
-                    description: 'Améliorer ou corriger le texte sélectionné',
-                    defaultPrompt: 'Améliore ce texte en gardant le même sens',
-                    action: 'replace',
-                    requireInput: true
-                },
                 humanize: {
                     label: 'Humaniser',
                     description: 'Rendre le texte plus naturel et humain',
@@ -116,48 +109,55 @@ export default {
                     action: 'replace-all',
                     requireInput: false
                 },
-                extend: {
-                    label: 'Rallonger',
-                    description: 'Développer et enrichir le contenu',
-                    defaultPrompt: 'Développe et enrichis ce texte',
-                    action: 'replace',
-                    requireInput: true
-                },
-                shorten: {
-                    label: 'Raccourcir',
-                    description: 'Condense ce texte en gardant l\'essentiel',
-                    defaultPrompt: 'Condense ce texte en gardant l\'essentiel',
-                    action: 'replace',
-                    requireInput: true
-                },
-                formalize: {
-                    label: 'Formaliser',
-                    description: 'Rendre le texte plus formel et professionnel',
-                    defaultPrompt: 'Rends ce texte plus formel et professionnel',
-                    action: 'replace',
-                    requireInput: true
-                },
-                simplify: {
-                    label: 'Simplifier',
-                    description: 'Simplifie ce texte pour le rendre plus accessible',
-                    defaultPrompt: 'Simplifie ce texte pour le rendre plus accessible',
-                    action: 'replace',
-                    requireInput: true
-                },
-                translate: {
-                    label: 'Traduire',
-                    description: 'Traduire dans une autre langue',
-                    defaultPrompt: 'Traduis ce texte en français',
-                    action: 'replace',
-                    requireInput: true
-                },
-                custom: {
-                    label: 'Personnalisé',
-                    description: 'Prompt personnalisé',
-                    defaultPrompt: '',
-                    action: 'replace',
-                    requireInput: true
-                }
+                // modify: {
+                //     label: 'Modifier',
+                //     description: 'Améliorer ou corriger le texte sélectionné',
+                //     defaultPrompt: 'Améliore ce texte en gardant le même sens',
+                //     action: 'replace',
+                //     requireInput: true
+                // },
+                // extend: {
+                //     label: 'Rallonger',
+                //     description: 'Développer et enrichir le contenu',
+                //     defaultPrompt: 'Développe et enrichis ce texte',
+                //     action: 'replace',
+                //     requireInput: true
+                // },
+                // shorten: {
+                //     label: 'Raccourcir',
+                //     description: 'Condense ce texte en gardant l\'essentiel',
+                //     defaultPrompt: 'Condense ce texte en gardant l\'essentiel',
+                //     action: 'replace',
+                //     requireInput: true
+                // },
+                // formalize: {
+                //     label: 'Formaliser',
+                //     description: 'Rendre le texte plus formel et professionnel',
+                //     defaultPrompt: 'Rends ce texte plus formel et professionnel',
+                //     action: 'replace',
+                //     requireInput: true
+                // },
+                // simplify: {
+                //     label: 'Simplifier',
+                //     description: 'Simplifie ce texte pour le rendre plus accessible',
+                //     defaultPrompt: 'Simplifie ce texte pour le rendre plus accessible',
+                //     action: 'replace',
+                //     requireInput: true
+                // },
+                // translate: {
+                //     label: 'Traduire',
+                //     description: 'Traduire dans une autre langue',
+                //     defaultPrompt: 'Traduis ce texte en français',
+                //     action: 'replace',
+                //     requireInput: true
+                // },
+                // custom: {
+                //     label: 'Personnalisé',
+                //     description: 'Prompt personnalisé',
+                //     defaultPrompt: '',
+                //     action: 'replace',
+                //     requireInput: true
+                // }
             }
         };
     },
