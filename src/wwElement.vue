@@ -202,7 +202,6 @@
                     @ai-prompt="handleAiPrompt" v-if="richEditor" />
             </template>
         </div>
-    </div>
 </template>
 
 <script>
