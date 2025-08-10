@@ -180,26 +180,23 @@ export default {
         };
     },
     mounted() {
-        // Écouter les changements de sélection dans l'éditeur
-        this.richEditor.on('selectionUpdate', this.onSelectionUpdate);
-
         // Écouter les clics en dehors du menu pour le masquer
         document.addEventListener('mousedown', this.onClickOutside);
 
+        // Enregistrer la sélection initiale au montage
         const { from, to } = this.richEditor.state.selection;
         this.hasSelection = from !== to;
 
-        // Stocker le texte sélectionné quand il y en a un
+        // Stocker le texte sélectionné et le surligner une seule fois
         if (this.hasSelection) {
             this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
             this.storedSelectionRange = { from, to };
-            console.log('AiMenu - Déclencher le surlignage:', { from, to });
+            console.log('AiMenu - Sélection enregistrée et surlignée:', { from, to });
             this.richEditor.commands.highlightRange(from, to);
         }
     },
     beforeUnmount() {
         // Nettoyer les écouteurs
-        this.richEditor.off('selectionUpdate', this.onSelectionUpdate);
         document.removeEventListener('mousedown', this.onClickOutside);
 
         this.storedSelection = null;
@@ -207,27 +204,6 @@ export default {
         this.richEditor.commands.clearHighlight()
     },
     methods: {
-        onSelectionUpdate() {
-            // Ne traiter la sélection que si le menu est ouvert
-            if (!this.isVisible) {
-                return;
-            }
-
-            const { from, to } = this.richEditor.state.selection;
-            this.hasSelection = from !== to;
-
-            // Stocker le texte sélectionné quand il y en a un
-            if (this.hasSelection) {
-                this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
-                this.storedSelectionRange = { from, to };
-                console.log('AiMenu - Déclencher le surlignage:', { from, to });
-                this.richEditor.commands.highlightRange(from, to);
-            } else {
-                this.storedSelection = null;
-                this.storedSelectionRange = null;
-                this.richEditor.commands.clearHighlight();
-            }
-        },
         updateVisibility() {
             // Le menu est visible seulement si il est explicitement ouvert
             // Ne plus dépendre de isFocused pour éviter les conflits
@@ -241,11 +217,12 @@ export default {
             }
 
             this.isLoading = true;
-            const { from, to } = this.richEditor.state.selection;
 
-            if (from !== to) {
-                this.storedSelectionRange = { from, to };
-                this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
+            // Utiliser directement la sélection stockée au montage
+            if (!this.storedSelectionRange || !this.storedSelection) {
+                console.warn('AiMenu - Aucune sélection stockée disponible');
+                this.isLoading = false;
+                return;
             }
 
             const finalPrompt = this.buildFinalPrompt();
@@ -309,6 +286,9 @@ export default {
             this.hasSelection = false;
             this.selectedModificationType = null;
             this.isDropdownOpen = false; // Fermer la dropdown
+            
+            // Nettoyer le surlignage lors de la fermeture du menu
+            this.richEditor.commands.clearHighlight();
         },
         applyResponse(response) {
             const action = this.modificationTypes[this.selectedModificationType].action;
@@ -331,6 +311,10 @@ export default {
             this.isVisible = true;
             this.isFocused = true;
             this.updateVisibility();
+        },
+        openMenu() {
+            this.isVisible = true;
+            this.isFocused = true;
         },
         onFocus() {
             // Ne rien faire lors du focus pour éviter la réouverture automatique
