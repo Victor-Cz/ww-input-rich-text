@@ -1,6 +1,6 @@
 <template>
-    <div 
-        class="bubble-menu" 
+    <div
+        class="bubble-menu"
         v-show="isVisible"
         :class="{ 'is-focused': isFocused }"
     >
@@ -9,9 +9,9 @@
             <div class="selected-text-label">Texte sélectionné :</div>
             <div class="selected-text-content">{{ storedSelection }}</div>
         </div>
-        
+
         <!-- Sélecteur de type de modification -->
-        <div class="modification-type-selector" v-if="!isLoading">
+        <div class="modification-type-selector" v-if="!isLoading && !isProposal">
             <label class="type-label">Type de modification :</label>
             <select v-model="selectedModificationType" class="type-select">
                 <option value="modify">Modifier</option>
@@ -26,7 +26,7 @@
         </div>
 
         <!-- Input pour les prompts AI -->
-        <div class="ai-input-container" v-if="!isLoading && selectedModificationType">
+        <div class="ai-input-container" v-if="!isLoading && !isProposal && selectedModificationType">
             <input
                 v-model="aiPrompt"
                 type="text"
@@ -45,6 +45,41 @@
             </button>
         </div>
 
+        <!-- Affichage de la proposition AI -->
+        <div class="ai-proposal-container" v-if="isProposal">
+            <div class="proposal-header">
+                <span class="proposal-label">Proposition AI :</span>
+            </div>
+            <div class="proposal-content">
+                <input
+                    :value="aiResponse"
+                    type="text"
+                    class="ai-proposal-input"
+                    :readonly="isReadOnly"
+                    @focus="onFocus"
+                    @blur="onBlur"
+                />
+            </div>
+            <div class="proposal-actions">
+                <button
+                    @click="validateProposal"
+                    class="proposal-validate-button"
+                    title="Valider la proposition"
+                >
+                    <i class="fas fa-check"></i>
+                    Valider
+                </button>
+                <button
+                    @click="rejectProposal"
+                    class="proposal-reject-button"
+                    title="Rejeter la proposition"
+                >
+                    <i class="fas fa-times"></i>
+                    Rejeter
+                </button>
+            </div>
+        </div>
+
         <!-- État de chargement -->
         <div class="ai-loading-container" v-if="isLoading">
             <div class="ai-loading-spinner"></div>
@@ -61,16 +96,22 @@ export default {
             type: Object,
             required: true,
         },
+        isReadOnly: {
+            type: Boolean,
+            default: true,
+        },
     },
     data() {
         return {
             aiPrompt: '',
+            aiResponse: '',
             isVisible: false,
             isFocused: false,
             hasSelection: false,
             storedSelection: null,
-            storedSelectionRange: null, // Store selection coordinates
+            storedSelectionRange: null,
             isLoading: false,
+            isProposal: false,
             selectedModificationType: null,
             // Configuration des types de modifications
             modificationTypes: {
@@ -94,7 +135,7 @@ export default {
                 },
                 shorten: {
                     label: 'Raccourcir',
-                    description: 'Condenser le texte en gardant l\'essentiel',
+                    description: 'Condense ce texte en gardant l\'essentiel',
                     defaultPrompt: 'Condense ce texte en gardant l\'essentiel',
                     action: 'replace'
                 },
@@ -106,7 +147,7 @@ export default {
                 },
                 simplify: {
                     label: 'Simplifier',
-                    description: 'Simplifier le langage et la structure',
+                    description: 'Simplifie ce texte pour le rendre plus accessible',
                     defaultPrompt: 'Simplifie ce texte pour le rendre plus accessible',
                     action: 'replace'
                 },
@@ -128,7 +169,7 @@ export default {
     mounted() {
         // Écouter les changements de sélection dans l'éditeur
         this.richEditor.on('selectionUpdate', this.onSelectionUpdate);
-        
+
         // Écouter les clics en dehors du menu pour le masquer
         document.addEventListener('click', this.onClickOutside);
     },
@@ -141,487 +182,391 @@ export default {
         onSelectionUpdate() {
             const { from, to } = this.richEditor.state.selection;
             this.hasSelection = from !== to;
-            
+
             // Stocker le texte sélectionné quand il y en a un
             if (this.hasSelection) {
                 this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
-                this.storedSelectionRange = { from, to }; // Store selection coordinates
+                this.storedSelectionRange = { from, to };
             } else {
                 this.storedSelection = null;
                 this.storedSelectionRange = null;
             }
-            
+
             // Ne pas mettre à jour la visibilité automatiquement
             // this.updateVisibility();
         },
-        
-        onFocus() {
-            this.isFocused = true;
-            this.updateVisibility();
-            
-            // Ajouter une classe au body pour maintenir la sélection
-            if (this.hasSelection) {
-                document.body.classList.add('ai-menu-focused');
+        updateVisibility() {
+            // Le menu est visible seulement si il est explicitement ouvert
+            this.isVisible = this.isFocused;
+        },
+        submitPrompt() {
+            if (this.aiPrompt.trim() && this.selectedModificationType) {
+                this.isLoading = true;
+                const { from, to } = this.richEditor.state.selection;
+                if (from !== to) {
+                    this.storedSelectionRange = { from, to };
+                }
+                const finalPrompt = this.buildFinalPrompt();
+                const action = this.modificationTypes[this.selectedModificationType].action;
+                console.log('AI Prompt submitted:', {
+                    prompt: finalPrompt,
+                    modificationType: this.selectedModificationType,
+                    action: action,
+                    selectedText: this.storedSelection,
+                    selectionRange: this.storedSelectionRange,
+                    timestamp: new Date().toISOString()
+                });
+                this.$wwTriggerEvent('ai-prompt', {
+                    prompt: finalPrompt,
+                    modificationType: this.selectedModificationType,
+                    action: action,
+                    selectedText: this.storedSelection,
+                    timestamp: new Date().toISOString()
+                });
+                this.aiPrompt = '';
             }
         },
-        
-        onBlur() {
-            this.isFocused = false;
-            this.updateVisibility();
-            
-            // Retirer la classe du body
-            document.body.classList.remove('ai-menu-focused');
-        },
-        
-        onClickOutside(event) {
-            // Vérifier si le clic est en dehors du menu
-            if (!this.$el.contains(event.target)) {
-                this.isFocused = false;
-                this.updateVisibility();
-                document.body.classList.remove('ai-menu-focused');
-            }
-        },
-        
-                            updateVisibility() {
-                        // Le menu est visible seulement si il est explicitement ouvert
-                        this.isVisible = this.isFocused;
-                    },
-        
-        setLink() {
-            const url = window.prompt('URL:')
-            if (url) {
-                this.richEditor.chain().focus().setLink({ href: url }).run()
-            }
-        },
-        
-                            submitPrompt() {
-                        if (this.aiPrompt.trim() && this.selectedModificationType) {
-                            // Activer l'état de chargement
-                            this.isLoading = true;
-                            
-                            // Stocker la sélection actuelle pour pouvoir la modifier plus tard
-                            const { from, to } = this.richEditor.state.selection;
-                            if (from !== to) {
-                                this.storedSelectionRange = { from, to };
-                            }
-                            
-                            // Construire le prompt final avec le type de modification
-                            const finalPrompt = this.buildFinalPrompt();
-                            
-                            // Récupérer l'action prédéfinie pour ce type
-                            const action = this.modificationTypes[this.selectedModificationType].action;
-                            
-                            // Log pour debug
-                            console.log('AI Prompt submitted:', {
-                                prompt: finalPrompt,
-                                modificationType: this.selectedModificationType,
-                                action: action,
-                                selectedText: this.storedSelection,
-                                selectionRange: this.storedSelectionRange,
-                                timestamp: new Date().toISOString()
-                            });
-                            
-                            // Déclencher l'événement WeWeb pour le prompt AI
-                            this.$wwTriggerEvent('ai-prompt', {
-                                prompt: finalPrompt,
-                                modificationType: this.selectedModificationType,
-                                action: action,
-                                selectedText: this.storedSelection,
-                                timestamp: new Date().toISOString()
-                            });
-                            
-                            // Vider l'input
-                            this.aiPrompt = '';
-                        }
-                    },
-
-        // Construire le prompt final en combinant le type et le prompt utilisateur
-        buildFinalPrompt() {
-            const typeConfig = this.modificationTypes[this.selectedModificationType];
-            const userPrompt = this.aiPrompt.trim();
-            
-            if (this.selectedModificationType === 'custom') {
-                return userPrompt;
-            }
-            
-            // Combiner le prompt par défaut avec le prompt utilisateur
-            if (userPrompt) {
-                return `${typeConfig.defaultPrompt}. ${userPrompt}`;
-            }
-            
-            return typeConfig.defaultPrompt;
-        },
-
-        // Méthode appelée par l'action WeWeb setResponse
         setResponse(response) {
             this.isLoading = false;
-            
             if (!response) {
                 console.log('AI Response received but no content to apply');
                 return;
             }
-            
-            // Appliquer la réponse selon l'action sélectionnée
-            this.applyResponse(response);
-            
-            // Nettoyer la sélection stockée
+
+            // Afficher la proposition au lieu de l'appliquer directement
+            this.aiResponse = response;
+            this.isProposal = true;
+            console.log('AI Response displayed as proposal:', response);
+        },
+        validateProposal() {
+            // Appliquer la proposition à l'éditeur
+            this.applyResponse(this.aiResponse);
+
+            // Réinitialiser et fermer le menu
+            this.resetProposal();
+            this.closeMenu();
+            console.log('AI Proposal validated and applied:', this.aiResponse);
+        },
+        rejectProposal() {
+            // Rejeter la proposition et fermer le menu
+            this.resetProposal();
+            this.closeMenu();
+            console.log('AI Proposal rejected');
+        },
+        resetProposal() {
+            this.aiResponse = '';
+            this.isProposal = false;
+        },
+        closeMenu() {
+            this.isVisible = false;
+            this.isFocused = false;
             this.storedSelection = null;
             this.storedSelectionRange = null;
             this.hasSelection = false;
-            
-            // Mettre à jour la visibilité
-            this.updateVisibility();
-            
-            // Réinitialiser les sélecteurs
-            this.resetSelectors();
-
-            console.log('AI Response applied to editor:', response);
+            this.selectedModificationType = null;
         },
-
-                            // Appliquer la réponse selon l'action prédéfinie du type
-                    applyResponse(response) {
-                        const action = this.modificationTypes[this.selectedModificationType].action;
-                        
-                        switch (action) {
-                            case 'replace':
-                                this.replaceSelection(response);
-                                break;
-                            case 'insert-before':
-                                this.insertBeforeSelection(response);
-                                break;
-                            case 'insert-after':
-                                this.insertAfterSelection(response);
-                                break;
-                            case 'replace-all':
-                                this.replaceAllText(response);
-                                break;
-                            case 'append':
-                                this.appendToEnd(response);
-                                break;
-                            case 'prepend':
-                                this.prependToBeginning(response);
-                                break;
-                            default:
-                                console.warn('Action non reconnue:', action);
-                                this.replaceSelection(response); // Fallback
-                        }
-                    },
-
-        // Remplacer la sélection
-        replaceSelection(response) {
+        applyResponse(response) {
+            const action = this.modificationTypes[this.selectedModificationType].action;
+            switch (action) {
+                case 'replace': this.replaceSelection(response); break;
+                case 'insert-before': this.insertBeforeSelection(response); break;
+                case 'insert-after': this.insertAfterSelection(response); break;
+                case 'replace-all': this.replaceAllText(response); break;
+                case 'append': this.appendToEnd(response); break;
+                case 'prepend': this.prependToBeginning(response); break;
+                default: console.warn('Action non reconnue:', action); this.replaceSelection(response);
+            }
+        },
+        resetSelectors() {
+            this.selectedModificationType = null;
+            this.aiPrompt = '';
+        },
+        openWithType(typeKey) {
+            this.selectedModificationType = typeKey;
+            this.isVisible = true;
+            this.isFocused = true;
+            this.updateVisibility();
+        },
+        onFocus() {
+            this.isFocused = true;
+            this.updateVisibility();
+        },
+        onBlur() {
+            this.isFocused = false;
+            this.updateVisibility();
+        },
+        getPromptPlaceholder() {
+            if (this.selectedModificationType && this.modificationTypes[this.selectedModificationType]) {
+                return this.modificationTypes[this.selectedModificationType].defaultPrompt;
+            }
+            return 'Entrez votre prompt...';
+        },
+        buildFinalPrompt() {
+            if (this.selectedModificationType === 'custom') {
+                return this.aiPrompt;
+            }
+            const basePrompt = this.modificationTypes[this.selectedModificationType].defaultPrompt;
+            return this.aiPrompt ? `${basePrompt} : ${this.aiPrompt}` : basePrompt;
+        },
+        replaceSelection(text) {
             if (this.storedSelectionRange) {
                 const { from, to } = this.storedSelectionRange;
-                this.richEditor.chain()
-                    .focus()
-                    .setTextSelection({ from, to })
-                    .deleteSelection()
-                    .insertContent(response)
-                    .run();
+                this.richEditor.chain().focus().deleteRange({ from, to }).insertContent(text).run();
             }
         },
-
-        // Insérer avant la sélection
-        insertBeforeSelection(response) {
+        insertBeforeSelection(text) {
             if (this.storedSelectionRange) {
                 const { from } = this.storedSelectionRange;
-                this.richEditor.chain()
-                    .focus()
-                    .setTextSelection(from)
-                    .insertContent(response + ' ')
-                    .run();
+                this.richEditor.chain().focus().insertContentAt(from, text).run();
             }
         },
-
-        // Insérer après la sélection
-        insertAfterSelection(response) {
+        insertAfterSelection(text) {
             if (this.storedSelectionRange) {
                 const { to } = this.storedSelectionRange;
-                this.richEditor.chain()
-                    .focus()
-                    .setTextSelection(to)
-                    .insertContent(' ' + response)
-                    .run();
+                this.richEditor.chain().focus().insertContentAt(to, text).run();
             }
         },
-
-        // Remplacer tout le texte
-        replaceAllText(response) {
-            this.richEditor.chain()
-                .focus()
-                .selectAll()
-                .deleteSelection()
-                .insertContent(response)
-                .run();
+        replaceAllText(text) {
+            this.richEditor.chain().focus().setContent(text).run();
         },
-
-        // Ajouter à la fin
-        appendToEnd(response) {
-            const docSize = this.richEditor.state.doc.content.size;
-            this.richEditor.chain()
-                .focus()
-                .setTextSelection(docSize)
-                .insertContent('\n' + response)
-                .run();
+        appendToEnd(text) {
+            this.richEditor.chain().focus().insertContentAt(this.richEditor.state.doc.content.size, text).run();
         },
-
-        // Ajouter au début
-        prependToBeginning(response) {
-            this.richEditor.chain()
-                .focus()
-                .setTextSelection(0)
-                .insertContent(response + '\n')
-                .run();
-        },
-
-                            // Réinitialiser les sélecteurs
-                    resetSelectors() {
-                        this.selectedModificationType = null;
-                        this.aiPrompt = '';
-                    },
-
-                            getPromptPlaceholder() {
-                        if (this.selectedModificationType === 'custom') {
-                            return 'Entrez votre prompt personnalisé...';
-                        }
-                        return `Entrez votre prompt pour ${this.selectedModificationType}...`;
-                    },
-
-                    // Méthode pour ouvrir le menu avec un type pré-sélectionné
-                    openWithType(typeKey) {
-                        this.selectedModificationType = typeKey;
-                        this.isVisible = true;
-                        this.isFocused = true;
-                        this.updateVisibility();
-                    }
+        prependToBeginning(text) {
+            this.richEditor.chain().focus().insertContentAt(0, text).run();
+        }
     },
 };
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .bubble-menu {
-    display: flex;
-    flex-direction: column;
+    position: absolute;
     background: white;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #ddd;
     border-radius: 8px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    padding: 12px;
-    gap: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 16px;
+    min-width: 300px;
     z-index: 1000;
-    min-width: 320px;
-    max-width: 400px;
-    transition: opacity 0.2s ease, visibility 0.2s ease;
-    
-    &:not(.is-focused) {
-        opacity: 0.9;
-    }
-    
-    &.is-focused {
-        opacity: 1;
-        border-color: #3b82f6;
-        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1), 0 2px 4px -1px rgba(59, 130, 246, 0.06);
-    }
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-// Affichage du texte sélectionné
+.bubble-menu.is-focused {
+    border-color: #007bff;
+    box-shadow: 0 4px 16px rgba(0, 123, 255, 0.25);
+}
+
 .selected-text-display {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: #f8f9fa;
     border-radius: 6px;
-    padding: 8px;
-    margin-bottom: 4px;
+    border-left: 4px solid #007bff;
 }
 
 .selected-text-label {
     font-size: 12px;
     font-weight: 600;
-    color: #64748b;
+    color: #6c757d;
     margin-bottom: 4px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.5px;
 }
 
 .selected-text-content {
     font-size: 14px;
-    color: #334155;
+    color: #495057;
     line-height: 1.4;
-    background: #f1f5f9;
-    padding: 6px 8px;
-    border-radius: 4px;
-    border-left: 3px solid #3b82f6;
-    max-height: 80px;
-    overflow-y: auto;
     word-break: break-word;
 }
 
-// Styles globaux pour le body quand le menu AI est focalisé
-:global(body.ai-menu-focused) {
-    .ww-rich-text .ProseMirror {
-        ::selection {
-            background-color: rgba(59, 130, 246, 0.3) !important;
-        }
-        
-        ::-moz-selection {
-            background-color: rgba(59, 130, 246, 0.3) !important;
-        }
-    }
+.modification-type-selector {
+    margin-bottom: 16px;
 }
 
-            .modification-type-selector {
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-                margin-bottom: 8px;
-            }
+.type-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
 
-            .type-label {
-                font-size: 11px;
-                font-weight: 600;
-                color: #64748b;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                margin-bottom: 2px;
-            }
+.type-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #495057;
+    background: white;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
 
-            .type-select {
-                width: 100%;
-                padding: 8px 10px;
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
-                font-size: 13px;
-                outline: none;
-                transition: all 0.2s ease;
-                background: white;
-                color: #374151;
-                
-                &:focus {
-                    border-color: #3b82f6;
-                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-                    transform: translateY(-1px);
-                }
-                
-                &:hover {
-                    border-color: #9ca3af;
-                }
-                
-                option {
-                    padding: 8px;
-                    font-size: 13px;
-                }
-            }
+.type-select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
 
 .ai-input-container {
     display: flex;
-    gap: 4px;
-    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
 }
 
 .ai-input {
     flex: 1;
-    padding: 6px 8px;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
+    padding: 10px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
     font-size: 14px;
+    color: #495057;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ai-input:focus {
     outline: none;
-    transition: border-color 0.2s ease;
-    
-    &:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-    
-    &::placeholder {
-        color: #9ca3af;
-    }
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
 .ai-submit-button {
+    padding: 10px 12px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: #3b82f6;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    color: white;
-    
-    &:hover {
-        background: #2563eb;
-        transform: translateY(-1px);
-    }
-    
-    &:active {
-        transform: translateY(0);
-    }
-    
-    i {
-        font-size: 14px;
-    }
+    min-width: 44px;
 }
 
-// État de chargement
+.ai-submit-button:hover {
+    background: #0056b3;
+}
+
+.ai-submit-button:active {
+    background: #004085;
+}
+
+/* Styles pour la proposition AI */
+.ai-proposal-container {
+    margin-bottom: 16px;
+}
+
+.proposal-header {
+    margin-bottom: 12px;
+}
+
+.proposal-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.proposal-content {
+    margin-bottom: 16px;
+}
+
+.ai-proposal-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #8b5cf6;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #8b5cf6;
+    background: #faf5ff;
+    font-weight: 500;
+}
+
+.ai-proposal-input:focus {
+    outline: none;
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.proposal-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.proposal-validate-button,
+.proposal-reject-button {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.proposal-validate-button {
+    background: #10b981;
+    color: white;
+}
+
+.proposal-validate-button:hover {
+    background: #059669;
+}
+
+.proposal-validate-button:active {
+    background: #047857;
+}
+
+.proposal-reject-button {
+    background: #ef4444;
+    color: white;
+}
+
+.proposal-reject-button:hover {
+    background: #dc2626;
+}
+
+.proposal-reject-button:active {
+    background: #b91c1c;
+}
+
+/* État de chargement */
 .ai-loading-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 12px;
-    padding: 16px;
+    padding: 20px;
 }
 
 .ai-loading-spinner {
     width: 24px;
     height: 24px;
-    border: 2px solid #e2e8f0;
-    border-top: 2px solid #3b82f6;
+    border: 3px solid #e5e7eb;
+    border-top: 3px solid #007bff;
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
 
 .ai-loading-text {
     font-size: 14px;
-    color: #64748b;
+    color: #6c757d;
     font-weight: 500;
 }
 
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-}
-
-.separator {
-    height: 1px;
-    background: #e5e7eb;
-    margin: 0 -4px;
-}
-
-.bubble-menu__button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: transparent;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    color: #64748b;
-
-    &:hover {
-        background: #f1f5f9;
-        color: #334155;
-    }
-
-    &.is-active {
-        background: #3b82f6;
-        color: white;
-    }
-
-    i {
-        font-size: 14px;
-    }
 }
 </style>

@@ -181,9 +181,15 @@
                         @click="toggleAiMenu" :disabled="!isEditable">
                         <i class="fas fa-magic"></i>
                     </button>
+                    <!-- Debug info -->
+                    <div style="font-size: 10px; color: red;">Debug: menu.aiMenu={{ menu.aiMenu }}, isAiMenuOpen={{ isAiMenuOpen }}</div>
                     
                     <!-- AI Menu Dropdown -->
                     <div class="ai-menu-dropdown-content" v-show="isAiMenuOpen">
+                        <!-- Debug info -->
+                        <div style="background: red; color: white; padding: 5px; font-size: 12px;">
+                            Dropdown is visible! isAiMenuOpen: {{ isAiMenuOpen }}
+                        </div>
                         <div class="ai-menu-header">
                             <span>Types de modification</span>
                         </div>
@@ -205,8 +211,13 @@
 
             <editor-content class="ww-rich-text__input" :editor="richEditor" :style="richStyles" />
 
-                        <!-- Utilisation du composant AiMenu personnalisé -->
-                        <ai-menu ref="aiMenu" :rich-editor="richEditor" v-if="richEditor" />
+                                    <!-- Utilisation du composant AiMenu personnalisé -->
+            <ai-menu 
+                ref="aiMenu" 
+                :rich-editor="richEditor" 
+                :is-read-only="content.parameterAiMenuReadOnly ?? true"
+                v-if="richEditor" 
+            />
         </template>
     </div>
 </template>
@@ -959,7 +970,9 @@ export default {
 
         // AI Menu Dropdown methods
         toggleAiMenu() {
+            console.log('toggleAiMenu called, current state:', this.isAiMenuOpen);
             this.isAiMenuOpen = !this.isAiMenuOpen;
+            console.log('toggleAiMenu new state:', this.isAiMenuOpen);
         },
 
         selectAiModificationType(typeKey) {
@@ -1414,6 +1427,9 @@ export default {
         min-width: 280px;
         z-index: 1000;
         margin-top: 4px;
+        /* Debug styles */
+        border: 2px solid red !important;
+        background: yellow !important;
     }
 
     .ai-menu-header {

@@ -67,7 +67,6 @@ export default {
             [
                 'parameterTitle',
                 'parameterTextType',
-                'parameterAiMenu',
                 'parameterBold',
                 'parameterItalic',
                 'parameterUnderline',
@@ -87,6 +86,10 @@ export default {
                 'parameterQuote',
                 'parameterUndo',
                 'parameterRedo',
+            ],
+            [
+                'parameterAiMenu',
+                'parameterAiMenuReadOnly',
             ],
         ],
     },
@@ -1599,6 +1602,28 @@ export default {
                     {
                         value: false,
                         label: 'Hide',
+                    },
+                ],
+            },
+            defaultValue: true,
+        },
+        parameterAiMenuReadOnly: {
+            section: 'settings',
+            hidden: content => content.customMenu,
+            label: {
+                en: 'AI Menu Read Only',
+            },
+            type: 'TextRadioGroup',
+            options: {
+                choices: [
+                    {
+                        value: true,
+                        default: true,
+                        label: 'Yes',
+                    },
+                    {
+                        value: false,
+                        label: 'No',
                     },
                 ],
             },
