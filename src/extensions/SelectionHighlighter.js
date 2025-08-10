@@ -14,6 +14,7 @@ export const SelectionHighlighter = Extension.create({
   },
 
   addProseMirrorPlugins() {
+    const options = this.options
     return [
       new Plugin({
         key: selectionHighlighterKey,
@@ -37,7 +38,7 @@ export const SelectionHighlighter = Extension.create({
             }
 
             // Utiliser la couleur passée ou la couleur par défaut depuis options
-            const highlightColor = color || this.spec.options.defaultColor
+            const highlightColor = color || '#ffeb3b'
 
             const deco = Decoration.inline(from, to, {
               style: `background-color: ${highlightColor};`,
