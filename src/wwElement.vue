@@ -866,7 +866,7 @@ export default {
         openAiMenu() {
             // Ouvrir directement le composant AiMenu
             if (this.$refs.aiMenu) {
-                this.$refs.aiMenu.openMenu();
+                this.$refs.aiMenu.openWithType(humanize);
             }
         },
 

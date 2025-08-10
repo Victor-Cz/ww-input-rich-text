@@ -111,7 +111,6 @@ export default {
             aiResponse: '',
             isVisible: false,
             isFocused: false,
-            hasSelection: false,
             storedSelection: null,
             storedSelectionRange: null,
             isLoading: false,
@@ -182,18 +181,6 @@ export default {
     mounted() {
         // Écouter les clics en dehors du menu pour le masquer
         document.addEventListener('mousedown', this.onClickOutside);
-
-        // Enregistrer la sélection initiale au montage
-        const { from, to } = this.richEditor.state.selection;
-        this.hasSelection = from !== to;
-
-        // Stocker le texte sélectionné et le surligner une seule fois
-        if (this.hasSelection) {
-            this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
-            this.storedSelectionRange = { from, to };
-            console.log('AiMenu - Sélection enregistrée et surlignée:', { from, to });
-            this.richEditor.commands.highlightRange(from, to);
-        }
     },
     beforeUnmount() {
         // Nettoyer les écouteurs
@@ -204,10 +191,6 @@ export default {
         this.richEditor.commands.clearHighlight()
     },
     methods: {
-        updateVisibility() {
-            // Le menu est visible seulement si il est explicitement ouvert
-            // Ne plus dépendre de isFocused pour éviter les conflits
-        },
         toggleDropdown() {
             this.isDropdownOpen = !this.isDropdownOpen;
         },
@@ -217,13 +200,6 @@ export default {
             }
 
             this.isLoading = true;
-
-            // Utiliser directement la sélection stockée au montage
-            if (!this.storedSelectionRange || !this.storedSelection) {
-                console.warn('AiMenu - Aucune sélection stockée disponible');
-                this.isLoading = false;
-                return;
-            }
 
             const finalPrompt = this.buildFinalPrompt();
             const action = this.modificationTypes[this.selectedModificationType].action;
@@ -283,10 +259,9 @@ export default {
             this.isFocused = false;
             this.storedSelection = null;
             this.storedSelectionRange = null;
-            this.hasSelection = false;
             this.selectedModificationType = null;
             this.isDropdownOpen = false; // Fermer la dropdown
-            
+
             // Nettoyer le surlignage lors de la fermeture du menu
             this.richEditor.commands.clearHighlight();
         },
@@ -302,67 +277,21 @@ export default {
                 default: console.warn('Action non reconnue:', action); this.replaceSelection(response);
             }
         },
-        resetSelectors() {
-            this.selectedModificationType = null;
-            this.aiPrompt = '';
-        },
         openWithType(typeKey) {
             this.selectedModificationType = typeKey;
             this.isVisible = true;
             this.isFocused = true;
-            this.updateVisibility();
-        },
-        openMenu() {
-            this.isVisible = true;
-            this.isFocused = true;
-        },
-        onFocus() {
-            // Ne rien faire lors du focus pour éviter la réouverture automatique
-            // Le menu ne s'ouvre que via openMenu() ou openWithType()
-        },
-        onBlur() {
-            // Ne pas fermer automatiquement le menu lors de la perte de focus
-            // Le menu ne se fermera que via onClickOutside ou closeMenu explicite
-        },
-        getPromptPlaceholder() {
-            if (this.selectedModificationType && this.modificationTypes[this.selectedModificationType]) {
-                return this.modificationTypes[this.selectedModificationType].defaultPrompt;
+
+            // Enregistrer la sélection initiale au montage
+            const { from, to } = this.richEditor.state.selection;
+
+            // Stocker le texte sélectionné et le surligner une seule fois
+            if (from !== to) {
+                this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
+                this.storedSelectionRange = { from, to };
+                console.log('AiMenu - Sélection enregistrée et surlignée:', { from, to });
+                this.richEditor.commands.highlightRange(from, to);
             }
-            return 'Entrez votre prompt...';
-        },
-        buildFinalPrompt() {
-            if (this.selectedModificationType === 'custom') {
-                return this.aiPrompt;
-            }
-            const basePrompt = this.modificationTypes[this.selectedModificationType].defaultPrompt;
-            return this.aiPrompt ? `${basePrompt} : ${this.aiPrompt}` : basePrompt;
-        },
-        replaceSelection(text) {
-            if (this.storedSelectionRange) {
-                const { from, to } = this.storedSelectionRange;
-                this.richEditor.chain().focus().deleteRange({ from, to }).insertContent(text).run();
-            }
-        },
-        insertBeforeSelection(text) {
-            if (this.storedSelectionRange) {
-                const { from } = this.storedSelectionRange;
-                this.richEditor.chain().focus().insertContentAt(from, text).run();
-            }
-        },
-        insertAfterSelection(text) {
-            if (this.storedSelectionRange) {
-                const { to } = this.storedSelectionRange;
-                this.richEditor.chain().focus().insertContentAt(to, text).run();
-            }
-        },
-        replaceAllText(text) {
-            this.richEditor.chain().focus().setContent(text).run();
-        },
-        appendToEnd(text) {
-            this.richEditor.chain().focus().insertContentAt(this.richEditor.state.doc.content.size, text).run();
-        },
-        prependToBeginning(text) {
-            this.richEditor.chain().focus().insertContentAt(0, text).run();
         },
         selectModificationType(typeKey) {
             this.selectedModificationType = typeKey;
@@ -371,12 +300,53 @@ export default {
             this.isFocused = true;
         },
 
-        openMenu() {
-            this.isVisible = true;
-            this.isFocused = true;
+        getPromptPlaceholder() {
+            if (this.selectedModificationType && this.modificationTypes[this.selectedModificationType]) {
+                return this.modificationTypes[this.selectedModificationType].defaultPrompt;
+            }
+            return 'Entrez votre prompt...';
         },
 
+        buildFinalPrompt() {
+            if (this.selectedModificationType === 'custom') {
+                return this.aiPrompt;
+            }
+            const basePrompt = this.modificationTypes[this.selectedModificationType].defaultPrompt;
+            return this.aiPrompt ? `${basePrompt} : ${this.aiPrompt}` : basePrompt;
+        },
 
+        replaceSelection(text) {
+            if (this.storedSelectionRange) {
+                const { from, to } = this.storedSelectionRange;
+                this.richEditor.chain().focus().deleteRange({ from, to }).insertContent(text).run();
+            }
+        },
+
+        insertBeforeSelection(text) {
+            if (this.storedSelectionRange) {
+                const { from } = this.storedSelectionRange;
+                this.richEditor.chain().focus().insertContentAt(from, text).run();
+            }
+        },
+
+        insertAfterSelection(text) {
+            if (this.storedSelectionRange) {
+                const { to } = this.storedSelectionRange;
+                this.richEditor.chain().focus().insertContentAt(to, text).run();
+            }
+        },
+
+        replaceAllText(text) {
+            this.richEditor.chain().focus().setContent(text).run();
+        },
+
+        appendToEnd(text) {
+            this.richEditor.chain().focus().insertContentAt(this.richEditor.state.doc.content.size, text).run();
+        },
+
+        prependToBeginning(text) {
+            this.richEditor.chain().focus().insertContentAt(0, text).run();
+        },
 
         onClickOutside(event) {
             // Ne fermer le menu que s'il est déjà ouvert et visible
@@ -418,30 +388,6 @@ export default {
 .bubble-menu.is-focused {
     border-color: var(--primary-color);
     box-shadow: 0 4px 16px var(--primary-color-40);
-}
-
-.selected-text-display {
-    margin-bottom: 16px;
-    padding: 12px;
-    background: #f8f9fa;
-    border-radius: 6px;
-    border-left: 4px solid var(--primary-color);
-}
-
-.selected-text-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #6c757d;
-    margin-bottom: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.selected-text-content {
-    font-size: 14px;
-    color: #495057;
-    line-height: 1.4;
-    word-break: break-word;
 }
 
 .modification-type-dropdown {
