@@ -5,10 +5,11 @@
         :class="{ 'is-focused': isFocused }"
         :style="{ 
             '--primary-color': primaryColor,
-            '--primary-color-rgb': getRgbValues(primaryColor),
-            '--primary-color-hover': getDarkerColor(primaryColor, 0.8),
-            '--primary-color-active': getDarkerColor(primaryColor, 0.7),
-            '--primary-color-inactive': getDarkerColor(primaryColor, 0.3)
+            '--primary-color-40': primaryColor + '66',
+            '--primary-color-1A': primaryColor + '1A',
+            '--primary-color-hover': primaryColor + 'CC',
+            '--primary-color-active': primaryColor + '99',
+            '--primary-color-inactive': primaryColor + '4D'
         }"
     >
 
@@ -425,22 +426,6 @@ export default {
             }
             return 'Choisir un type';
         },
-        getRgbValues(hexColor) {
-            // Convertir la couleur hex en RGB
-            const hex = hexColor.replace('#', '');
-            const r = parseInt(hex.substr(0, 2), 16);
-            const g = parseInt(hex.substr(2, 2), 16);
-            const b = parseInt(hex.substr(4, 2), 16);
-            return `${r}, ${g}, ${b}`;
-        },
-        getDarkerColor(hexColor, factor) {
-            // Assombrir une couleur hex par un facteur donné
-            const hex = hexColor.replace('#', '');
-            const r = Math.max(0, Math.floor(parseInt(hex.substr(0, 2), 16) * factor));
-            const g = Math.max(0, Math.floor(parseInt(hex.substr(2, 2), 16) * factor));
-            const b = Math.max(0, Math.floor(parseInt(hex.substr(4, 2), 16) * factor));
-            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-        }
     },
 };
 </script>
@@ -460,7 +445,7 @@ export default {
 
 .bubble-menu.is-focused {
     border-color: var(--primary-color);
-    box-shadow: 0 4px 16px rgba(var(--primary-color-rgb), 0.25);
+    box-shadow: 0 4px 16px var(--primary-color-40);
 }
 
 .selected-text-display {
@@ -510,7 +495,7 @@ export default {
 
 .dropdown-header:hover {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
+    box-shadow: 0 0 0 3px var(--primary-color-1A);
 }
 
 .dropdown-header div {
@@ -557,7 +542,7 @@ export default {
 
 .dropdown-option:focus {
     background: rgb(238, 238, 238);
-    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
+    box-shadow: 0 0 0 3px var(--primary-color-1A);
 }
 
 .ai-input-container {
