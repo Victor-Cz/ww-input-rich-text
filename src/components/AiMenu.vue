@@ -690,7 +690,6 @@ export default {
     opacity: 0.6;
 }
 
-/* Ajuster la position du bouton submit */
 .ai-submit-button {
     position: static;
     margin-left: 0;
