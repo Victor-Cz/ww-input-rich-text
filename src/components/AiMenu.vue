@@ -23,7 +23,7 @@
                     <div class="modification-type-dropdown">
                         <div class="dropdown-header" @click="toggleDropdown">
                             <i class="fas fa-microphone"></i>
-                            <span>{{ selectedModificationType ? selectedModificationType.label : 'Choisir un type' }}</span>
+                            <span>{{ getSelectedTypeLabel() }}</span>
                             <i class="fas fa-chevron-down" :class="{ 'rotated': isDropdownOpen }"></i>
                         </div>
                         <div class="dropdown-options" v-show="isDropdownOpen">
@@ -37,6 +37,14 @@
                             </div>
                         </div>
                     </div>
+                    <button
+                        @click="submitPrompt"
+                        class="ai-submit-button"
+                        title="Envoyer le prompt"
+                        :disabled="!aiPrompt.trim() || !selectedModificationType"
+                    >
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
                 </div>
             </div>
 
@@ -393,14 +401,13 @@ export default {
             if (aiMenuElement && !aiMenuElement.contains(event.target)) {
                 // Fermer le menu si on clique en dehors
                 this.closeMenu();
-            } else {
-                // Si le clic est sur le rich text editor, fermer aussi le menu
-                // car l'utilisateur veut probablement continuer à éditer
-                const richTextElement = this.richEditor.view.dom;
-                if (richTextElement && richTextElement.contains(event.target)) {
-                    this.closeMenu();
-                }
             }
+        },
+        getSelectedTypeLabel() {
+            if (this.selectedModificationType && this.modificationTypes[this.selectedModificationType]) {
+                return this.modificationTypes[this.selectedModificationType].label;
+            }
+            return 'Choisir un type';
         }
     },
 };
@@ -415,8 +422,6 @@ export default {
     border: 1px solid #ddd;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    padding: 16px;
-    padding-bottom: 60px;
     min-width: 300px;
     z-index: 1000;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -452,8 +457,9 @@ export default {
 }
 
 .modification-type-dropdown {
-    position: relative;
-    margin-top: 8px;
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
     z-index: 1001;
 }
 
@@ -487,7 +493,7 @@ export default {
 
 .dropdown-options {
     position: absolute;
-    bottom: calc(100% + 4px);
+    top: calc(100% + 4px);
     left: 0;
     display: flex;
     flex-direction: column;
@@ -499,6 +505,7 @@ export default {
     z-index: 1000;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     min-width: 200px;
+    background: white;
 }
 
 .dropdown-option {
@@ -526,7 +533,6 @@ export default {
 
 .ai-input-container {
     display: flex;
-    gap: 8px;
     width: 100%;
     height: 100%;
 }
@@ -550,19 +556,14 @@ export default {
     width: 100%;
     height: 100%;
     box-sizing: border-box;
-}
-
-.ai-input:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    resize: none;
 }
 
 .ai-submit-button {
     position: absolute;
-    bottom: 16px;
-    right: 16px;
-    padding: 10px 12px;
+    bottom: 8px;
+    right: 8px;
+    padding: 8px 10px;
     background: #007bff;
     color: white;
     border: none;
@@ -572,8 +573,14 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 44px;
+    min-width: 40px;
+    height: 32px;
     z-index: 1001;
+}
+
+.ai-submit-button:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
 }
 
 .ai-submit-button:hover {
