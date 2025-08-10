@@ -164,18 +164,10 @@ export default {
     mounted() {
         // Écouter les clics en dehors du menu pour le masquer
         document.addEventListener('mousedown', this.onClickOutside);
-        
-        // Écouter le blur de l'éditeur pour nettoyer les strikes
-        this.richEditor.on('blur', this.onEditorBlur);
     },
     beforeUnmount() {
         // Nettoyer les écouteurs
         document.removeEventListener('mousedown', this.onClickOutside);
-        
-        // Nettoyer l'écouteur de l'éditeur
-        if (this.richEditor && this.richEditor.off) {
-            this.richEditor.off('blur', this.onEditorBlur);
-        }
 
         this.storedSelection = null;
         this.storedSelectionRange = null;
@@ -277,7 +269,6 @@ export default {
             this.applyResponse(this.aiResponse);
 
             // Réinitialiser et fermer le menu
-            this.resetProposal();
             this.closeMenu();
         },
         rejectProposal() {
@@ -286,7 +277,6 @@ export default {
             this.richEditor.commands.clearHighlight();
             this.richEditor.commands.clearStrike();
 
-            this.resetProposal();
             this.closeMenu();
         },
         resetProposal() {
@@ -299,6 +289,7 @@ export default {
             this.storedSelectionRange = null;
             this.selectedModificationType = null;
             this.isDropdownOpen = false; // Fermer la dropdown
+            this.aiResponse = '';
 
             // Nettoyer le surlignage, la suggestion et le Strike lors de la fermeture du menu
             this.richEditor.commands.clearHighlight();
@@ -436,10 +427,6 @@ export default {
                 // Fermer le menu si on clique en dehors
                 this.closeMenu();
             }
-        },
-
-        onEditorBlur() {
-            this.closeMenu();
         },
 
         getSelectedTypeLabel() {
