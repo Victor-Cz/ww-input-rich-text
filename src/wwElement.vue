@@ -698,7 +698,9 @@ export default {
                             char: this.editorConfig.mention.char,
                         },
                     }),
-                    SelectionHighlighter,
+                    SelectionHighlighter.configure({
+                        defaultColor: '#a0d911', // vert clair
+                    }),
                 ],
                 onCreate: () => {
                     this.setValue(this.getContent());

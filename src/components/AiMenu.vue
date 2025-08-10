@@ -205,9 +205,11 @@ export default {
             if (this.hasSelection) {
                 this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
                 this.storedSelectionRange = { from, to };
+                this.richEditor.commands.highlightRange(from, to);
             } else {
                 this.storedSelection = null;
                 this.storedSelectionRange = null;
+                this.richEditor.commands.clearHighlight();
             }
         },
         updateVisibility() {
