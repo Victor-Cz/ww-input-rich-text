@@ -22,9 +22,9 @@
                     ></textarea>
                     <div class="modification-type-dropdown">
                         <div class="dropdown-header" @click="toggleDropdown">
-                            <i class="lucide/sparkles"></i>
+                            <div class="ph ph-sparkle" aria-hidden="true"></div>
                             <span>{{ getSelectedTypeLabel() }}</span>
-                            <i class="lucide/chevron-down" :class="{ 'rotated': isDropdownOpen }"></i>
+                            <div class="ph ph-caret-down" :class="{ 'rotated': isDropdownOpen }" aria-hidden="true"></div>
                         </div>
                         <div class="dropdown-options" v-show="isDropdownOpen">
                             <div
@@ -43,7 +43,7 @@
                         title="Envoyer le prompt"
                         :disabled="!aiPrompt.trim() || !selectedModificationType"
                     >
-                        <i class="lucide/arrow-right"></i>
+                        <div class="ph ph-arrow-right" aria-hidden="true"></div>
                     </button>
                 </div>
             </div>
@@ -424,7 +424,6 @@ export default {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     min-width: 300px;
     z-index: 1000;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .bubble-menu.is-focused {
@@ -564,7 +563,7 @@ export default {
     position: absolute;
     bottom: 8px;
     right: 8px;
-    padding: 8px 10px;
+    padding: 8px 8px;
     background: #007bff;
     color: white;
     border: none;
