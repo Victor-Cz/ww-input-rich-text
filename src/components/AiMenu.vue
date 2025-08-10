@@ -3,6 +3,13 @@
         class="bubble-menu"
         v-show="isVisible"
         :class="{ 'is-focused': isFocused }"
+        :style="{ 
+            '--primary-color': primaryColor,
+            '--primary-color-rgb': getRgbValues(primaryColor),
+            '--primary-color-hover': getDarkerColor(primaryColor, 0.8),
+            '--primary-color-active': getDarkerColor(primaryColor, 0.7),
+            '--primary-color-inactive': getDarkerColor(primaryColor, 0.3)
+        }"
     >
 
 
@@ -102,6 +109,15 @@ export default {
         isReadOnly: {
             type: Boolean,
             default: true,
+        },
+        parameterAiMenuPrimaryColor: {
+            type: String,
+            default: '#007bff',
+        },
+    },
+    computed: {
+        primaryColor() {
+            return this.parameterAiMenuPrimaryColor || '#007bff';
         },
     },
     data() {
@@ -408,6 +424,22 @@ export default {
                 return this.modificationTypes[this.selectedModificationType].label;
             }
             return 'Choisir un type';
+        },
+        getRgbValues(hexColor) {
+            // Convertir la couleur hex en RGB
+            const hex = hexColor.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            return `${r}, ${g}, ${b}`;
+        },
+        getDarkerColor(hexColor, factor) {
+            // Assombrir une couleur hex par un facteur donné
+            const hex = hexColor.replace('#', '');
+            const r = Math.max(0, Math.floor(parseInt(hex.substr(0, 2), 16) * factor));
+            const g = Math.max(0, Math.floor(parseInt(hex.substr(2, 2), 16) * factor));
+            const b = Math.max(0, Math.floor(parseInt(hex.substr(4, 2), 16) * factor));
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
         }
     },
 };
@@ -419,7 +451,7 @@ export default {
     margin-top: 16px;
     margin-bottom: 32px;
     background: white;
-    border: 1px solid #007bff;
+    border: 1px solid var(--primary-color);
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     min-width: 300px;
@@ -427,8 +459,8 @@ export default {
 }
 
 .bubble-menu.is-focused {
-    border-color: #007bff;
-    box-shadow: 0 4px 16px rgba(0, 123, 255, 0.25);
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 16px rgba(var(--primary-color-rgb), 0.25);
 }
 
 .selected-text-display {
@@ -436,7 +468,7 @@ export default {
     padding: 12px;
     background: #f8f9fa;
     border-radius: 6px;
-    border-left: 4px solid #007bff;
+    border-left: 4px solid var(--primary-color);
 }
 
 .selected-text-label {
@@ -478,8 +510,8 @@ export default {
 }
 
 .dropdown-header:hover {
-    border-color: #007bff;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
 }
 
 .dropdown-header div {
@@ -526,7 +558,7 @@ export default {
 
 .dropdown-option:focus {
     background: rgb(238, 238, 238);
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
 }
 
 .ai-input-container {
@@ -564,7 +596,7 @@ export default {
     bottom: 8px;
     right: 8px;
     padding: 8px 8px;
-    background: #007bff;
+    background: var(--primary-color);
     color: white;
     border: none;
     border-radius: 9px;
@@ -579,16 +611,16 @@ export default {
 }
 
 .ai-submit-button:disabled {
-    background: #6c757d;
+    background: var(--primary-color-inactive);
     cursor: not-allowed;
 }
 
 .ai-submit-button:hover {
-    background: #0056b3;
+    background: var(--primary-color-hover);
 }
 
 .ai-submit-button:active {
-    background: #004085;
+    background: var(--primary-color-active);
 }
 
 /* Styles pour la proposition AI */
@@ -689,7 +721,7 @@ export default {
     width: 24px;
     height: 24px;
     border: 3px solid #e5e7eb;
-    border-top: 3px solid #007bff;
+    border-top: 3px solid var(--primary-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
