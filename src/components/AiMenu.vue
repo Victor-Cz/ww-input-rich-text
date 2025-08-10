@@ -1,9 +1,5 @@
 <template>
     <div class="bubble-menu" v-show="isVisible" :class="{ 'is-focused': isFocused }">
-
-
-
-
         <!-- Input pour les prompts AI -->
         <div class="ai-input-container" v-if="!isLoading">
             <div class="ai-input-wrapper">
@@ -465,7 +461,7 @@ export default {
 <style scoped>
 .bubble-menu {
     position: relative;
-    margin-top: 16px;
+    margin-top: 8px;
     margin-bottom: 32px;
     background: white;
     border: 1px solid var(--primary-color);
