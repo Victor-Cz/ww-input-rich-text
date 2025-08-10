@@ -191,6 +191,7 @@
                 ref="aiMenu" 
                 :rich-editor="richEditor" 
                 :is-read-only="content.parameterAiMenuReadOnly ?? true"
+                :parameter-ai-menu-primary-color="content.parameterAiMenuPrimaryColor ?? '#007bff'"
                 v-if="richEditor" 
             />
         </template>
