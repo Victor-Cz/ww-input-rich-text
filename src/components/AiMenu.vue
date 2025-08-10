@@ -201,7 +201,7 @@ export default {
         },
         updateVisibility() {
             // Le menu est visible seulement si il est explicitement ouvert
-            this.isVisible = this.isFocused;
+            // Ne plus dépendre de isFocused pour éviter les conflits
         },
         toggleDropdown() {
             this.isDropdownOpen = !this.isDropdownOpen;
@@ -296,12 +296,13 @@ export default {
             this.updateVisibility();
         },
         onFocus() {
-            this.isFocused = true;
-            this.updateVisibility();
+            // Ne pas rouvrir le menu automatiquement via focus
+            if (this.isVisible) {
+                this.isFocused = true;
+            }
         },
         onBlur() {
             this.isFocused = false;
-            this.updateVisibility();
         },
         getPromptPlaceholder() {
             if (this.selectedModificationType && this.modificationTypes[this.selectedModificationType]) {
@@ -378,6 +379,7 @@ export default {
 .bubble-menu {
     position: relative;
     margin-top: 16px;
+    margin-bottom: 32px;
     background: white;
     border: 1px solid #ddd;
     border-radius: 8px;
