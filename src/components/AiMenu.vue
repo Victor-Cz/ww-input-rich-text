@@ -10,12 +10,40 @@
             <div class="selected-text-content">{{ storedSelection }}</div>
         </div>
         
+        <!-- Sélecteur de type de modification -->
+        <div class="modification-type-selector" v-if="!isLoading">
+            <label class="type-label">Type de modification :</label>
+            <select v-model="selectedModificationType" class="type-select">
+                <option value="modify">Modifier</option>
+                <option value="humanize">Humaniser</option>
+                <option value="extend">Rallonger</option>
+                <option value="shorten">Raccourcir</option>
+                <option value="formalize">Formaliser</option>
+                <option value="simplify">Simplifier</option>
+                <option value="translate">Traduire</option>
+                <option value="custom">Personnalisé</option>
+            </select>
+        </div>
+
+        <!-- Sélecteur d'action pour le type choisi -->
+        <div class="action-selector" v-if="!isLoading && selectedModificationType">
+            <label class="action-label">Action :</label>
+            <select v-model="selectedAction" class="action-select">
+                <option value="replace">Remplacer la sélection</option>
+                <option value="insert-before">Insérer avant</option>
+                <option value="insert-after">Insérer après</option>
+                <option value="replace-all">Remplacer tout le texte</option>
+                <option value="append">Ajouter à la fin</option>
+                <option value="prepend">Ajouter au début</option>
+            </select>
+        </div>
+
         <!-- Input pour les prompts AI -->
-        <div class="ai-input-container" v-if="!isLoading">
+        <div class="ai-input-container" v-if="!isLoading && selectedModificationType && selectedAction">
             <input
                 v-model="aiPrompt"
                 type="text"
-                placeholder="Entrez votre prompt AI..."
+                :placeholder="getPromptPlaceholder()"
                 class="ai-input"
                 @keyup.enter="submitPrompt"
                 @focus="onFocus"
@@ -56,6 +84,51 @@ export default {
             storedSelection: null,
             storedSelectionRange: null, // Store selection coordinates
             isLoading: false,
+            selectedModificationType: null,
+            selectedAction: null,
+            // Configuration des types de modifications
+            modificationTypes: {
+                modify: {
+                    label: 'Modifier',
+                    description: 'Améliorer ou corriger le texte sélectionné',
+                    defaultPrompt: 'Améliore ce texte en gardant le même sens'
+                },
+                humanize: {
+                    label: 'Humaniser',
+                    description: 'Rendre le texte plus naturel et humain',
+                    defaultPrompt: 'Rends ce texte plus naturel et humain'
+                },
+                extend: {
+                    label: 'Rallonger',
+                    description: 'Développer et enrichir le contenu',
+                    defaultPrompt: 'Développe et enrichis ce texte'
+                },
+                shorten: {
+                    label: 'Raccourcir',
+                    description: 'Condenser le texte en gardant l\'essentiel',
+                    defaultPrompt: 'Condense ce texte en gardant l\'essentiel'
+                },
+                formalize: {
+                    label: 'Formaliser',
+                    description: 'Rendre le texte plus formel et professionnel',
+                    defaultPrompt: 'Rends ce texte plus formel et professionnel'
+                },
+                simplify: {
+                    label: 'Simplifier',
+                    description: 'Simplifier le langage et la structure',
+                    defaultPrompt: 'Simplifie ce texte pour le rendre plus accessible'
+                },
+                translate: {
+                    label: 'Traduire',
+                    description: 'Traduire dans une autre langue',
+                    defaultPrompt: 'Traduis ce texte en français'
+                },
+                custom: {
+                    label: 'Personnalisé',
+                    description: 'Prompt personnalisé',
+                    defaultPrompt: ''
+                }
+            }
         };
     },
     mounted() {
@@ -127,7 +200,7 @@ export default {
         },
         
         submitPrompt() {
-            if (this.aiPrompt.trim()) {
+            if (this.aiPrompt.trim() && this.selectedModificationType && this.selectedAction) {
                 // Activer l'état de chargement
                 this.isLoading = true;
                 
@@ -137,9 +210,14 @@ export default {
                     this.storedSelectionRange = { from, to };
                 }
                 
+                // Construire le prompt final avec le type de modification
+                const finalPrompt = this.buildFinalPrompt();
+                
                 // Log pour debug
                 console.log('AI Prompt submitted:', {
-                    prompt: this.aiPrompt.trim(),
+                    prompt: finalPrompt,
+                    modificationType: this.selectedModificationType,
+                    action: this.selectedAction,
                     selectedText: this.storedSelection,
                     selectionRange: this.storedSelectionRange,
                     timestamp: new Date().toISOString()
@@ -147,7 +225,9 @@ export default {
                 
                 // Déclencher l'événement WeWeb pour le prompt AI
                 this.$wwTriggerEvent('ai-prompt', {
-                    prompt: this.aiPrompt.trim(),
+                    prompt: finalPrompt,
+                    modificationType: this.selectedModificationType,
+                    action: this.selectedAction,
                     selectedText: this.storedSelection,
                     timestamp: new Date().toISOString()
                 });
@@ -157,35 +237,157 @@ export default {
             }
         },
 
+        // Construire le prompt final en combinant le type et le prompt utilisateur
+        buildFinalPrompt() {
+            const typeConfig = this.modificationTypes[this.selectedModificationType];
+            const userPrompt = this.aiPrompt.trim();
+            
+            if (this.selectedModificationType === 'custom') {
+                return userPrompt;
+            }
+            
+            // Combiner le prompt par défaut avec le prompt utilisateur
+            if (userPrompt) {
+                return `${typeConfig.defaultPrompt}. ${userPrompt}`;
+            }
+            
+            return typeConfig.defaultPrompt;
+        },
+
         // Méthode appelée par l'action WeWeb setResponse
         setResponse(response) {
             this.isLoading = false;
             
-            // Remplacer le texte sélectionné par la réponse AI
-            if (this.storedSelectionRange && response) {
+            if (!response) {
+                console.log('AI Response received but no content to apply');
+                return;
+            }
+            
+            // Appliquer la réponse selon l'action sélectionnée
+            this.applyResponse(response);
+            
+            // Nettoyer la sélection stockée
+            this.storedSelection = null;
+            this.storedSelectionRange = null;
+            this.hasSelection = false;
+            
+            // Mettre à jour la visibilité
+            this.updateVisibility();
+            
+            // Réinitialiser les sélecteurs
+            this.resetSelectors();
+
+            console.log('AI Response applied to editor:', response);
+        },
+
+        // Appliquer la réponse selon l'action sélectionnée
+        applyResponse(response) {
+            const action = this.selectedAction;
+            
+            switch (action) {
+                case 'replace':
+                    this.replaceSelection(response);
+                    break;
+                case 'insert-before':
+                    this.insertBeforeSelection(response);
+                    break;
+                case 'insert-after':
+                    this.insertAfterSelection(response);
+                    break;
+                case 'replace-all':
+                    this.replaceAllText(response);
+                    break;
+                case 'append':
+                    this.appendToEnd(response);
+                    break;
+                case 'prepend':
+                    this.prependToBeginning(response);
+                    break;
+                default:
+                    console.warn('Action non reconnue:', action);
+                    this.replaceSelection(response); // Fallback
+            }
+        },
+
+        // Remplacer la sélection
+        replaceSelection(response) {
+            if (this.storedSelectionRange) {
                 const { from, to } = this.storedSelectionRange;
-                
-                // Remplacer le texte sélectionné par la réponse
                 this.richEditor.chain()
                     .focus()
                     .setTextSelection({ from, to })
                     .deleteSelection()
                     .insertContent(response)
                     .run();
-                
-                // Nettoyer la sélection stockée
-                this.storedSelection = null;
-                this.storedSelectionRange = null;
-                this.hasSelection = false;
-                
-                // Mettre à jour la visibilité
-                this.updateVisibility();
-                
-                console.log('AI Response applied to editor:', response);
-            } else {
-                console.log('AI Response received but no selection to replace:', response);
             }
         },
+
+        // Insérer avant la sélection
+        insertBeforeSelection(response) {
+            if (this.storedSelectionRange) {
+                const { from } = this.storedSelectionRange;
+                this.richEditor.chain()
+                    .focus()
+                    .setTextSelection(from)
+                    .insertContent(response + ' ')
+                    .run();
+            }
+        },
+
+        // Insérer après la sélection
+        insertAfterSelection(response) {
+            if (this.storedSelectionRange) {
+                const { to } = this.storedSelectionRange;
+                this.richEditor.chain()
+                    .focus()
+                    .setTextSelection(to)
+                    .insertContent(' ' + response)
+                    .run();
+            }
+        },
+
+        // Remplacer tout le texte
+        replaceAllText(response) {
+            this.richEditor.chain()
+                .focus()
+                .selectAll()
+                .deleteSelection()
+                .insertContent(response)
+                .run();
+        },
+
+        // Ajouter à la fin
+        appendToEnd(response) {
+            const docSize = this.richEditor.state.doc.content.size;
+            this.richEditor.chain()
+                .focus()
+                .setTextSelection(docSize)
+                .insertContent('\n' + response)
+                .run();
+        },
+
+        // Ajouter au début
+        prependToBeginning(response) {
+            this.richEditor.chain()
+                .focus()
+                .setTextSelection(0)
+                .insertContent(response + '\n')
+                .run();
+        },
+
+        // Réinitialiser les sélecteurs
+        resetSelectors() {
+            this.selectedModificationType = null;
+            this.selectedAction = null;
+            this.aiPrompt = '';
+        },
+
+        getPromptPlaceholder() {
+            if (this.selectedModificationType === 'custom') {
+                return 'Entrez votre prompt personnalisé...';
+            }
+            return `Entrez votre prompt pour ${this.selectedModificationType}...`;
+        }
     },
 };
 </script>
@@ -198,10 +400,11 @@ export default {
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    padding: 8px;
+    padding: 12px;
     gap: 8px;
     z-index: 1000;
-    min-width: 280px;
+    min-width: 320px;
+    max-width: 400px;
     transition: opacity 0.2s ease, visibility 0.2s ease;
     
     &:not(.is-focused) {
@@ -256,6 +459,52 @@ export default {
         ::-moz-selection {
             background-color: rgba(59, 130, 246, 0.3) !important;
         }
+    }
+}
+
+.modification-type-selector,
+.action-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.type-label,
+.action-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 2px;
+}
+
+.type-select,
+.action-select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s ease;
+    background: white;
+    color: #374151;
+    
+    &:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        transform: translateY(-1px);
+    }
+    
+    &:hover {
+        border-color: #9ca3af;
+    }
+    
+    option {
+        padding: 8px;
+        font-size: 13px;
     }
 }
 

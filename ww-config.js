@@ -98,7 +98,7 @@ export default {
         { name: 'mention:click', label: { en: 'On mention click' }, event: { mention: { id: '', label: '' } } },
         { name: 'focus', label: { en: 'On focus' }, event: { value: '' } },
         { name: 'blur', label: { en: 'On blur' }, event: { value: '' } },
-        { name: 'ai-prompt', label: { en: 'On AI prompt', fr: 'Sur prompt IA' }, event: { prompt: '', selectedText: '', timestamp: '' } },
+        { name: 'ai-prompt', label: { en: 'On AI prompt', fr: 'Sur prompt IA' }, event: { prompt: '', modificationType: '', action: '', selectedText: '', timestamp: '' } },
     ],
     actions: [
         { label: 'Focus Rich text', action: 'focusEditor' },
