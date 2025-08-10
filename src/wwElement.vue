@@ -176,36 +176,11 @@
                 <span class="separator" v-if="menu.undo || menu.redo"></span>
 
                 <!-- AI Menu Button -->
-                <div class="ai-menu-dropdown" v-if="menu.aiMenu">
-                    <button type="button" class="ww-rich-text__menu-item ai-menu-trigger" 
-                        @click="toggleAiMenu" :disabled="!isEditable">
-                        <i class="fas fa-magic"></i>
-                    </button>
-                    <!-- Debug info -->
-                    <div style="font-size: 10px; color: red;">Debug: menu.aiMenu={{ menu.aiMenu }}, isAiMenuOpen={{ isAiMenuOpen }}</div>
-                    
-                    <!-- AI Menu Dropdown -->
-                    <div class="ai-menu-dropdown-content" v-show="isAiMenuOpen">
-                        <!-- Debug info -->
-                        <div style="background: red; color: white; padding: 5px; font-size: 12px;">
-                            Dropdown is visible! isAiMenuOpen: {{ isAiMenuOpen }}
-                        </div>
-                        <div class="ai-menu-header">
-                            <span>Types de modification</span>
-                        </div>
-                        <div class="ai-menu-options">
-                            <button 
-                                v-for="(type, key) in aiModificationTypes" 
-                                :key="key"
-                                class="ai-menu-option"
-                                @click="selectAiModificationType(key)"
-                            >
-                                <div class="ai-menu-option-label">{{ type.label }}</div>
-                                <div class="ai-menu-option-description">{{ type.description }}</div>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <button type="button" class="ww-rich-text__menu-item" 
+                    @click="openAiMenu" :disabled="!isEditable"
+                    v-if="menu.aiMenu">
+                    <i class="fas fa-magic"></i>
+                </button>
             </div>
             <wwElement class="ww-rich-text__menu" v-else-if="content.customMenu" v-bind="content.customMenuElement" />
 
@@ -341,66 +316,6 @@ export default {
     data: () => ({
         richEditor: null,
         loading: false,
-        isAiMenuOpen: false,
-        selectedAiType: null,
-        aiModificationTypes: {
-            modify: {
-                label: 'Modifier',
-                description: 'Améliorer ou corriger le texte sélectionné',
-                defaultPrompt: 'Améliore ce texte en gardant le même sens',
-                action: 'replace',
-                needsInput: true
-            },
-            humanize: {
-                label: 'Humaniser',
-                description: 'Rendre le texte plus naturel et humain',
-                defaultPrompt: 'Rends ce texte plus naturel et humain',
-                action: 'replace',
-                needsInput: true
-            },
-            extend: {
-                label: 'Rallonger',
-                description: 'Développer et enrichir le contenu',
-                defaultPrompt: 'Développe et enrichis ce texte',
-                action: 'replace',
-                needsInput: true
-            },
-            shorten: {
-                label: 'Raccourcir',
-                description: 'Condenser le texte en gardant l\'essentiel',
-                defaultPrompt: 'Condense ce texte en gardant l\'essentiel',
-                action: 'replace',
-                needsInput: true
-            },
-            formalize: {
-                label: 'Formaliser',
-                description: 'Rendre le texte plus formel et professionnel',
-                defaultPrompt: 'Rends ce texte plus formel et professionnel',
-                action: 'replace',
-                needsInput: true
-            },
-            simplify: {
-                label: 'Simplifier',
-                description: 'Simplifier le langage et la structure',
-                defaultPrompt: 'Simplifie ce texte pour le rendre plus accessible',
-                action: 'replace',
-                needsInput: true
-            },
-            translate: {
-                label: 'Traduire',
-                description: 'Traduire dans une autre langue',
-                defaultPrompt: 'Traduis ce texte en français',
-                action: 'replace',
-                needsInput: true
-            },
-            custom: {
-                label: 'Personnalisé',
-                description: 'Prompt personnalisé',
-                defaultPrompt: '',
-                action: 'replace',
-                needsInput: true
-            }
-        }
     }),
 
     watch: {
@@ -531,12 +446,14 @@ export default {
             return this.content.mentionListLength;
         },
         isReadonly() {
-            return this.wwElementState.props.readonly === undefined
+            const result = this.wwElementState.props.readonly === undefined
                 ? this.content.readonly
                 : this.wwElementState.props.readonly;
+            return result;
         },
         isEditable() {
-            return !this.isReadonly && this.content.editable;
+            const result = !this.isReadonly && this.content.editable;
+            return result;
         },
         hideMenu() {
             return this.content.hideMenu || this.isReadonly;
@@ -951,14 +868,10 @@ export default {
         
         // AI Menu actions
         openAiMenu() {
-            // Déclencher l'événement pour ouvrir le menu AI
-            this.$emit('trigger-event', { 
-                name: 'ai-menu-opened', 
-                event: { 
-                    timestamp: new Date().toISOString(),
-                    source: 'action'
-                } 
-            });
+            // Ouvrir directement le composant AiMenu
+            if (this.$refs.aiMenu) {
+                this.$refs.aiMenu.openMenu();
+            }
         },
         
         setResponse(response) {
@@ -968,57 +881,7 @@ export default {
             }
         },
 
-        // AI Menu Dropdown methods
-        toggleAiMenu() {
-            console.log('toggleAiMenu called, current state:', this.isAiMenuOpen);
-            this.isAiMenuOpen = !this.isAiMenuOpen;
-            console.log('toggleAiMenu new state:', this.isAiMenuOpen);
-        },
 
-        selectAiModificationType(typeKey) {
-            const type = this.aiModificationTypes[typeKey];
-            this.selectedAiType = typeKey;
-            
-            if (type.needsInput) {
-                // Ouvrir le composant AiMenu avec le type sélectionné
-                this.openAiMenuWithType(typeKey);
-            } else {
-                // Lancer directement l'action sans input
-                this.launchAiAction(typeKey);
-            }
-            
-            // Fermer le dropdown
-            this.isAiMenuOpen = false;
-        },
-
-        openAiMenuWithType(typeKey) {
-            // Ouvrir le composant AiMenu avec le type pré-sélectionné
-            if (this.$refs.aiMenu) {
-                this.$refs.aiMenu.openWithType(typeKey);
-            }
-        },
-
-        launchAiAction(typeKey) {
-            const type = this.aiModificationTypes[typeKey];
-            const finalPrompt = type.defaultPrompt;
-            
-            // Déclencher directement l'événement AI
-            this.$wwTriggerEvent('ai-prompt', {
-                prompt: finalPrompt,
-                modificationType: typeKey,
-                action: type.action,
-                selectedText: this.getSelectedText(),
-                timestamp: new Date().toISOString()
-            });
-        },
-
-        getSelectedText() {
-            const { from, to } = this.richEditor.state.selection;
-            if (from !== to) {
-                return this.richEditor.state.doc.textBetween(from, to);
-            }
-            return '';
-        },
     },
     mounted() {
         this.loadEditor();
@@ -1410,77 +1273,6 @@ export default {
         }
     }
 
-    // Styles pour le menu dropdown AI
-    .ai-menu-dropdown {
-        position: relative;
-        display: inline-block;
-    }
 
-    .ai-menu-dropdown-content {
-        position: absolute;
-        top: 100%;
-        right: 0;
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        min-width: 280px;
-        z-index: 1000;
-        margin-top: 4px;
-        /* Debug styles */
-        border: 2px solid red !important;
-        background: yellow !important;
-    }
-
-    .ai-menu-header {
-        padding: 12px 16px;
-        border-bottom: 1px solid #e2e8f0;
-        background: #f8fafc;
-        border-radius: 8px 8px 0 0;
-    }
-
-    .ai-menu-header span {
-        font-size: 12px;
-        font-weight: 600;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .ai-menu-options {
-        padding: 8px 0;
-    }
-
-    .ai-menu-option {
-        width: 100%;
-        padding: 12px 16px;
-        border: none;
-        background: transparent;
-        text-align: left;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-        border-radius: 0;
-
-        &:hover {
-            background-color: #f1f5f9;
-        }
-
-        &:last-child {
-            border-radius: 0 0 8px 8px;
-        }
-    }
-
-    .ai-menu-option-label {
-        font-size: 14px;
-        font-weight: 500;
-        color: #374151;
-        margin-bottom: 4px;
-    }
-
-    .ai-menu-option-description {
-        font-size: 12px;
-        color: #6b7280;
-        line-height: 1.4;
-    }
 }
 </style>

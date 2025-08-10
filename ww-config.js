@@ -87,6 +87,7 @@ export default {
                 'parameterUndo',
                 'parameterRedo',
             ],
+            'aiMenuSection',
             [
                 'parameterAiMenu',
                 'parameterAiMenuReadOnly',
@@ -1584,6 +1585,17 @@ export default {
                 ],
             },
             defaultValue: true,
+        },
+        aiMenuSection: {
+            section: 'settings',
+            hidden: content => content.customMenu,
+            type: 'InfoBox',
+            options: {
+                variant: 'info',
+                icon: 'magic',
+                title: 'AI Menu',
+                content: 'Configure the AI menu functionality for text modification.',
+            },
         },
         parameterAiMenu: {
             section: 'settings',

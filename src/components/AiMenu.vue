@@ -11,18 +11,20 @@
         </div>
 
         <!-- Sélecteur de type de modification -->
-        <div class="modification-type-selector" v-if="!isLoading && !isProposal">
-            <label class="type-label">Type de modification :</label>
-            <select v-model="selectedModificationType" class="type-select">
-                <option value="modify">Modifier</option>
-                <option value="humanize">Humaniser</option>
-                <option value="extend">Rallonger</option>
-                <option value="shorten">Raccourcir</option>
-                <option value="formalize">Formaliser</option>
-                <option value="simplify">Simplifier</option>
-                <option value="translate">Traduire</option>
-                <option value="custom">Personnalisé</option>
-            </select>
+        <div class="modification-type-dropdown" v-if="!isLoading && !isProposal">
+            <div class="dropdown-header">
+                <span>Types de modification</span>
+            </div>
+            <div class="dropdown-options">
+                <button 
+                    v-for="(type, key) in modificationTypes" 
+                    :key="key"
+                    class="dropdown-option"
+                    @click="selectModificationType(key)"
+                >
+                    {{ type.label }}
+                </button>
+            </div>
         </div>
 
         <!-- Input pour les prompts AI -->
@@ -334,6 +336,18 @@ export default {
         },
         prependToBeginning(text) {
             this.richEditor.chain().focus().insertContentAt(0, text).run();
+        },
+        selectModificationType(typeKey) {
+            this.selectedModificationType = typeKey;
+            this.isVisible = true;
+            this.isFocused = true;
+            this.updateVisibility();
+        },
+        
+        openMenu() {
+            this.isVisible = true;
+            this.isFocused = true;
+            this.updateVisibility();
         }
     },
 };
@@ -381,12 +395,11 @@ export default {
     word-break: break-word;
 }
 
-.modification-type-selector {
+.modification-type-dropdown {
     margin-bottom: 16px;
 }
 
-.type-label {
-    display: block;
+.dropdown-header {
     font-size: 12px;
     font-weight: 600;
     color: #6c757d;
@@ -395,18 +408,30 @@ export default {
     letter-spacing: 0.5px;
 }
 
-.type-select {
-    width: 100%;
+.dropdown-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dropdown-option {
     padding: 10px 12px;
     border: 1px solid #dee2e6;
     border-radius: 6px;
     font-size: 14px;
     color: #495057;
     background: white;
+    text-align: left;
+    cursor: pointer;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.type-select:focus {
+.dropdown-option:hover {
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.dropdown-option:focus {
     outline: none;
     border-color: #007bff;
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
