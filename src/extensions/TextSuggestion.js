@@ -9,29 +9,46 @@ export const TextSuggestion = Extension.create({
 
   addOptions() {
     return {
-      // Texte de la suggestion à afficher
       suggestionText: 'Suggestion',
-      // Position dans le document où afficher la suggestion (index)
       position: 1,
-      // Style CSS optionnel
       className: 'suggestion-label',
     }
   },
 
   addProseMirrorPlugins() {
+    const options = this.options
+
+    // Fonction qui crée le widget DOM avec les options capturées
+    function createWidget() {
+      const span = document.createElement('span')
+      span.className = options.className
+      span.style.cssText = `
+        background: #eef;
+        color: #336;
+        border-radius: 3px;
+        padding: 2px 6px;
+        font-size: 0.85em;
+        user-select: none;
+        pointer-events: none;
+        margin-left: 4px;
+      `
+      span.textContent = options.suggestionText
+      return span
+    }
+
     return [
       new Plugin({
         key: textSuggestionKey,
 
         state: {
-          init() {
-            return DecorationSet.create(this.doc, [
-              Decoration.widget(this.options.position, this.createWidget.bind(this)),
+          init(config, instance) {
+            // 'instance.doc' est le document initial
+            return DecorationSet.create(instance.doc, [
+              Decoration.widget(options.position, createWidget),
             ])
           },
 
           apply(tr, old) {
-            // Met à jour la décoration si document modifié
             return old.map(tr.mapping, tr.doc)
           },
         },
@@ -40,23 +57,6 @@ export const TextSuggestion = Extension.create({
           decorations(state) {
             return textSuggestionKey.getState(state)
           },
-        },
-
-        createWidget() {
-          const span = document.createElement('span')
-          span.className = this.options.className
-          span.style.cssText = `
-            background: #eef;
-            color: #336;
-            border-radius: 3px;
-            padding: 2px 6px;
-            font-size: 0.85em;
-            user-select: none;
-            pointer-events: none;
-            margin-left: 4px;
-          `
-          span.textContent = this.options.suggestionText
-          return span
         },
       }),
     ]
