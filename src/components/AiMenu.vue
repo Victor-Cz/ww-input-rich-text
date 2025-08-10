@@ -230,7 +230,7 @@ export default {
             if (action === 'replace' && this.storedSelectionRange) {
                 this.richEditor.commands.setStrikeRanges([{ from: this.storedSelectionRange.from, to: this.storedSelectionRange.to }]);
             } else if (action === 'replace-all') {
-                this.richEditor.commands.setStrikeRanges([{ from: 0, to: this.richEditor.state.doc.content.size }]);
+                this.richEditor.commands.setStrikeRanges([{ from: 0, to: this.getDocumentEnd() }]);
             }
 
             // Stocker la réponse pour validation ultérieure
@@ -250,17 +250,17 @@ export default {
                 // Pour l'insertion après, placer après la sélection
                 return this.storedSelectionRange.to;
             } else if (action === 'replace-all') {
-                // Pour le remplacement global, placer à la fin
-                return this.richEditor.state.doc.content.size;
+                // Pour le remplacement global, placer à la fin du texte (même ligne)
+                return this.getDocumentEnd();
             } else if (action === 'append') {
                 // Pour l'ajout, placer à la fin
-                return this.richEditor.state.doc.content.size;
+                return this.getDocumentEnd();
             } else if (action === 'prepend') {
                 // Pour l'ajout au début, placer au début
                 return 0;
             } else {
                 // Par défaut, placer après la sélection ou à la fin
-                return this.storedSelectionRange?.to || this.richEditor.state.doc.content.size;
+                return this.storedSelectionRange?.to || this.getDocumentEnd();
             }
         },
 
@@ -380,7 +380,7 @@ export default {
         },
 
         appendToEnd(text) {
-            const docSize = this.richEditor.state.doc.content.size;
+            const docSize = this.getDocumentEnd();
             this.richEditor.chain().focus().insertContentAt(docSize, text).run();
         },
 
@@ -417,6 +417,21 @@ export default {
 
         isPunctuation(char) {
             return /[.,;:!?()[\]{}"'`]/.test(char);
+        },
+
+        // Méthode utilitaire pour obtenir la fin du document (fin du texte, pas fin absolue)
+        getDocumentEnd() {
+            const doc = this.richEditor.state.doc;
+            const lastPos = doc.content.size;
+            // Chercher la dernière position de texte (pas d'éléments de bloc)
+            let textEnd = lastPos;
+            for (let i = lastPos - 1; i >= 0; i--) {
+                if (doc.textBetween(i, i + 1) !== '') {
+                    textEnd = i + 1;
+                    break;
+                }
+            }
+            return textEnd;
         },
 
         onClickOutside(event) {
