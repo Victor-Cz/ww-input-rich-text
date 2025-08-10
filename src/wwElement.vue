@@ -181,7 +181,7 @@
                     <i class="fas fa-magic"></i>
                 </button>
             </div>
-            <wwElement class="ww-rich-text__menu" v-else-if="content.customMenu" v-bind="content.customMenuElement" />
+            <div class="ww-rich-text__menu" v-else-if="content.customMenu" v-html="content.customMenuElement?.html || ''" v-bind="content.customMenuElement?.props || {}" />
 
             <editor-content class="ww-rich-text__input" :editor="richEditor" :style="richStyles" />
 
@@ -278,7 +278,7 @@ export default {
         });
 
         /* wwEditor:start */
-        const { createElement } = wwLib.wwElement.useCreate();
+        // createElement is no longer needed as we're using HTML directly
         /* wwEditor:end */
 
         const randomUid = wwLib.wwUtils.getUid();
@@ -304,7 +304,7 @@ export default {
             setStates,
             randomUid,
             /* wwEditor:start */
-            createElement,
+            // createElement is no longer needed
             /* wwEditor:end */
         };
     },
@@ -346,18 +346,15 @@ export default {
         'content.customMenu': {
             async handler(value) {
                 if (value && !this.content.customMenuElement) {
-                    const element = await this.createElement('ww-flexbox', {
-                        _state: {
-                            name: 'Custom menu container',
-                            style: {
-                                default: {
-                                    width: '100%',
-                                },
-                            },
-                        },
-                    });
+                    // Create a simple HTML structure instead of using the deprecated createElement
+                    const customElement = {
+                        html: '<div class="custom-menu-container" style="width: 100%; display: flex; gap: 8px; align-items: center; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9;"><span>Custom menu container</span></div>',
+                        props: {
+                            class: 'custom-menu-wrapper'
+                        }
+                    };
                     this.$emit('update:content:effect', {
-                        customMenuElement: element,
+                        customMenuElement: customElement,
                     });
                 }
             },
