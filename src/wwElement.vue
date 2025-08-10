@@ -8,8 +8,7 @@
         '--primary-color-active': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '99', // 60%
         '--primary-color-hover': (content.parameterAiMenuPrimaryColor ?? '#007bff') + 'CC', // 80%
     }">
-        <div class="ww-rich-text" :class="{ '-readonly': isReadonly, editing: isEditing }" data-capture>
-            <template v-if="richEditor">
+        <template v-if="richEditor">
                 <div class="ww-rich-text__menu native-menu" v-if="!hideMenu && !content.customMenu" :style="menuStyles">
                     <!-- Texte type (normal, ...) -->
                     <select id="rich-size" v-model="currentTextType" :disabled="!isEditable" v-if="menu.textType">
@@ -259,6 +258,7 @@ export default {
     components: {
         EditorContent,
         TableIcon,
+        AiMenu,
     },
     props: {
         content: { type: Object, required: true },
@@ -828,9 +828,6 @@ export default {
         },
         toggleItalic() {
             this.richEditor.chain().focus().toggleItalic().run();
-        },
-        toggleUnderline() {
-            this.richEditor.chain().focus().toggleUnderline().run();
         },
         toggleStrike() {
             this.richEditor.chain().focus().toggleStrike().run();
