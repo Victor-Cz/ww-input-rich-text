@@ -692,8 +692,6 @@ export default {
                     }),
                     Markdown.configure({ 
                         breaks: true,
-                        transformPastedText: true,
-                        transformCopiedText: true
                     }),
                     Image.configure({ ...this.editorConfig.image }),
 
@@ -1021,6 +1019,11 @@ export default {
         text-align: var(--p-textAlign);
         color: var(--p-color);
         line-height: var(--p-lineHeight);
+
+        /* Hide empty paragraphs with trailing breaks */
+        p:has(br.ProseMirror-trailingBreak) {
+            display: none !important;
+        }
 
         &-focused {
             outline: unset;
