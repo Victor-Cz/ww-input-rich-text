@@ -38,6 +38,11 @@
                         <div class="icon-arrow-sm-right" aria-hidden="true"></div>
                     </button>
                 </div>
+                
+                <!-- Debug temporaire -->
+                <div style="position: absolute; top: -25px; left: 0; font-size: 11px; color: #999; background: #f0f0f0; padding: 2px 6px; border-radius: 4px;">
+                    aiResponse: "{{ aiResponse }}" ({{ aiResponse ? aiResponse.length : 0 }} chars)
+                </div>
             </div>
         </div>
 
