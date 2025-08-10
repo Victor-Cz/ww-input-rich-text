@@ -173,6 +173,7 @@ export default {
         this.storedSelectionRange = null;
         this.richEditor.commands.clearHighlight();
         this.richEditor.commands.clearSuggestion();
+        this.richEditor.commands.clearStrike();
     },
     methods: {
         toggleDropdown() {
