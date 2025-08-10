@@ -22,7 +22,7 @@
                     ></textarea>
                     <div class="modification-type-dropdown">
                         <div class="dropdown-header" @click="toggleDropdown">
-                            <div class="ph ph-sparkle" aria-hidden="true"></div>
+                            <div class="ph ph-sparkle-filled" aria-hidden="true"></div>
                             <span>{{ getSelectedTypeLabel() }}</span>
                             <div class="ph ph-caret-down" :class="{ 'rotated': isDropdownOpen }" aria-hidden="true"></div>
                         </div>
@@ -482,11 +482,11 @@ export default {
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
-.dropdown-header i {
+.dropdown-header div {
     transition: transform 0.2s;
 }
 
-.dropdown-header i.rotated {
+.dropdown-header div.rotated {
     transform: rotate(180deg);
 }
 
