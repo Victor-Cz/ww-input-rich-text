@@ -113,7 +113,7 @@ export default {
                     label: 'Humaniser',
                     description: 'Rendre le texte plus naturel et humain',
                     defaultPrompt: 'Rends ce texte plus naturel et humain',
-                    action: 'replace',
+                    action: 'replace-all',
                     requireInput: false
                 },
                 extend: {
