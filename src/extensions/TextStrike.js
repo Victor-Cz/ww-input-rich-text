@@ -26,7 +26,7 @@ export const TextStrike = Extension.create({
             const decorations = options.ranges.map(({ from, to }) =>
               Decoration.inline(from, to, {
                 class: options.className,
-                style: 'text-decoration: line-through;',
+                style: 'text-decoration: line-through; !important',
               }),
             )
             return DecorationSet.create(instance.doc, decorations)
@@ -38,7 +38,7 @@ export const TextStrike = Extension.create({
               const decorations = meta.ranges.map(({ from, to }) =>
                 Decoration.inline(from, to, {
                   class: options.className,
-                  style: 'text-decoration: line-through;',
+                  style: 'text-decoration: line-through; !important',
                 }),
               )
               return DecorationSet.create(tr.doc, decorations)
