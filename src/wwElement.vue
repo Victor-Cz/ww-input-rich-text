@@ -278,7 +278,7 @@ export default {
         });
 
         /* wwEditor:start */
-        const { createElement } = wwLib.useCreateElement();
+        const { createElement } = wwLib.wwElement.useCreate();
         /* wwEditor:end */
 
         const randomUid = wwLib.wwUtils.getUid();
