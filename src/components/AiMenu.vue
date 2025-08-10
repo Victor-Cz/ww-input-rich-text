@@ -4,6 +4,12 @@
         v-show="isVisible"
         :class="{ 'is-focused': isFocused }"
     >
+        <!-- Affichage du texte sélectionné -->
+        <div v-if="storedSelection" class="selected-text-display">
+            <div class="selected-text-label">Texte sélectionné :</div>
+            <div class="selected-text-content">{{ storedSelection }}</div>
+        </div>
+        
         <!-- Input pour les prompts AI -->
         <div class="ai-input-container">
             <input
@@ -23,55 +29,6 @@
                 <i class="fas fa-magic"></i>
             </button>
         </div>
-        
-        <!-- Séparateur -->
-        <div class="separator"></div>
-        
-        <!-- Bouton Gras -->
-        <button
-            class="bubble-menu__button"
-            :class="{ 'is-active': richEditor.isActive('bold') }"
-            @click="richEditor.chain().focus().toggleBold().run()"
-            title="Gras"
-        >
-            <i class="fas fa-bold"></i>
-        </button>
-        <!-- Bouton Italique -->
-        <button
-            class="bubble-menu__button"
-            :class="{ 'is-active': richEditor.isActive('italic') }"
-            @click="richEditor.chain().focus().toggleItalic().run()"
-            title="Italique"
-        >
-            <i class="fas fa-italic"></i>
-        </button>
-        <!-- Bouton Souligné -->
-        <button
-            class="bubble-menu__button"
-            :class="{ 'is-active': richEditor.isActive('underline') }"
-            @click="richEditor.chain().focus().toggleUnderline().run()"
-            title="Souligné"
-        >
-            <i class="fas fa-underline"></i>
-        </button>
-        <!-- Bouton Barré -->
-        <button
-            class="bubble-menu__button"
-            :class="{ 'is-active': richEditor.isActive('strike') }"
-            @click="richEditor.chain().focus().toggleStrike().run()"
-            title="Barré"
-        >
-            <i class="fas fa-strikethrough"></i>
-        </button>
-        <!-- Bouton Lien -->
-        <button
-            class="bubble-menu__button"
-            :class="{ 'is-active': richEditor.isActive('link') }"
-            @click="setLink"
-            title="Lien"
-        >
-            <i class="fas fa-link"></i>
-        </button>
     </div>
 </template>
 
@@ -90,6 +47,7 @@ export default {
             isVisible: false,
             isFocused: false,
             hasSelection: false,
+            storedSelection: null,
         };
     },
     mounted() {
@@ -108,6 +66,14 @@ export default {
         onSelectionUpdate() {
             const { from, to } = this.richEditor.state.selection;
             this.hasSelection = from !== to;
+            
+            // Stocker le texte sélectionné quand il y en a un
+            if (this.hasSelection) {
+                this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
+            } else {
+                this.storedSelection = null;
+            }
+            
             this.updateVisibility();
         },
         
@@ -155,12 +121,7 @@ export default {
                 // Déclencher l'événement WeWeb pour le prompt AI
                 this.$wwTriggerEvent('ai-prompt-submitted', {
                     prompt: this.aiPrompt.trim(),
-                    selection: this.richEditor.state.selection.content().content.size > 0 
-                        ? this.richEditor.state.doc.textBetween(
-                            this.richEditor.state.selection.from,
-                            this.richEditor.state.selection.to
-                        )
-                        : null
+                    selection: this.storedSelection
                 });
                 
                 // Vider l'input
@@ -194,6 +155,37 @@ export default {
         border-color: #3b82f6;
         box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1), 0 2px 4px -1px rgba(59, 130, 246, 0.06);
     }
+}
+
+// Affichage du texte sélectionné
+.selected-text-display {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 4px;
+}
+
+.selected-text-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.selected-text-content {
+    font-size: 14px;
+    color: #334155;
+    line-height: 1.4;
+    background: #f1f5f9;
+    padding: 6px 8px;
+    border-radius: 4px;
+    border-left: 3px solid #3b82f6;
+    max-height: 80px;
+    overflow-y: auto;
+    word-break: break-word;
 }
 
 // Styles globaux pour le body quand le menu AI est focalisé
