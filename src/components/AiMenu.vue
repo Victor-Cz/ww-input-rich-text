@@ -25,10 +25,12 @@
                 <div class="ai-action-buttons">
                     <button @click="rejectProposal" class="ai-reject-button" title="Rejeter la proposition"
                         :disabled="!aiResponse" v-if="aiResponse">
+                        <div class="icon-x" aria-hidden="true"></div>
                         <span class="button-label">Discard</span>
                     </button>
                     <button @click="validateProposal" class="ai-validate-button" title="Valider la proposition"
                         :disabled="!aiResponse" v-if="aiResponse">
+                        <div class="icon-check" aria-hidden="true"></div>
                         <span class="button-label">Apply</span>
                     </button>
                     <button @click="submitPrompt" class="ai-submit-button" title="Envoyer le prompt"
@@ -578,7 +580,8 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 60px;
+    gap: 6px;
+    min-width: 70px;
     height: 32px;
     font-size: 13px;
     font-weight: 500;
@@ -611,23 +614,19 @@ export default {
 .ai-reject-button {
     background: #f8f9fa;
     color: #495057;
-    border: 1px solid #dee2e6;
 }
 
 .ai-reject-button:hover:not(:disabled) {
     background: #e9ecef;
-    border-color: #adb5bd;
 }
 
 .ai-reject-button:active:not(:disabled) {
     background: #dee2e6;
-    border-color: #adb5bd;
 }
 
 .ai-reject-button:disabled {
     background: #f8f9fa;
     color: #adb5bd;
-    border-color: #dee2e6;
     cursor: not-allowed;
     opacity: 0.6;
 }
