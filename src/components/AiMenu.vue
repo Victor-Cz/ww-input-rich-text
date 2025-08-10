@@ -175,12 +175,12 @@ export default {
         this.richEditor.on('selectionUpdate', this.onSelectionUpdate);
 
         // Écouter les clics en dehors du menu pour le masquer
-        document.addEventListener('click', this.onClickOutside);
+        document.addEventListener('mousedown', this.onClickOutside);
     },
     beforeUnmount() {
         // Nettoyer les écouteurs
         this.richEditor.off('selectionUpdate', this.onSelectionUpdate);
-        document.removeEventListener('click', this.onClickOutside);
+        document.removeEventListener('mousedown', this.onClickOutside);
     },
     methods: {
         onSelectionUpdate() {
