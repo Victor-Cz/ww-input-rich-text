@@ -1,60 +1,40 @@
 <template>
-    <div
-        class="bubble-menu"
-        v-show="isVisible"
-        :class="{ 'is-focused': isFocused }"
-        :style="{ 
-            '--primary-color': primaryColor,
-            '--primary-color-40': primaryColor + '66',
-            '--primary-color-1A': primaryColor + '1A',
-            '--primary-color-hover': primaryColor + 'CC',
-            '--primary-color-active': primaryColor + '99',
-            '--primary-color-inactive': primaryColor + '4D'
-        }"
-    >
+    <div class="bubble-menu" v-show="isVisible" :class="{ 'is-focused': isFocused }" :style="{
+        '--primary-color': primaryColor,
+        '--primary-color-1A': primaryColor + '1A', // 10%
+        '--primary-color-inactive': primaryColor + '4D', // 30%
+        '--primary-color-40': primaryColor + '66', // 40%
+        '--primary-color-active': primaryColor + '99', // 60%
+        '--primary-color-hover': primaryColor + 'CC', // 80%
+    }">
 
 
 
 
-                    <!-- Input pour les prompts AI -->
-            <div class="ai-input-container" v-if="!isLoading">
-                <div class="ai-input-wrapper">
-                    <textarea
-                        v-model="aiPrompt"
-                        :placeholder="getPromptPlaceholder()"
-                        class="ai-input"
-                        @keyup.enter="submitPrompt"
-                        @focus="onFocus"
-                        @blur="onBlur"
-                        rows="3"
-                    ></textarea>
-                    <div class="modification-type-dropdown">
-                        <div class="dropdown-header" @click="toggleDropdown">
-                            <div class="icon-collection" aria-hidden="true"></div>
-                            <span>{{ getSelectedTypeLabel() }}</span>
-                            <div class="icon-chevron-down" :class="{ 'rotated': isDropdownOpen }" aria-hidden="true"></div>
-                        </div>
-                        <div class="dropdown-options" v-show="isDropdownOpen">
-                            <div
-                                v-for="(type, key) in modificationTypes"
-                                :key="key"
-                                class="dropdown-option"
-                                @click="selectModificationType(key)"
-                            >
-                                {{ type.label }}
-                            </div>
+        <!-- Input pour les prompts AI -->
+        <div class="ai-input-container" v-if="!isLoading">
+            <div class="ai-input-wrapper">
+                <textarea v-model="aiPrompt" :placeholder="getPromptPlaceholder()" class="ai-input"
+                    @keyup.enter="submitPrompt" @focus="onFocus" @blur="onBlur" rows="3"></textarea>
+                <div class="modification-type-dropdown">
+                    <div class="dropdown-header" @click="toggleDropdown">
+                        <div class="icon-collection" aria-hidden="true"></div>
+                        <span>{{ getSelectedTypeLabel() }}</span>
+                        <div class="icon-chevron-down" :class="{ 'rotated': isDropdownOpen }" aria-hidden="true"></div>
+                    </div>
+                    <div class="dropdown-options" v-show="isDropdownOpen">
+                        <div v-for="(type, key) in modificationTypes" :key="key" class="dropdown-option"
+                            @click="selectModificationType(key)">
+                            {{ type.label }}
                         </div>
                     </div>
-                    <button
-                        @click="submitPrompt"
-                        class="ai-submit-button"
-                        title="Envoyer le prompt"
-                        :disabled="!aiPrompt.trim() || !selectedModificationType"
-                    >
-                        <div class="icon-arrow-sm-right" aria-hidden="true"></div>
-                    </button>
                 </div>
+                <button @click="submitPrompt" class="ai-submit-button" title="Envoyer le prompt"
+                    :disabled="!aiPrompt.trim() || !selectedModificationType">
+                    <div class="icon-arrow-sm-right" aria-hidden="true"></div>
+                </button>
             </div>
+        </div>
 
         <!-- Affichage de la proposition AI -->
         <div class="ai-proposal-container" v-if="isProposal">
@@ -62,29 +42,15 @@
                 <span class="proposal-label">Proposition AI :</span>
             </div>
             <div class="proposal-content">
-                <input
-                    :value="aiResponse"
-                    type="text"
-                    class="ai-proposal-input"
-                    :readonly="isReadOnly"
-                    @focus="onFocus"
-                    @blur="onBlur"
-                />
+                <input :value="aiResponse" type="text" class="ai-proposal-input" :readonly="isReadOnly" @focus="onFocus"
+                    @blur="onBlur" />
             </div>
             <div class="proposal-actions">
-                <button
-                    @click="validateProposal"
-                    class="proposal-validate-button"
-                    title="Valider la proposition"
-                >
+                <button @click="validateProposal" class="proposal-validate-button" title="Valider la proposition">
                     <i class="fas fa-check"></i>
                     Valider
                 </button>
-                <button
-                    @click="rejectProposal"
-                    class="proposal-reject-button"
-                    title="Rejeter la proposition"
-                >
+                <button @click="rejectProposal" class="proposal-reject-button" title="Rejeter la proposition">
                     <i class="fas fa-times"></i>
                     Rejeter
                 </button>
@@ -290,7 +256,7 @@ export default {
         closeMenu() {
             // Retirer le surlignage avant de fermer
             this.removeHighlight();
-            
+
             this.isVisible = false;
             this.isFocused = false;
             this.storedSelection = null;
@@ -375,27 +341,27 @@ export default {
             this.isVisible = true;
             this.isFocused = true;
         },
-        
+
         openMenu() {
             this.isVisible = true;
             this.isFocused = true;
         },
-        
+
         highlightSelection() {
             if (this.storedSelectionRange) {
                 const { from, to } = this.storedSelectionRange;
                 console.log('Highlighting selection:', { from, to });
-                
+
                 // Appliquer un surlignage jaune au texte sélectionné
                 this.richEditor.chain()
                     .setTextSelection({ from, to })
                     .setMark('backgroundColor', '#ffeb3b')
                     .run();
-                
+
                 console.log('Highlight applied');
             }
         },
-        
+
         removeHighlight() {
             if (this.storedSelectionRange) {
                 const { from, to } = this.storedSelectionRange;
@@ -406,13 +372,13 @@ export default {
                     .run();
             }
         },
-        
+
         onClickOutside(event) {
             // Ne fermer le menu que s'il est déjà ouvert et visible
             if (!this.isVisible) {
                 return;
             }
-            
+
             // Vérifier si le clic est en dehors du menu AI
             const aiMenuElement = this.$el;
             if (aiMenuElement && !aiMenuElement.contains(event.target)) {
@@ -484,7 +450,7 @@ export default {
     align-items: center;
     gap: 6px;
     padding: 4px 8px;
-    border-radius: 12px;
+    border-radius: 8px;
     font-size: 13px;
     color: #495057;
     background: #f8f9fa;
@@ -573,6 +539,12 @@ export default {
     vertical-align: top;
     border: none;
     background: none;
+    outline: none;
+}
+
+.ai-input:focus {
+    outline: none;
+    border: none;
 }
 
 .ai-submit-button {
@@ -717,7 +689,12 @@ export default {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 </style>
