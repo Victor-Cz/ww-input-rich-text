@@ -10,15 +10,25 @@ export const SelectionHighlighter = Extension.create({
           const { state, view } = editor;
           const { doc } = state;
           
-          // Calculer la position de fin (10 premiers caractères)
-          const endPos = Math.min(10, doc.content.size);
+          // Trouver le premier nœud de contenu textuel
+          let startPos = 0;
+          let endPos = 0;
           
-          // Créer une sélection simple
-          const selection = state.selection.constructor.create(doc, 0, endPos);
+          // Parcourir le document pour trouver le premier nœud de texte
+          doc.descendants((node, pos) => {
+            if (node.isText && startPos === 0) {
+              startPos = pos;
+              endPos = Math.min(pos + 10, pos + node.textContent.length);
+              return false; // Arrêter la recherche
+            }
+          });
           
-          // Appliquer la sélection
-          const tr = state.tr.setSelection(selection);
-          view.dispatch(tr);
+          // Si on a trouvé du texte, créer la sélection
+          if (startPos < endPos) {
+            const selection = state.selection.constructor.create(doc, startPos, endPos);
+            const tr = state.tr.setSelection(selection);
+            view.dispatch(tr);
+          }
           
           return true;
         } catch (error) {
