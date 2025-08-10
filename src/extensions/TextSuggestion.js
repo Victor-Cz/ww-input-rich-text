@@ -60,27 +60,41 @@ export const TextSuggestion = Extension.create({
       if (options.enableProgressiveDisplay) {
         span.textContent = ''
         
+        // Diviser le texte en chunks de 5 mots en préservant les espaces
+        const words = text.split(/\s+/).filter(word => word.length > 0)
+        const chunks = []
+        
+        for (let i = 0; i < words.length; i += 5) {
+          const chunkWords = words.slice(i, i + 5)
+          const chunk = chunkWords.join(' ')
+          
+          // Ajouter un espace après le chunk (sauf pour le dernier)
+          if (i + 5 < words.length) {
+            chunks.push(chunk + ' ')
+          } else {
+            chunks.push(chunk)
+          }
+        }
+        
         // Démarrer l'affichage progressif après un court délai
         setTimeout(() => {
           let index = 0
           const interval = setInterval(() => {
-            if (index < text.length) {
-              // Créer un span pour chaque caractère avec une transition
-              const charSpan = document.createElement('span')
-              charSpan.textContent = text[index]
-              charSpan.style.cssText = `
+            if (index < chunks.length) {
+              // Créer un span pour chaque chunk avec une transition
+              const chunkSpan = document.createElement('span')
+              chunkSpan.textContent = chunks[index]
+              chunkSpan.style.cssText = `
                 opacity: 0;
-                transform: translateY(5px);
-                transition: opacity 0.3s ease, transform 0.3s ease;
+                transition: opacity 0.2s ease;
                 display: inline-block;
               `
               
-              span.appendChild(charSpan)
+              span.appendChild(chunkSpan)
               
               // Déclencher la transition après un court délai
               setTimeout(() => {
-                charSpan.style.opacity = '1'
-                charSpan.style.transform = 'translateY(0)'
+                chunkSpan.style.opacity = '1'
               }, 10)
               
               index++
