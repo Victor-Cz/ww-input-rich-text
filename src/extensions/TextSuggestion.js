@@ -12,6 +12,7 @@ export const TextSuggestion = Extension.create({
       suggestionText: null,
       position: 1,
       className: 'suggestion-label',
+      color: 'var(--primary-color)',
     }
   },
 
@@ -28,7 +29,7 @@ export const TextSuggestion = Extension.create({
       const span = document.createElement('span')
       span.className = options.className
       span.style.cssText = `
-        color: var(--primary-color);
+        color: ${options.color};
       `
       span.textContent = options.suggestionText
       return span

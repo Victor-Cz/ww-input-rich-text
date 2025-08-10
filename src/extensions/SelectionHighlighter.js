@@ -38,7 +38,7 @@ export const SelectionHighlighter = Extension.create({
             }
 
             // Utiliser la couleur passée ou la couleur par défaut depuis options
-            const highlightColor = color || 'var(--primary-color-1A)'
+            const highlightColor = color || options.defaultColor;
 
             const deco = Decoration.inline(from, to, {
               style: `background-color: ${highlightColor};`,

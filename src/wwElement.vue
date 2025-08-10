@@ -706,6 +706,7 @@ export default {
                         suggestionText: 'Suggestion',
                         position: 1,
                         className: 'suggestion-label',
+                        color: 'var(--primary-color)',
                     }),
                 ],
                 onCreate: () => {
