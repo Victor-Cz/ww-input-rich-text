@@ -67,6 +67,7 @@ export default {
             [
                 'parameterTitle',
                 'parameterTextType',
+                'parameterAiMenu',
                 'parameterBold',
                 'parameterItalic',
                 'parameterUnderline',
@@ -1564,6 +1565,28 @@ export default {
             hidden: content => content.customMenu,
             label: {
                 en: 'Redo',
+            },
+            type: 'TextRadioGroup',
+            options: {
+                choices: [
+                    {
+                        value: true,
+                        default: true,
+                        label: 'Show',
+                    },
+                    {
+                        value: false,
+                        label: 'Hide',
+                    },
+                ],
+            },
+            defaultValue: true,
+        },
+        parameterAiMenu: {
+            section: 'settings',
+            hidden: content => content.customMenu,
+            label: {
+                en: 'AI Menu',
             },
             type: 'TextRadioGroup',
             options: {
