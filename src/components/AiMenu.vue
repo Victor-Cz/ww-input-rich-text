@@ -29,10 +29,10 @@
                         </div>
                     </div>
                 </div>
-                <button @click="submitPrompt" class="ai-submit-button" title="Envoyer le prompt"
-                    :disabled="!aiPrompt.trim() || !selectedModificationType">
-                    <div class="icon-arrow-sm-right" aria-hidden="true"></div>
-                </button>
+                                    <button @click="submitPrompt" class="ai-submit-button" title="Envoyer le prompt"
+                        :disabled="isSubmitDisabled">
+                        <div class="icon-arrow-sm-right" aria-hidden="true"></div>
+                    </button>
             </div>
         </div>
 
@@ -86,6 +86,24 @@ export default {
         primaryColor() {
             return this.parameterAiMenuPrimaryColor || '#007bff';
         },
+        isSubmitDisabled() {
+            if (!this.selectedModificationType) {
+                return true;
+            }
+            
+            const selectedType = this.modificationTypes[this.selectedModificationType];
+            if (!selectedType) {
+                return true;
+            }
+            
+            // Si requireInput est false, le bouton peut être actif même sans input
+            if (selectedType.requireInput === false) {
+                return false;
+            }
+            
+            // Par défaut, requireInput est true, donc l'input est requis
+            return !this.aiPrompt.trim();
+        },
     },
     data() {
         return {
@@ -106,49 +124,57 @@ export default {
                     label: 'Modifier',
                     description: 'Améliorer ou corriger le texte sélectionné',
                     defaultPrompt: 'Améliore ce texte en gardant le même sens',
-                    action: 'replace'
+                    action: 'replace',
+                    requireInput: true
                 },
                 humanize: {
                     label: 'Humaniser',
                     description: 'Rendre le texte plus naturel et humain',
                     defaultPrompt: 'Rends ce texte plus naturel et humain',
-                    action: 'replace'
+                    action: 'replace',
+                    requireInput: false
                 },
                 extend: {
                     label: 'Rallonger',
                     description: 'Développer et enrichir le contenu',
                     defaultPrompt: 'Développe et enrichis ce texte',
-                    action: 'replace'
+                    action: 'replace',
+                    requireInput: true
                 },
                 shorten: {
                     label: 'Raccourcir',
                     description: 'Condense ce texte en gardant l\'essentiel',
                     defaultPrompt: 'Condense ce texte en gardant l\'essentiel',
-                    action: 'replace'
+                    action: 'replace',
+                    requireInput: true
                 },
                 formalize: {
                     label: 'Formaliser',
                     description: 'Rendre le texte plus formel et professionnel',
                     defaultPrompt: 'Rends ce texte plus formel et professionnel',
-                    action: 'replace'
+                    action: 'replace',
+                    requireInput: true
                 },
                 simplify: {
                     label: 'Simplifier',
                     description: 'Simplifie ce texte pour le rendre plus accessible',
                     defaultPrompt: 'Simplifie ce texte pour le rendre plus accessible',
-                    action: 'replace'
+                    action: 'replace',
+                    requireInput: true
                 },
                 translate: {
                     label: 'Traduire',
                     description: 'Traduire dans une autre langue',
                     defaultPrompt: 'Traduis ce texte en français',
-                    action: 'replace'
+                    action: 'replace',
+                    requireInput: true
                 },
                 custom: {
                     label: 'Personnalisé',
                     description: 'Prompt personnalisé',
                     defaultPrompt: '',
-                    action: 'replace'
+                    action: 'replace',
+                    requireInput: true
                 }
             }
         };
@@ -196,31 +222,33 @@ export default {
             this.isDropdownOpen = !this.isDropdownOpen;
         },
         submitPrompt() {
-            if (this.aiPrompt.trim() && this.selectedModificationType) {
-                this.isLoading = true;
-                const { from, to } = this.richEditor.state.selection;
-                if (from !== to) {
-                    this.storedSelectionRange = { from, to };
-                }
-                const finalPrompt = this.buildFinalPrompt();
-                const action = this.modificationTypes[this.selectedModificationType].action;
-                console.log('AI Prompt submitted:', {
-                    prompt: finalPrompt,
-                    modificationType: this.selectedModificationType,
-                    action: action,
-                    selectedText: this.storedSelection,
-                    selectionRange: this.storedSelectionRange,
-                    timestamp: new Date().toISOString()
-                });
-                this.$wwTriggerEvent('ai-prompt', {
-                    prompt: finalPrompt,
-                    modificationType: this.selectedModificationType,
-                    action: action,
-                    selectedText: this.storedSelection,
-                    timestamp: new Date().toISOString()
-                });
-                this.aiPrompt = '';
+            if (this.isSubmitDisabled) {
+                return;
             }
+            
+            this.isLoading = true;
+            const { from, to } = this.richEditor.state.selection;
+            if (from !== to) {
+                this.storedSelectionRange = { from, to };
+            }
+            const finalPrompt = this.buildFinalPrompt();
+            const action = this.modificationTypes[this.selectedModificationType].action;
+            console.log('AI Prompt submitted:', {
+                prompt: finalPrompt,
+                modificationType: this.selectedModificationType,
+                action: action,
+                selectedText: this.storedSelection,
+                selectionRange: this.storedSelectionRange,
+                timestamp: new Date().toISOString()
+            });
+            this.$wwTriggerEvent('ai-prompt', {
+                prompt: finalPrompt,
+                modificationType: this.selectedModificationType,
+                action: action,
+                selectedText: this.storedSelection,
+                timestamp: new Date().toISOString()
+            });
+            this.aiPrompt = '';
         },
         setResponse(response) {
             this.isLoading = false;
