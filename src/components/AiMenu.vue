@@ -360,11 +360,15 @@ export default {
         highlightSelection() {
             if (this.storedSelectionRange) {
                 const { from, to } = this.storedSelectionRange;
+                console.log('Highlighting selection:', { from, to });
+                
                 // Appliquer un surlignage jaune au texte sélectionné
                 this.richEditor.chain()
                     .setTextSelection({ from, to })
-                    .setMark('backgroundColor', { color: '#ffeb3b' })
+                    .setMark('backgroundColor', '#ffeb3b')
                     .run();
+                
+                console.log('Highlight applied');
             }
         },
         
