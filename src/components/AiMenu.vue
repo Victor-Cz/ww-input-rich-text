@@ -29,10 +29,10 @@
                         </div>
                     </div>
                 </div>
-                                    <button @click="submitPrompt" class="ai-submit-button" title="Envoyer le prompt"
-                        :disabled="isSubmitDisabled">
-                        <div class="icon-arrow-sm-right" aria-hidden="true"></div>
-                    </button>
+                <button @click="submitPrompt" class="ai-submit-button" title="Envoyer le prompt"
+                    :disabled="isSubmitDisabled">
+                    <div class="icon-arrow-sm-right" aria-hidden="true"></div>
+                </button>
             </div>
         </div>
 
@@ -90,17 +90,17 @@ export default {
             if (!this.selectedModificationType) {
                 return true;
             }
-            
+
             const selectedType = this.modificationTypes[this.selectedModificationType];
             if (!selectedType) {
                 return true;
             }
-            
+
             // Si requireInput est false, le bouton peut être actif même sans input
             if (selectedType.requireInput === false) {
                 return false;
             }
-            
+
             // Par défaut, requireInput est true, donc l'input est requis
             return !this.aiPrompt.trim();
         },
@@ -225,12 +225,15 @@ export default {
             if (this.isSubmitDisabled) {
                 return;
             }
-            
+
             this.isLoading = true;
             const { from, to } = this.richEditor.state.selection;
+
             if (from !== to) {
                 this.storedSelectionRange = { from, to };
+                this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
             }
+
             const finalPrompt = this.buildFinalPrompt();
             const action = this.modificationTypes[this.selectedModificationType].action;
             console.log('AI Prompt submitted:', {
@@ -241,7 +244,7 @@ export default {
                 selectionRange: this.storedSelectionRange,
                 timestamp: new Date().toISOString()
             });
-            
+
             // Émettre l'événement vers le composant parent
             this.$emit('ai-prompt', {
                 prompt: finalPrompt,
@@ -250,7 +253,7 @@ export default {
                 selectedText: this.storedSelection,
                 timestamp: new Date().toISOString()
             });
-            
+
             this.aiPrompt = '';
         },
         setResponse(response) {
@@ -571,6 +574,7 @@ export default {
     border: none;
     background: none;
     outline: none;
+    transition: outline 0.2s;
 }
 
 .ai-input:focus {

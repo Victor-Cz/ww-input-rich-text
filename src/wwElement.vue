@@ -885,8 +885,8 @@ export default {
         },
 
         handleAiPrompt(eventData) {
-            // Déclencher l'événement WeWeb 'ai-prompt'
-            this.$wwTriggerEvent('ai-prompt', eventData);
+            // Déclencher l'événement WeWeb 'ai-prompt' via $emit
+            this.$emit('trigger-event', { name: 'ai-prompt', event: eventData });
         },
 
 
