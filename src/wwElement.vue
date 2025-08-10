@@ -201,7 +201,7 @@
 import { Editor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import Mention from '@tiptap/extension-mention';
-import { TextStyle } from '@tiptap/extension-text-style';
+import { TextStyle, BackgroundColor } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import Link from '@tiptap/extension-link';
 import { Placeholder, UndoRedo } from '@tiptap/extensions';
@@ -667,6 +667,7 @@ export default {
                         },
                     }),
                     TextStyle,
+        BackgroundColor,
                     Color,
                     Underline,
                     Table.configure({

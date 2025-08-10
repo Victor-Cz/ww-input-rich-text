@@ -4,11 +4,7 @@
         v-show="isVisible"
         :class="{ 'is-focused': isFocused }"
     >
-        <!-- Affichage du texte sélectionné -->
-        <div v-if="storedSelection" class="selected-text-display">
-            <div class="selected-text-label">Texte sélectionné :</div>
-            <div class="selected-text-content">{{ storedSelection }}</div>
-        </div>
+
 
         <!-- Sélecteur de type de modification - dropdown collapsible -->
         <div class="modification-type-dropdown" v-if="!isLoading && !isProposal">
@@ -29,7 +25,7 @@
         </div>
 
         <!-- Input pour les prompts AI -->
-        <div class="ai-input-container" v-if="!isLoading && !isProposal && selectedModificationType">
+        <div class="ai-input-container" v-if="!isLoading && !isProposal">
             <input
                 v-model="aiPrompt"
                 type="text"
@@ -191,9 +187,13 @@ export default {
             if (this.hasSelection) {
                 this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
                 this.storedSelectionRange = { from, to };
+                // Surligner le texte sélectionné
+                this.highlightSelection();
             } else {
                 this.storedSelection = null;
                 this.storedSelectionRange = null;
+                // Retirer le surlignage
+                this.removeHighlight();
             }
 
             // Ne pas mettre à jour la visibilité automatiquement
@@ -265,6 +265,9 @@ export default {
             this.isProposal = false;
         },
         closeMenu() {
+            // Retirer le surlignage avant de fermer
+            this.removeHighlight();
+            
             this.isVisible = false;
             this.isFocused = false;
             this.storedSelection = null;
@@ -296,10 +299,6 @@ export default {
             this.updateVisibility();
         },
         onFocus() {
-            // Ne pas rouvrir le menu automatiquement via focus
-            if (this.isVisible) {
-                this.isFocused = true;
-            }
         },
         onBlur() {
             this.isFocused = false;
@@ -356,6 +355,28 @@ export default {
             this.isVisible = true;
             this.isFocused = true;
             this.updateVisibility();
+        },
+        
+        highlightSelection() {
+            if (this.storedSelectionRange) {
+                const { from, to } = this.storedSelectionRange;
+                // Appliquer un surlignage jaune au texte sélectionné
+                this.richEditor.chain()
+                    .setTextSelection({ from, to })
+                    .setMark('backgroundColor', { color: '#ffeb3b' })
+                    .run();
+            }
+        },
+        
+        removeHighlight() {
+            if (this.storedSelectionRange) {
+                const { from, to } = this.storedSelectionRange;
+                // Retirer le surlignage
+                this.richEditor.chain()
+                    .setTextSelection({ from, to })
+                    .unsetMark('backgroundColor')
+                    .run();
+            }
         },
         
         onClickOutside(event) {
@@ -495,16 +516,21 @@ export default {
     display: flex;
     gap: 8px;
     margin-bottom: 16px;
+    width: 100%;
+    height: 100%;
 }
 
 .ai-input {
     flex: 1;
-    padding: 10px 12px;
+    padding: 8px 8px 32px 32px;
     border: 1px solid #dee2e6;
     border-radius: 6px;
     font-size: 14px;
     color: #495057;
     transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
 }
 
 .ai-input:focus {
