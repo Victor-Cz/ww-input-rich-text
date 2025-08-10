@@ -720,7 +720,7 @@ export default {
                     TextStroke.configure({
                         defaultStrokeColor: 'var(--primary-color)',
                         defaultStrokeWidth: '1px',
-                        ranges: [],
+                        ranges:  [{ from: 0, to: 10, color: 'var(--primary-color)' }],
                     }),
                 ],
                 onCreate: () => {

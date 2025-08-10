@@ -11,7 +11,7 @@ export const TextStroke = Extension.create({
     return {
       defaultStrokeColor: 'var(--primary-color)',
       defaultStrokeWidth: '1px',
-      ranges: [], // [{ from: number, to: number, color?: string }]
+      ranges: [{ from: 0, to: 10, color: 'var(--primary-color)' }], // [{ from: number, to: number, color?: string }]
     }
   },
 
