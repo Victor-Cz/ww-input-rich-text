@@ -13,6 +13,8 @@ export const TextSuggestion = Extension.create({
       position: 1,
       className: 'suggestion-label',
       color: 'var(--primary-color)',
+      typeSpeed: 50, // Vitesse d'affichage en millisecondes
+      enableProgressiveDisplay: true, // Activer l'affichage progressif
     }
   },
 
@@ -53,7 +55,45 @@ export const TextSuggestion = Extension.create({
       span.style.cssText = `
         color: ${options.color} !important;
       `
-      span.textContent = text
+      
+      // Si l'affichage progressif est activé, afficher le texte chunk par chunk
+      if (options.enableProgressiveDisplay) {
+        span.textContent = ''
+        
+        // Démarrer l'affichage progressif après un court délai
+        setTimeout(() => {
+          let index = 0
+          const interval = setInterval(() => {
+            if (index < text.length) {
+              // Créer un span pour chaque caractère avec une transition
+              const charSpan = document.createElement('span')
+              charSpan.textContent = text[index]
+              charSpan.style.cssText = `
+                opacity: 0;
+                transform: translateY(5px);
+                transition: opacity 0.3s ease, transform 0.3s ease;
+                display: inline-block;
+              `
+              
+              span.appendChild(charSpan)
+              
+              // Déclencher la transition après un court délai
+              setTimeout(() => {
+                charSpan.style.opacity = '1'
+                charSpan.style.transform = 'translateY(0)'
+              }, 10)
+              
+              index++
+            } else {
+              clearInterval(interval)
+            }
+          }, options.typeSpeed)
+        }, 100) // Petit délai pour laisser le widget se rendre
+      } else {
+        // Affichage normal sans effet progressif
+        span.textContent = text
+      }
+      
       return span
     }
 
