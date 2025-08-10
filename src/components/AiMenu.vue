@@ -704,15 +704,15 @@ export default {
 /* État de chargement */
 .ai-loading-container {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    flex-direction: row;
+    align-items: start;
     gap: 12px;
-    padding: 20px;
+    padding: 12px;
 }
 
 .ai-loading-spinner {
-    width: 24px;
-    height: 24px;
+    width: 18px;
+    height: 18px;
     border: 3px solid #e5e7eb;
     border-top: 3px solid var(--primary-color);
     border-radius: 50%;
