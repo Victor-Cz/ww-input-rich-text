@@ -371,7 +371,9 @@ export default {
 
 <style scoped>
 .bubble-menu {
-    position: absolute;
+    position: fixed;
+    top: 0;
+    left: 0;
     background: white;
     border: 1px solid #ddd;
     border-radius: 8px;
@@ -414,6 +416,7 @@ export default {
 .modification-type-dropdown {
     margin-bottom: 16px;
     position: relative;
+    z-index: 1001;
 }
 
 .dropdown-header {
@@ -445,18 +448,18 @@ export default {
 
 .dropdown-options {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 4px);
     left: 0;
     right: 0;
     display: flex;
     flex-direction: column;
     gap: 4px;
-    margin-top: 4px;
     border: 1px solid #dee2e6;
     border-radius: 6px;
     background: white;
     overflow: hidden;
     z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .dropdown-option {
