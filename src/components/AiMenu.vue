@@ -22,7 +22,7 @@
                     ></textarea>
                     <div class="modification-type-dropdown">
                         <div class="dropdown-header" @click="toggleDropdown">
-                            <i class="fas fa-wand-magic-sparkles"></i>
+                            <i class="fa-solid fa-sparkles"></i>
                             <span>{{ getSelectedTypeLabel() }}</span>
                             <i class="fas fa-chevron-down" :class="{ 'rotated': isDropdownOpen }"></i>
                         </div>
@@ -419,8 +419,8 @@ export default {
     margin-top: 16px;
     margin-bottom: 32px;
     background: white;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+    border: 1px solid #007bff;
+    border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     min-width: 300px;
     z-index: 1000;
@@ -523,7 +523,6 @@ export default {
 
 .dropdown-option:hover {
     background: rgb(238, 238, 238);
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
 .dropdown-option:focus {
@@ -557,6 +556,8 @@ export default {
     box-sizing: border-box;
     resize: none;
     vertical-align: top;
+    border: none;
+    background: none;
 }
 
 .ai-submit-button {
