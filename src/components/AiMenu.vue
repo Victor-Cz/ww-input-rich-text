@@ -54,6 +54,7 @@ export default {
             isFocused: false,
             hasSelection: false,
             storedSelection: null,
+            storedSelectionRange: null, // Store selection coordinates
             isLoading: false,
         };
     },
@@ -77,8 +78,10 @@ export default {
             // Stocker le texte sélectionné quand il y en a un
             if (this.hasSelection) {
                 this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
+                this.storedSelectionRange = { from, to }; // Store selection coordinates
             } else {
                 this.storedSelection = null;
+                this.storedSelectionRange = null;
             }
             
             this.updateVisibility();
@@ -128,10 +131,17 @@ export default {
                 // Activer l'état de chargement
                 this.isLoading = true;
                 
+                // Stocker la sélection actuelle pour pouvoir la modifier plus tard
+                const { from, to } = this.richEditor.state.selection;
+                if (from !== to) {
+                    this.storedSelectionRange = { from, to };
+                }
+                
                 // Log pour debug
                 console.log('AI Prompt submitted:', {
                     prompt: this.aiPrompt.trim(),
                     selectedText: this.storedSelection,
+                    selectionRange: this.storedSelectionRange,
                     timestamp: new Date().toISOString()
                 });
                 
@@ -150,8 +160,31 @@ export default {
         // Méthode appelée par l'action WeWeb setResponse
         setResponse(response) {
             this.isLoading = false;
-            // Ici on pourrait traiter la réponse si nécessaire
-            console.log('AI Response received:', response);
+            
+            // Remplacer le texte sélectionné par la réponse AI
+            if (this.storedSelectionRange && response) {
+                const { from, to } = this.storedSelectionRange;
+                
+                // Remplacer le texte sélectionné par la réponse
+                this.richEditor.chain()
+                    .focus()
+                    .setTextSelection({ from, to })
+                    .deleteSelection()
+                    .insertContent(response)
+                    .run();
+                
+                // Nettoyer la sélection stockée
+                this.storedSelection = null;
+                this.storedSelectionRange = null;
+                this.hasSelection = false;
+                
+                // Mettre à jour la visibilité
+                this.updateVisibility();
+                
+                console.log('AI Response applied to editor:', response);
+            } else {
+                console.log('AI Response received but no selection to replace:', response);
+            }
         },
     },
 };
