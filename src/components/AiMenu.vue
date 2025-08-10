@@ -206,7 +206,7 @@ export default {
                 this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
                 this.storedSelectionRange = { from, to };
                 
-                // Déclencher le surlignage du storedSelection
+                // Déclencher le surlignage via l'extension SelectionHighlighter
                 this.richEditor.view.dispatch(
                     this.richEditor.view.state.tr.setMeta('storedSelection', { from, to })
                 );
@@ -399,6 +399,7 @@ export default {
                 this.closeMenu();
             }
         },
+
         getSelectedTypeLabel() {
             if (this.selectedModificationType && this.modificationTypes[this.selectedModificationType]) {
                 return this.modificationTypes[this.selectedModificationType].label;
