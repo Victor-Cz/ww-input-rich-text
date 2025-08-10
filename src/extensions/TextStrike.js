@@ -71,6 +71,7 @@ export const TextStrike = Extension.create({
       clearStrike:
         () =>
         ({ state, dispatch }) => {
+          console.log('clearStrike');
           if (!dispatch) return false
           const tr = state.tr.setMeta(strikeKey, { ranges: [] })
           dispatch(tr)
