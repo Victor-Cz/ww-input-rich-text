@@ -223,9 +223,9 @@ export default {
 
             const action = this.modificationTypes[this.selectedModificationType]?.action;
             if (action === 'replace' && this.storedSelectionRange) {
-                this.richEditor.commands.setStrikeRanges(this.storedSelectionRange.from, this.storedSelectionRange.to);
+                this.richEditor.commands.setStrikeRanges([{ from: this.storedSelectionRange.from, to: this.storedSelectionRange.to }]);
             } else if (action === 'replace-all') {
-                this.richEditor.commands.setStrikeRanges(0, this.richEditor.state.doc.content.size);
+                this.richEditor.commands.setStrikeRanges([{ from: 0, to: this.richEditor.state.doc.content.size }]);
             }
 
             // Stocker la réponse pour validation ultérieure

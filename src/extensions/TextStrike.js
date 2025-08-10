@@ -62,7 +62,6 @@ export const TextStrike = Extension.create({
       setStrikeRanges:
         (ranges) =>
         ({ state, dispatch }) => {
-          console.log('setStrikeRanges', ranges)
           if (!dispatch) return false
           const tr = state.tr.setMeta(strikeKey, { ranges })
           dispatch(tr)
