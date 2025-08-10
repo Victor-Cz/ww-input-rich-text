@@ -198,13 +198,13 @@ export default {
             this.aiPrompt = '';
         },
         setResponse(response) {
+            // Utiliser TextSuggestion pour afficher la proposition dans l'éditeur
+            this.displaySuggestion(response);
+
             this.isLoading = false;
             if (!response) {
                 return;
             }
-
-            // Utiliser TextSuggestion pour afficher la proposition dans l'éditeur
-            this.displaySuggestion(response);
         },
 
         displaySuggestion(response) {
@@ -281,7 +281,7 @@ export default {
             this.closeMenu();
         },
         hideMenu() {
-            if (!this.aiResponse && !this.isLoading) {
+            if (this.aiResponse === '' && !this.isLoading) {
                 this.closeMenu();
                 return;
             }
