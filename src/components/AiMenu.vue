@@ -24,25 +24,18 @@
             </div>
         </div>
 
-        <!-- Input pour les prompts AI -->
-        <div class="ai-input-container" v-if="!isLoading && !isProposal">
-            <input
-                v-model="aiPrompt"
-                type="text"
-                :placeholder="getPromptPlaceholder()"
-                class="ai-input"
-                @keyup.enter="submitPrompt"
-                @focus="onFocus"
-                @blur="onBlur"
-            />
-            <button
-                @click="submitPrompt"
-                class="ai-submit-button"
-                title="Envoyer le prompt"
-            >
-                <i class="fas fa-magic"></i>
-            </button>
-        </div>
+                    <!-- Input pour les prompts AI -->
+            <div class="ai-input-container" v-if="!isLoading">
+                <input
+                    v-model="aiPrompt"
+                    type="text"
+                    :placeholder="getPromptPlaceholder()"
+                    class="ai-input"
+                    @keyup.enter="submitPrompt"
+                    @focus="onFocus"
+                    @blur="onBlur"
+                />
+            </div>
 
         <!-- Affichage de la proposition AI -->
         <div class="ai-proposal-container" v-if="isProposal">
@@ -301,7 +294,7 @@ export default {
         onFocus() {
         },
         onBlur() {
-            this.isFocused = false;
+            this.closeMenu();
         },
         getPromptPlaceholder() {
             if (this.selectedModificationType && this.modificationTypes[this.selectedModificationType]) {
@@ -410,6 +403,7 @@ export default {
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     padding: 16px;
+    padding-bottom: 60px;
     min-width: 300px;
     z-index: 1000;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -445,8 +439,9 @@ export default {
 }
 
 .modification-type-dropdown {
-    margin-bottom: 16px;
-    position: relative;
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
     z-index: 1001;
 }
 
@@ -519,7 +514,6 @@ export default {
 .ai-input-container {
     display: flex;
     gap: 8px;
-    margin-bottom: 16px;
     width: 100%;
     height: 100%;
 }
@@ -544,6 +538,9 @@ export default {
 }
 
 .ai-submit-button {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
     padding: 10px 12px;
     background: #007bff;
     color: white;
