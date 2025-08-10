@@ -229,13 +229,10 @@ export default {
             // Utiliser la commande updateSuggestion pour afficher la proposition
             this.richEditor.commands.updateSuggestion(formattedResponse, position);
 
-            // Ajouter un Strike sur le texte sélectionné pour montrer ce qui va être modifié
             const action = this.modificationTypes[this.selectedModificationType]?.action;
             if (action === 'replace' && this.storedSelectionRange) {
-                // Pour le remplacement de sélection, barrer le texte sélectionné
                 this.richEditor.commands.setStrike(this.storedSelectionRange.from, this.storedSelectionRange.to);
             } else if (action === 'replace-all') {
-                // Pour le remplacement global, barrer tout le contenu du document
                 this.richEditor.commands.setStrike(0, this.richEditor.state.doc.content.size);
             }
 
@@ -277,6 +274,7 @@ export default {
             // Effacer la suggestion
             this.richEditor.commands.clearSuggestion();
             this.richEditor.commands.clearHighlight();
+            this.richEditor.commands.clearStrike();
 
             // Appliquer la proposition à l'éditeur
             this.applyResponse(this.aiResponse);
@@ -290,6 +288,7 @@ export default {
             // Rejeter la proposition et fermer le menu
             this.richEditor.commands.clearSuggestion();
             this.richEditor.commands.clearHighlight();
+            this.richEditor.commands.clearStrike();
 
             this.resetProposal();
             this.closeMenu();
@@ -309,7 +308,7 @@ export default {
             // Nettoyer le surlignage, la suggestion et le Strike lors de la fermeture du menu
             this.richEditor.commands.clearHighlight();
             this.richEditor.commands.clearSuggestion();
-            this.richEditor.commands.clearHighlight();
+            this.richEditor.commands.clearStrike();
         },
         applyResponse(response) {
             const action = this.modificationTypes[this.selectedModificationType].action;
