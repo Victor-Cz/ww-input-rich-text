@@ -11,18 +11,18 @@
                     <!-- Input pour les prompts AI -->
             <div class="ai-input-container" v-if="!isLoading">
                 <div class="ai-input-wrapper">
-                    <input
+                    <textarea
                         v-model="aiPrompt"
-                        type="text"
                         :placeholder="getPromptPlaceholder()"
                         class="ai-input"
                         @keyup.enter="submitPrompt"
                         @focus="onFocus"
                         @blur="onBlur"
-                    />
+                        rows="3"
+                    ></textarea>
                     <div class="modification-type-dropdown">
                         <div class="dropdown-header" @click="toggleDropdown">
-                            <i class="fas fa-microphone"></i>
+                            <i class="fas fa-wand-magic-sparkles"></i>
                             <span>{{ getSelectedTypeLabel() }}</span>
                             <i class="fas fa-chevron-down" :class="{ 'rotated': isDropdownOpen }"></i>
                         </div>
@@ -499,19 +499,20 @@ export default {
     flex-direction: column;
     gap: 4px;
     border: 1px solid #dee2e6;
-    border-radius: 6px;
+    border-radius: 12px;
     background: white;
     overflow: hidden;
     z-index: 1000;
+    padding: 4px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    min-width: 200px;
+    min-width: 180px;
+    min-height: 100px;
     background: white;
 }
 
 .dropdown-option {
-    padding: 10px 12px;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
+    padding: 3px 6px;
+    border-radius: 8px;
     font-size: 14px;
     color: #495057;
     background: white;
@@ -521,13 +522,12 @@ export default {
 }
 
 .dropdown-option:hover {
-    border-color: #007bff;
+    background: rgb(238, 238, 238);
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
 .dropdown-option:focus {
-    outline: none;
-    border-color: #007bff;
+    background: rgb(238, 238, 238);
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
@@ -547,16 +547,16 @@ export default {
 
 .ai-input {
     flex: 1;
-    padding: 8px 8px 32px 32px;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
+    padding: 8px 32px 32px 8px;
+    border-radius: 12px;
     font-size: 14px;
     color: #495057;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    text-align: left;
     width: 100%;
     height: 100%;
     box-sizing: border-box;
     resize: none;
+    vertical-align: top;
 }
 
 .ai-submit-button {
@@ -567,7 +567,7 @@ export default {
     background: #007bff;
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 9px;
     cursor: pointer;
     transition: background-color 0.2s;
     display: flex;
