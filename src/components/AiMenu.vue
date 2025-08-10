@@ -205,16 +205,9 @@ export default {
             if (this.hasSelection) {
                 this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
                 this.storedSelectionRange = { from, to };
-                
-                // Déclencher le surlignage via l'extension SelectionHighlighter
-                console.log('AiMenu - Déclencher le surlignage:', { from, to });
-                this.richEditor.commands.highlightRange(from, to);
             } else {
                 this.storedSelection = null;
                 this.storedSelectionRange = null;
-                
-                // Retirer le surlignage
-                this.richEditor.commands.clearHighlight();
             }
         },
         updateVisibility() {

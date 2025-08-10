@@ -207,7 +207,6 @@ import TextAlign from '@tiptap/extension-text-align';
 import TaskList from '@tiptap/extension-task-list';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import Underline from '@tiptap/extension-underline';
-import SelectionHighlighter from './extensions/SelectionHighlighter.js';
 
 import AiMenu from './components/AiMenu.vue';
 
@@ -684,7 +683,6 @@ export default {
                     }),
                     Markdown.configure({ breaks: true }),
                     Image.configure({ ...this.editorConfig.image }),
-                    SelectionHighlighter,
         
                     this.editorConfig.mention.enabled &&
                     Mention.configure({
