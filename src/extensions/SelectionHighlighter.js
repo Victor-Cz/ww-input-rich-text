@@ -2,32 +2,34 @@ import { Extension } from '@tiptap/core'
 import { Decoration, DecorationSet } from 'prosemirror-view'
 import { Plugin, PluginKey } from 'prosemirror-state'
 
+// Déclarer la clé une seule fois ici
+const selectionHighlighterKey = new PluginKey('selectionHighlighter')
+
 export const SelectionHighlighter = Extension.create({
   name: 'selectionHighlighter',
 
   addProseMirrorPlugins() {
-    const key = new PluginKey('selectionHighlighter')
-
     return [
       new Plugin({
-        key,
+        key: selectionHighlighterKey,
         state: {
           init() {
             return DecorationSet.empty
           },
           apply(tr, old) {
-            const storedSelection = tr.getMeta(key)
+            const storedSelection = tr.getMeta(selectionHighlighterKey)
 
-            // Si pas de nouvelle sélection => garder l'ancienne
+            // Pas de nouvelle sélection → garder l'ancienne
             if (!storedSelection) {
               return old.map(tr.mapping, tr.doc)
             }
 
-            // Si from et to sont null, retirer le surlignage
+            // from/to null → supprimer le highlight
             if (storedSelection.from === null || storedSelection.to === null) {
               return DecorationSet.empty
             }
 
+            // Créer la décoration
             const deco = Decoration.inline(
               storedSelection.from,
               storedSelection.to,
@@ -39,10 +41,10 @@ export const SelectionHighlighter = Extension.create({
         },
         props: {
           decorations(state) {
-            return key.getState(state)
+            return selectionHighlighterKey.getState(state)
           },
         },
-      })
+      }),
     ]
   },
 
@@ -51,7 +53,15 @@ export const SelectionHighlighter = Extension.create({
       highlightRange:
         (from, to) =>
         ({ state, dispatch }) => {
-          const tr = state.tr.setMeta(key, { from, to })
+          const tr = state.tr.setMeta(selectionHighlighterKey, { from, to })
+          dispatch(tr)
+          return true
+        },
+
+      clearHighlight:
+        () =>
+        ({ state, dispatch }) => {
+          const tr = state.tr.setMeta(selectionHighlighterKey, { from: null, to: null })
           dispatch(tr)
           return true
         },

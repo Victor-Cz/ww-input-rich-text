@@ -207,13 +207,14 @@ export default {
                 this.storedSelectionRange = { from, to };
                 
                 // Déclencher le surlignage via l'extension SelectionHighlighter
+                console.log('AiMenu - Déclencher le surlignage:', { from, to });
                 this.richEditor.commands.highlightRange(from, to);
             } else {
                 this.storedSelection = null;
                 this.storedSelectionRange = null;
                 
                 // Retirer le surlignage
-                this.richEditor.commands.highlightRange(null, null);
+                this.richEditor.commands.clearHighlight();
             }
         },
         updateVisibility() {
