@@ -690,7 +690,11 @@ export default {
                     Placeholder.configure({
                         placeholder: this.editorConfig.placeholder,
                     }),
-                    Markdown.configure({ breaks: false }),
+                    Markdown.configure({ 
+                        breaks: true,
+                        transformPastedText: true,
+                        transformCopiedText: true
+                    }),
                     Image.configure({ ...this.editorConfig.image }),
 
                     this.editorConfig.mention.enabled &&
