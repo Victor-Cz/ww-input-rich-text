@@ -22,9 +22,9 @@
                     ></textarea>
                     <div class="modification-type-dropdown">
                         <div class="dropdown-header" @click="toggleDropdown">
-                            <i class="lucide lucide-sparkles"></i>
+                            <i class="lucide/sparkles"></i>
                             <span>{{ getSelectedTypeLabel() }}</span>
-                            <i class="lucide lucide-chevron-down" :class="{ 'rotated': isDropdownOpen }"></i>
+                            <i class="lucide/chevron-down" :class="{ 'rotated': isDropdownOpen }"></i>
                         </div>
                         <div class="dropdown-options" v-show="isDropdownOpen">
                             <div
@@ -43,7 +43,7 @@
                         title="Envoyer le prompt"
                         :disabled="!aiPrompt.trim() || !selectedModificationType"
                     >
-                        <i class="lucide lucide-arrow-right"></i>
+                        <i class="lucide/arrow-right"></i>
                     </button>
                 </div>
             </div>
