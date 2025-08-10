@@ -212,6 +212,11 @@ export default {
         },
 
         displaySuggestion(response) {
+            // Afficher la suggestion uniquement si la popup est ouverte
+            if (!this.isVisible) {
+                return;
+            }
+
             // Déterminer la position de la suggestion selon la méthode et la sélection
             const position = this.getSuggestionPosition();
 
