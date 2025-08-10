@@ -9,7 +9,7 @@ export const TextSuggestion = Extension.create({
 
   addOptions() {
     return {
-      suggestionText: 'Suggestion',
+      suggestionText: null,
       position: 1,
       className: 'suggestion-label',
     }
@@ -20,17 +20,15 @@ export const TextSuggestion = Extension.create({
 
     // Fonction qui crée le widget DOM avec les options capturées
     function createWidget() {
+      // Vérifier si suggestionText existe avant de créer le widget
+      if (!options.suggestionText) {
+        return null
+      }
+      
       const span = document.createElement('span')
       span.className = options.className
       span.style.cssText = `
-        background: #eef;
-        color: #336;
-        border-radius: 3px;
-        padding: 2px 6px;
-        font-size: 0.85em;
-        user-select: none;
-        pointer-events: none;
-        margin-left: 4px;
+        color: var(--primary-color);
       `
       span.textContent = options.suggestionText
       return span
@@ -43,9 +41,17 @@ export const TextSuggestion = Extension.create({
         state: {
           init(config, instance) {
             // 'instance.doc' est le document initial
-            return DecorationSet.create(instance.doc, [
-              Decoration.widget(options.position, createWidget),
-            ])
+            const widget = createWidget()
+            
+            // Ne créer la décoration que si le widget existe
+            if (widget) {
+              return DecorationSet.create(instance.doc, [
+                Decoration.widget(options.position, widget),
+              ])
+            }
+            
+            // Retourner un DecorationSet vide si pas de widget
+            return DecorationSet.empty
           },
 
           apply(tr, old) {
