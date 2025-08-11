@@ -1635,7 +1635,6 @@ export default {
             type: 'InfoBox',
             options: {
                 variant: 'info',
-                icon: 'magic',
                 title: 'AI Menu',
                 content: 'Configure the AI menu functionality for text modification.',
             },
@@ -1749,6 +1748,7 @@ export default {
                                 },
                                 type: 'Text',
                                 bindable: true,
+                                multiLang: true,
                                 description: 'Label shown in the dropdown menu',
                             },
                             defaultPrompt: {
@@ -1757,6 +1757,7 @@ export default {
                                 },
                                 type: 'Textarea',
                                 bindable: true,
+                                multiLang: true,
                                 defaultValue: 'Enter your instructions for the AI',
                                 description: 'Default AI prompt for this modification type',
                             },
@@ -1826,6 +1827,7 @@ export default {
                         },
                         type: 'Text',
                         bindable: true,
+                        multiLang: true,
                         defaultValue: 'Enter your prompt...',
                         description:
                             'Placeholder text for the prompt input field. You can use simple text or formulas starting with "=" for multilingual support (e.g., "Enter your prompt..." or "=wwLib.wwUtils.getText(\'ai.promptInput\')")',
@@ -1836,6 +1838,7 @@ export default {
                         },
                         type: 'Text',
                         bindable: true,
+                        multiLang: true,
                         defaultValue: 'Processing...',
                         description:
                             'Message displayed while AI is processing the request. You can use simple text or formulas starting with "=" for multilingual support.',
@@ -1846,6 +1849,7 @@ export default {
                         },
                         type: 'Text',
                         bindable: true,
+                        multiLang: true,
                         defaultValue: 'Apply',
                         description:
                             'Text displayed on the apply button. You can use simple text or formulas starting with "=" for multilingual support.',
@@ -1856,6 +1860,7 @@ export default {
                         },
                         type: 'Text',
                         bindable: true,
+                        multiLang: true,
                         defaultValue: 'Cancel',
                         description:
                             'Text displayed on the cancel button. You can use simple text or formulas starting with "=" for multilingual support.',
@@ -1866,6 +1871,7 @@ export default {
                         },
                         type: 'Text',
                         bindable: true,
+                        multiLang: true,
                         defaultValue: 'Enter your instructions for the AI',
                         description:
                             'Tooltip text displayed when hovering over the prompt input field. You can use simple text or formulas starting with "=" for multilingual support.',
@@ -1876,6 +1882,7 @@ export default {
                         },
                         type: 'Text',
                         bindable: true,
+                        multiLang: true,
                         defaultValue: 'Apply the AI modification',
                         description:
                             'Tooltip text displayed when hovering over the apply button. You can use simple text or formulas starting with "=" for multilingual support.',
@@ -1886,6 +1893,7 @@ export default {
                         },
                         type: 'Text',
                         bindable: true,
+                        multiLang: true,
                         defaultValue: 'Cancel the current operation',
                         description:
                             'Tooltip text displayed when hovering over the cancel button. You can use simple text or formulas starting with "=" for multilingual support.',
@@ -1896,6 +1904,7 @@ export default {
                         },
                         type: 'Text',
                         bindable: true,
+                        multiLang: true,
                         defaultValue: 'Select a type',
                         description:
                             'Text displayed in the modification type dropdown when no type is selected. You can use simple text or formulas starting with "=" for multilingual support.',
