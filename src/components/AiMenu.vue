@@ -324,6 +324,7 @@ export default {
             this.richEditor.commands.clearStrike();
         },
         applyResponse(response) {
+            console.log('applyResponse', response);
             const action = this.modificationTypes[this.selectedModificationType].action;
 
             // Formater le texte avec la même logique que pour l'affichage
