@@ -1860,17 +1860,6 @@ export default {
                         description:
                             'Text displayed on the cancel button. You can use simple text or formulas starting with "=" for multilingual support.',
                     },
-                    noTypesMessage: {
-                        label: {
-                            en: 'No Types Message',
-                        },
-                        type: 'Text',
-                        bindable: true,
-                        defaultValue:
-                            'No modification types configured. Please configure at least one type in the settings.',
-                        description:
-                            'Message displayed when no modification types are configured. You can use simple text or formulas starting with "=" for multilingual support.',
-                    },
                     promptInputTooltip: {
                         label: {
                             en: 'Prompt Input Tooltip',
@@ -1918,7 +1907,6 @@ export default {
                 processing: 'Processing...',
                 submitButton: 'Apply',
                 cancelButton: 'Cancel',
-                noTypesMessage: 'No modification types configured. Please configure at least one type in the settings.',
                 promptInputTooltip: 'Enter your instructions for the AI',
                 submitButtonTooltip: 'Apply the AI modification',
                 cancelButtonTooltip: 'Cancel the current operation',
