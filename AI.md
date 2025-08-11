@@ -87,3 +87,114 @@ A versatile rich text editor enabling text content creation with formatting opti
 - mentions: array - List of mentions in content (path: variables['current_element_uid-mentions'])
 - states: object - Editor states (text formatting, alignment, etc) (path: variables['current_element_uid-states'])
 
+# Menu AI - Types de modification personnalisés
+
+## Vue d'ensemble
+
+Le composant Rich Text Editor inclut un menu AI qui permet aux utilisateurs de modifier leur texte en utilisant l'intelligence artificielle. Par défaut, plusieurs types de modification sont disponibles, mais vous pouvez également configurer vos propres types personnalisés.
+
+## Types de modification par défaut
+
+Le menu AI n'inclut **aucun type de modification par défaut**. Tous les types de modification doivent être configurés par l'utilisateur dans les paramètres.
+
+> **Note** : Cette approche permet une personnalisation complète du menu AI selon les besoins spécifiques de chaque projet ou utilisateur.
+> 
+> **Exemples disponibles** : Des exemples de types de modification sont disponibles en commentaires dans le code source (`src/components/AiMenu.vue`) pour vous aider à configurer vos propres types.
+
+## Configuration des types de modification personnalisés
+
+### Étape 1 : Accéder aux paramètres
+
+1. Sélectionnez votre composant Rich Text Editor
+2. Dans le panneau de droite, allez dans la section "Settings"
+3. Trouvez la section "AI Menu"
+
+### Étape 2 : Configurer les types personnalisés
+
+Dans le paramètre "Custom Modification Types", vous pouvez ajouter autant de types que vous le souhaitez. Chaque type doit avoir les propriétés suivantes :
+
+#### Propriétés requises
+
+- **Key (identifiant unique)** : Un identifiant unique pour ce type (ex: "summarize", "rewrite", "academic")
+- **Display Label** : Le nom affiché dans le menu déroulant (ex: "Résumer", "Réécrire", "Style académique")
+
+#### Propriétés optionnelles
+
+- **Description** : Description de ce que fait ce type de modification
+- **Default Prompt** : Le prompt par défaut pour l'IA
+- **Action** : Comment la réponse de l'IA doit être appliquée au texte
+- **Require User Input** : Si l'utilisateur doit fournir une saisie supplémentaire
+
+### Étape 3 : Exemples de configuration
+
+#### Exemple 1 : Type "Résumer"
+
+```json
+{
+  "key": "summarize",
+  "label": "Résumer",
+  "description": "Condenser le texte en gardant les points essentiels",
+  "defaultPrompt": "Résume ce texte en gardant les informations importantes",
+  "action": "replace",
+  "requireInput": false
+}
+```
+
+#### Exemple 2 : Type "Style académique"
+
+```json
+{
+  "key": "academic",
+  "label": "Style académique",
+  "description": "Transformer le texte en style académique formel",
+  "defaultPrompt": "Transforme ce texte en style académique formel et professionnel",
+  "action": "replace",
+  "requireInput": true
+}
+```
+
+#### Exemple 3 : Type "Corriger l'orthographe"
+
+```json
+{
+  "key": "spellcheck",
+  "label": "Corriger l'orthographe",
+  "description": "Corriger les erreurs d'orthographe et de grammaire",
+  "defaultPrompt": "Corrige les erreurs d'orthographe et de grammaire dans ce texte",
+  "action": "replace",
+  "requireInput": false
+}
+```
+
+## Actions disponibles
+
+L'action détermine comment la réponse de l'IA sera appliquée au texte :
+
+- **replace** : Remplacer la sélection actuelle
+- **replace-all** : Remplacer tout le texte
+- **insert-before** : Insérer avant la sélection
+- **insert-after** : Insérer après la sélection
+- **append** : Ajouter à la fin du texte
+- **prepend** : Ajouter au début du texte
+
+## Utilisation
+
+Une fois configurés, vos types personnalisés apparaîtront dans le menu déroulant du menu AI, à côté des types par défaut. Les utilisateurs pourront :
+
+1. Sélectionner le type de modification souhaité
+2. Voir la description et le prompt par défaut
+3. Ajouter des instructions supplémentaires si nécessaire
+4. Soumettre leur demande à l'IA
+
+## Bonnes pratiques
+
+- **Clés uniques** : Assurez-vous que chaque clé est unique pour éviter les conflits
+- **Labels clairs** : Utilisez des noms descriptifs et compréhensibles
+- **Prompts précis** : Rédigez des prompts clairs pour obtenir de meilleurs résultats
+- **Actions appropriées** : Choisissez l'action qui correspond le mieux au comportement souhaité
+- **Validation** : Testez vos types personnalisés pour vous assurer qu'ils fonctionnent comme prévu
+
+## Support
+
+Si vous rencontrez des problèmes ou avez des questions sur la configuration des types de modification personnalisés, consultez la documentation de votre plateforme ou contactez le support technique.
+

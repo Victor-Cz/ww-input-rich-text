@@ -199,6 +199,7 @@
                 <!-- Utilisation du composant AiMenu personnalisé -->
                 <ai-menu ref="aiMenu" :rich-editor="richEditor" :is-read-only="content.parameterAiMenuReadOnly ?? true"
                     :parameter-ai-menu-primary-color="content.parameterAiMenuPrimaryColor ?? '#007bff'"
+                    :custom-modification-types="content.parameterAiMenuCustomTypes ?? []"
                     @ai-prompt="handleAiPrompt" v-if="richEditor" />
             </template>
         </div>

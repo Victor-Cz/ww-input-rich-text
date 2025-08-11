@@ -92,6 +92,7 @@ export default {
                 'parameterAiMenu',
                 'parameterAiMenuReadOnly',
                 'parameterAiMenuPrimaryColor',
+                'parameterAiMenuCustomTypes',
             ],
         ],
     },
@@ -1651,6 +1652,86 @@ export default {
             type: 'Color',
             defaultValue: '#007bff',
             bindable: true,
+        },
+        parameterAiMenuCustomTypes: {
+            section: 'settings',
+            hidden: content => content.customMenu,
+            label: {
+                en: 'Custom Modification Types',
+            },
+            type: 'Array',
+            options: {
+                item: {
+                    type: 'Object',
+                    defaultValue: {
+                        key: '',
+                        label: '',
+                        description: '',
+                        defaultPrompt: '',
+                        action: 'replace',
+                        requireInput: true
+                    },
+                    options: {
+                        item: {
+                            key: {
+                                label: { 
+                                    en: 'Key (unique identifier)',
+                                },
+                                type: 'Text',
+                                description: 'Unique identifier for this modification type (e.g., "summarize", "rewrite")'
+                            },
+                            label: {
+                                label: { 
+                                    en: 'Display Label',
+                                },
+                                type: 'Text',
+                                description: 'Label shown in the dropdown menu'
+                            },
+                            description: {
+                                label: { 
+                                    en: 'Description',
+                                },
+                                type: 'Textarea',
+                                description: 'Description of what this modification type does'
+                            },
+                            defaultPrompt: {
+                                label: { 
+                                    en: 'Default Prompt',
+                                },
+                                type: 'Textarea',
+                                description: 'Default AI prompt for this modification type'
+                            },
+                            action: {
+                                label: { 
+                                    en: 'Action',
+                                },
+                                type: 'TextSelect',
+                                options: {
+                                    options: [
+                                        { value: 'replace', label: { en: 'Replace selection' } },
+                                        { value: 'replace-all', label: { en: 'Replace all text' } },
+                                        { value: 'insert-before', label: { en: 'Insert before selection' } },
+                                        { value: 'insert-after', label: { en: 'Insert after selection' } },
+                                        { value: 'append', label: { en: 'Append to end' } },
+                                        { value: 'prepend', label: { en: 'Prepend to beginning' } }
+                                    ]
+                                },
+                                description: 'How the AI response should be applied to the text'
+                            },
+                            requireInput: {
+                                label: { 
+                                    en: 'Require User Input',
+                                },
+                                type: 'OnOff',
+                                description: 'Whether the user must provide additional input before submitting'
+                            }
+                        }
+                    }
+                }
+            },
+            defaultValue: [],
+            bindable: true,
+            description: 'Define custom modification types for the AI menu. Each type can have its own label, description, default prompt, and action behavior.'
         },
         /* wwEditor:start */
         form: {
