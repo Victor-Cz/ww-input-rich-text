@@ -1,7 +1,7 @@
 <template>
     <div class="bubble-menu" v-show="isMenuVisible" :class="{ 'is-focused': isFocused, 'force-display': forceDisplay }">
         <!-- Input pour les prompts AI -->
-        <div class="ai-input-container" v-if="!isLoading && Object.keys(modificationTypes).length > 0">
+        <div class="ai-input-container" v-if="!isLoading && !showSuccessCheck && Object.keys(modificationTypes).length > 0">
             <div class="ai-input-wrapper">
                 <textarea v-model="aiPrompt" :placeholder="getPromptPlaceholder" class="ai-input"
                     @keyup.enter="submitPrompt" @focus="onFocus" @blur="onBlur" rows="3"
@@ -48,6 +48,9 @@
         <div class="ai-loading-container" v-if="isLoading">
             <div class="ai-loading-spinner"></div>
             <div class="ai-loading-text">{{ placeholders.processing }}</div>
+        </div>
+        <div class="ai-success-container" v-if="showSuccessCheck">
+            <div class="icon-check-circle" aria-hidden="true"></div>
         </div>
     </div>
 </template>
@@ -166,6 +169,7 @@ export default {
             hasStarted: false,
             selectedModificationType: null,
             isDropdownOpen: false, // Pour contrôler l'ouverture/fermeture de la dropdown
+            showSuccessCheck: false,
         };
     },
     mounted() {
@@ -283,20 +287,10 @@ export default {
             // Appliquer la proposition à l'éditeur
             this.applyResponse(this.aiResponse);
 
-            // Effacer la suggestion
-            this.richEditor.commands.clearSuggestion();
-            this.richEditor.commands.clearHighlight();
-            this.richEditor.commands.clearStrike();
-
             // Réinitialiser et fermer le menu
             this.closeMenu();
         },
         rejectProposal() {
-            // Rejeter la proposition et fermer le menu
-            this.richEditor.commands.clearSuggestion();
-            this.richEditor.commands.clearHighlight();
-            this.richEditor.commands.clearStrike();
-
             this.closeMenu();
         },
         hideMenu() {
@@ -317,6 +311,7 @@ export default {
             this.isDropdownOpen = false;
             this.aiResponse = '';
             this.aiPrompt = '';
+            this.showSuccessCheck = false;
 
             // Nettoyer le surlignage, la suggestion et le Strike lors de la fermeture du menu
             this.richEditor.commands.clearHighlight();
@@ -324,7 +319,6 @@ export default {
             this.richEditor.commands.clearStrike();
         },
         applyResponse(response) {
-            console.log('applyResponse', response);
             const action = this.modificationTypes[this.selectedModificationType].action;
 
             // Formater le texte avec la même logique que pour l'affichage
@@ -340,6 +334,8 @@ export default {
                 case 'prepend': this.prependToBeginning(formattedResponse); break;
                 default: console.warn('Action non reconnue:', action); this.replaceSelection(formattedResponse);
             }
+            this.showSuccessCheck = true;
+            setTimeout(() => { this.showSuccessCheck = false; }, 2000);
         },
         openWithType(typeKey) {
             // Permettre l'ouverture avec ou sans type spécifique
@@ -780,5 +776,18 @@ export default {
     color: #6c757d;
     line-height: 1.4;
     max-width: 280px;
+}
+
+.ai-success-container {
+    display: flex;
+    flex-direction: row;
+    align-items: start;
+    gap: 12px;
+    padding: 12px;
+}
+.icon-check-circle {
+    width: 18px;
+    height: 18px;
+    color: var(--primary-color, #007bff);
 }
 </style>
