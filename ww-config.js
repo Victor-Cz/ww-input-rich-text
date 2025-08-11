@@ -1609,7 +1609,7 @@ export default {
         },
         parameterAiMenu: {
             section: 'settings',
-            hidden: content => content.customMenu,
+            hidden: content => !content.enableAiMenu,
             label: {
                 en: 'AI Menu',
             },

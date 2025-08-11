@@ -202,7 +202,7 @@
                     :custom-modification-types="content.parameterAiMenuCustomTypes ?? []"
                     :placeholders="content.parameterAiMenuPlaceholders ?? {}"
                     :force-display="content.parameterAiMenuForceDisplay ?? false"
-                    @ai-prompt="handleAiPrompt" v-if="richEditor" />
+                    @ai-prompt="handleAiPrompt" v-if="richEditor && content.enableAiMenu" />
             </template>
         </div>
 </template>
@@ -892,6 +892,11 @@ export default {
         // AI Menu actions
 
         openAiMenu(modificationType) {
+            // Vérifier si le menu AI est activé avant de l'ouvrir
+            if (!this.content.enableAiMenu) {
+                return; // Ne pas ouvrir le menu si enableAiMenu est false
+            }
+            
             // Ouvrir directement le composant AiMenu
             if (this.$refs.aiMenu) {
                 this.$refs.aiMenu.openWithType(modificationType ?? null);
