@@ -1,5 +1,5 @@
 <template>
-    <div class="bubble-menu" v-show="isVisible" :class="{ 'is-focused': isFocused }">
+    <div class="bubble-menu" v-show="isMenuVisible" :class="{ 'is-focused': isFocused, 'force-display': forceDisplay }">
         <!-- Input pour les prompts AI -->
         <div class="ai-input-container" v-if="!isLoading && Object.keys(modificationTypes).length > 0">
             <div class="ai-input-wrapper">
@@ -87,10 +87,27 @@ export default {
                 chooseTypePlaceholder: 'Select a type'
             }),
         },
+        // Nouvelle propriété pour forcer l'affichage dans l'éditeur
+        forceDisplay: {
+            type: Boolean,
+            default: false,
+        },
     },
     computed: {
         primaryColor() {
             return this.parameterAiMenuPrimaryColor || '#007bff';
+        },
+        // Computed property pour contrôler la visibilité du menu
+        isMenuVisible() {
+            // Détecter si on est dans l'éditeur WeWeb
+            const isInEditor = typeof window.wwLib !== "undefined";
+            
+            // Si forceDisplay est activé ET qu'on est dans l'éditeur, le menu est toujours visible
+            if (this.forceDisplay && isInEditor) {
+                return true;
+            }
+            // Sinon, utiliser la logique normale
+            return this.isVisible;
         },
         // Computed property pour récupérer les types de modification personnalisés
         modificationTypes() {

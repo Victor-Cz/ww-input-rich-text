@@ -201,6 +201,7 @@
                     :parameter-ai-menu-primary-color="content.parameterAiMenuPrimaryColor ?? '#007bff'"
                     :custom-modification-types="content.parameterAiMenuCustomTypes ?? []"
                     :placeholders="content.parameterAiMenuPlaceholders ?? {}"
+                    :force-display="content.parameterAiMenuForceDisplay ?? false"
                     @ai-prompt="handleAiPrompt" v-if="richEditor" />
             </template>
         </div>

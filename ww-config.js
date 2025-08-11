@@ -91,6 +91,7 @@ export default {
             [
                 'parameterAiMenu',
                 'parameterAiMenuReadOnly',
+                'parameterAiMenuForceDisplay',
                 'parameterAiMenuPrimaryColor',
                 'parameterAiMenuCustomTypes',
                 'parameterAiMenuPlaceholders',
@@ -1636,7 +1637,7 @@ export default {
             section: 'settings',
             hidden: content => content.customMenu,
             label: {
-                en: 'AI Menu Read Only',
+                en: 'Switch text to read only while AI is processing',
             },
             type: 'TextRadioGroup',
             options: {
@@ -1653,6 +1654,29 @@ export default {
                 ],
             },
             defaultValue: true,
+        },
+        parameterAiMenuForceDisplay: {
+            section: 'settings',
+            hidden: content => content.customMenu,
+            label: {
+                en: 'Force Display in Editor',
+            },
+            type: 'TextRadioGroup',
+            options: {
+                choices: [
+                    {
+                        value: false,
+                        default: true,
+                        label: 'No (Default behavior)',
+                    },
+                    {
+                        value: true,
+                        label: 'Yes (Always visible in editor)',
+                    },
+                ],
+            },
+            defaultValue: false,
+            description: 'When enabled, the AI menu will always be visible in the editor, regardless of text selection or focus state.',
         },
         parameterAiMenuPrimaryColor: {
             section: 'settings',
