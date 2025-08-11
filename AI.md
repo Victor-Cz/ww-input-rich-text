@@ -140,7 +140,24 @@ Chaque type de modification personnalisé doit avoir la structure suivante :
 
 ### Placeholders personnalisables
 
-Vous pouvez personnaliser tous les textes affichés dans l'interface du menu AI. Les placeholders utilisent maintenant le type **Formula** pour permettre le support multilingue et le contenu dynamique.
+Vous pouvez personnaliser tous les textes affichés dans l'interface du menu AI. Les placeholders acceptent maintenant **deux types de valeurs** :
+
+1. **Texte simple** : Pour une configuration rapide et simple
+2. **Formules** : Pour le support multilingue et le contenu dynamique
+
+#### Option 1 : Texte simple (recommandé pour débuter)
+
+```json
+{
+  "promptInput": "Entrez votre prompt...",
+  "processing": "Traitement en cours...",
+  "submitButton": "Envoyer",
+  "cancelButton": "Annuler",
+  "noTypesMessage": "Aucun type de modification configuré"
+}
+```
+
+#### Option 2 : Formules (pour le support multilingue)
 
 ```json
 {
@@ -189,17 +206,24 @@ Vous pouvez personnaliser tous les textes affichés dans l'interface du menu AI.
 
 ### Valeurs par défaut
 
-Les valeurs par défaut sont maintenant des chaînes de caractères entre guillemets pour éviter la confusion avec les formules :
+Les valeurs par défaut sont maintenant du texte simple (sans guillemets) pour une configuration facile :
 
 ```json
 {
-  "promptInput": "\"Enter your prompt...\"",
-  "processing": "\"Processing...\"",
-  "submitButton": "\"Submit\"",
-  "cancelButton": "\"Cancel\"",
-  "noTypesMessage": "\"No modification types configured. Please configure at least one type in the settings.\""
+  "promptInput": "Enter your prompt...",
+  "processing": "Processing...",
+  "submitButton": "Submit",
+  "cancelButton": "Cancel",
+  "noTypesMessage": "No modification types configured. Please configure at least one type in the settings."
 }
 ```
+
+### Logique d'évaluation
+
+Le système détecte automatiquement le type de valeur :
+
+- **Si la valeur commence par `=`** → Évaluée comme une formule
+- **Sinon** → Utilisée directement comme texte
 
 ### Avantages des formules
 
@@ -207,6 +231,13 @@ Les valeurs par défaut sont maintenant des chaînes de caractères entre guille
 2. **Contenu dynamique** : Possibilité d'utiliser des variables et des conditions
 3. **Flexibilité** : Intégration avec le système de gestion des langues de la plateforme
 4. **Performance** : Évaluation à la demande, pas de surcharge au chargement
+
+### Avantages du texte simple
+
+1. **Configuration rapide** : Pas besoin de connaître la syntaxe des formules
+2. **Performance optimale** : Aucun calcul d'évaluation
+3. **Simplicité** : Idéal pour les configurations statiques
+4. **Débogage facile** : Pas de risque d'erreur de formule
 
 ## Utilisation
 

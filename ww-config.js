@@ -1747,48 +1747,53 @@ export default {
                         label: { 
                             en: 'Prompt Input Placeholder',
                         },
-                        type: 'Formula',
-                        description: 'Placeholder text for the prompt input field. You can use formulas for multilingual support (e.g., wwLib.wwUtils.getText("ai.promptInput", { lang: wwLib.wwUtils.getCurrentLanguage() })'
+                        type: 'Text',
+                        bindable: true,
+                        description: 'Placeholder text for the prompt input field. You can use simple text or formulas starting with "=" for multilingual support (e.g., "Enter your prompt..." or "=wwLib.wwUtils.getText(\'ai.promptInput\')")'
                     },
                     processing: {
                         label: { 
                             en: 'Processing Message',
                         },
-                        type: 'Formula',
-                        description: 'Message displayed while AI is processing the request. You can use formulas for multilingual support.'
+                        type: 'Text',
+                        bindable: true,
+                        description: 'Message displayed while AI is processing the request. You can use simple text or formulas starting with "=" for multilingual support.'
                     },
                     submitButton: {
                         label: { 
                             en: 'Submit Button Text',
                         },
-                        type: 'Formula',
-                        description: 'Text displayed on the submit button. You can use formulas for multilingual support.'
+                        type: 'Text',
+                        bindable: true,
+                        description: 'Text displayed on the submit button. You can use simple text or formulas starting with "=" for multilingual support.'
                     },
                     cancelButton: {
                         label: { 
                             en: 'Cancel Button Text',
                         },
-                        type: 'Formula',
-                        description: 'Text displayed on the cancel button. You can use formulas for multilingual support.'
+                        type: 'Text',
+                        bindable: true,
+                        description: 'Text displayed on the cancel button. You can use simple text or formulas starting with "=" for multilingual support.'
                     },
                     noTypesMessage: {
                         label: { 
                             en: 'No Types Message',
                         },
-                        type: 'Formula',
-                        description: 'Message displayed when no modification types are configured. You can use formulas for multilingual support.'
+                        type: 'Text',
+                        bindable: true,
+                        description: 'Message displayed when no modification types are configured. You can use simple text or formulas starting with "=" for multilingual support.'
                     }
                 }
             },
             defaultValue: {
-                promptInput: '"Enter your prompt..."',
-                processing: '"Processing..."',
-                submitButton: '"Submit"',
-                cancelButton: '"Cancel"',
-                noTypesMessage: '"No modification types configured. Please configure at least one type in the settings."'
+                promptInput: 'Enter your prompt...',
+                processing: 'Processing...',
+                submitButton: 'Submit',
+                cancelButton: 'Cancel',
+                noTypesMessage: 'No modification types configured. Please configure at least one type in the settings.'
             },
-            bindable: true,
-            description: 'Customize the placeholder texts and messages displayed in the AI menu interface. You can use formulas for dynamic content and multilingual support.'
+            bindable: false,
+            description: 'Customize the placeholder texts and messages displayed in the AI menu interface. You can use simple text or formulas starting with "=" for dynamic content and multilingual support.'
         },
         /* wwEditor:start */
         form: {
