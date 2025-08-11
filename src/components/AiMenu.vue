@@ -9,22 +9,14 @@
                         :title="placeholders.promptInputTooltip"></textarea>
                     <div class="modification-type-dropdown">
                         <div class="dropdown-header" @click="toggleDropdown">
-                            <div v-if="getSelectedTypeIcon()" class="type-icon">
-                                <ww-icon v-if="isWwIcon(getSelectedTypeIcon())" v-bind="getSelectedTypeIcon()" />
-                                <div v-else v-html="getSelectedTypeIcon()"></div>
-                            </div>
-                            <div v-else class="icon-cog" aria-hidden="true"></div>
+                            <div :class="getSelectedTypeIcon() ? ['type-icon', getSelectedTypeIcon()] : 'type-icon icon-cog'" aria-hidden="true"></div>
                             <span>{{ getSelectedTypeLabel() }}</span>
                             <div class="icon-chevron-down" :class="{ 'rotated': isDropdownOpen }" aria-hidden="true"></div>
                         </div>
                         <div class="dropdown-options" v-show="isDropdownOpen">
                             <div v-for="(type, key) in modificationTypes" :key="key" class="dropdown-option"
                                 @click="selectModificationType(key)">
-                                <!-- Affichage de l'icône de chaque type -->
-                                <div v-if="type.icon" class="type-icon">
-                                    <ww-icon v-if="isWwIcon(type.icon)" v-bind="type.icon" />
-                                    <div v-else v-html="type.icon"></div>
-                                </div>
+                                <div v-if="type.icon" :class="['type-icon', type.icon]" aria-hidden="true"></div>
                                 <span>{{ type.label }}</span>
                             </div>
                         </div>
@@ -505,16 +497,13 @@ export default {
             if (this.selectedModificationType && this.modificationTypes[this.selectedModificationType]) {
                 const icon = this.modificationTypes[this.selectedModificationType].icon;
                 if (icon && icon.isWwObject && icon.type === 'ww-icon') {
-                    // Pour les icônes WeWeb, retourner l'objet icon complet
-                    return icon;
+                    // Pour les icônes WeWeb, retourner le nom de l'icône
+                    return icon.state?.icon || null;
                 }
-                return icon;
+                return icon; // Pour les icônes HTML/SVG, retourner tel quel
             }
             return null;
         },
-        isWwIcon(icon) {
-            return icon && icon.isWwObject && icon.type === 'ww-icon';
-        }
     },
 };
 </script>
