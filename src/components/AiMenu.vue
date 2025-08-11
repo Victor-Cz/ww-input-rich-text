@@ -778,13 +778,13 @@ export default {
 .ai-success-container {
     display: flex;
     flex-direction: row;
-    align-items: center;
+    align-items: start;
     gap: 12px;
-    padding: 12px;
+    padding: 8px 12px;
 }
 .icon-check-circle {
-    width: 24px;
-    height: 24px;
+    width: 18px;
+    height: 18px;
     color: var(--primary-color, #007bff);
 }
 </style>
