@@ -630,7 +630,7 @@ export default {
 .type-icon {
     width: 16px;
     height: 16px;
-    color: var(--primary-color);
+    color: #495057;
     display: flex;
     align-items: center;
     justify-content: center;
