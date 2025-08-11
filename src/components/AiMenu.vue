@@ -284,11 +284,8 @@ export default {
         },
 
         validateProposal() {
-            // Appliquer la proposition à l'éditeur
+            // Appliquer la proposition à l'éditeur puis fermer le menu
             this.applyResponse(this.aiResponse);
-
-            // Réinitialiser et fermer le menu
-            this.closeMenu();
         },
         rejectProposal() {
             this.closeMenu();
@@ -335,7 +332,7 @@ export default {
                 default: console.warn('Action non reconnue:', action); this.replaceSelection(formattedResponse);
             }
             this.showSuccessCheck = true;
-            setTimeout(() => { this.showSuccessCheck = false; }, 2000);
+            setTimeout(() => { this.showSuccessCheck = false; this.closeMenu(); }, 2000);
         },
         openWithType(typeKey) {
             // Permettre l'ouverture avec ou sans type spécifique
