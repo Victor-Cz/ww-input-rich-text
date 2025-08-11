@@ -217,6 +217,7 @@ export default {
                 modificationType: this.selectedModificationType,
                 action: action,
                 selectedText: this.storedSelection,
+                totalContent: this.getTotalContent(),
                 timestamp: new Date().toISOString()
             });
 
@@ -342,6 +343,7 @@ export default {
                 action: action,
                 selectedText: this.storedSelection,
                 selectionRange: this.storedSelectionRange,
+                totalContent: this.getTotalContent(),
                 timestamp: new Date().toISOString(),
                 position: position
             });
@@ -378,6 +380,14 @@ export default {
                     textarea.focus();
                 }
             });
+        },
+
+        // Méthode pour récupérer le contenu total de l'éditeur
+        getTotalContent() {
+            if (this.richEditor && this.richEditor.state && this.richEditor.state.doc) {
+                return this.richEditor.state.doc.textBetween(0, this.richEditor.state.doc.content.size);
+            }
+            return '';
         },
 
         // Méthode supprimée - maintenant gérée par les placeholders personnalisés

@@ -316,6 +316,7 @@ Ce trigger est déclenché lorsqu'une suggestion AI est appliquée avec succès 
     "from": 10,
     "to": 50
   },
+  "totalContent": "Contenu total du document après application de la suggestion",
   "timestamp": "2024-01-15T10:30:00.000Z",
   "position": 50
 }
@@ -328,6 +329,7 @@ Ce trigger est déclenché lorsqu'une suggestion AI est appliquée avec succès 
 - **`action`** : L'action appliquée (replace, insert-before, etc.)
 - **`selectedText`** : Le texte qui était sélectionné (si applicable)
 - **`selectionRange`** : La position de la sélection dans le document
+- **`totalContent`** : Le contenu total du document après application de la suggestion
 - **`timestamp`** : Horodatage de l'application
 - **`position`** : Position finale où le texte a été inséré
 
@@ -340,11 +342,18 @@ const eventData = event.event;
 const aiResponse = eventData.response;
 const modificationType = eventData.modificationType;
 const selectedText = eventData.selectedText;
+const totalContent = eventData.totalContent;
 
 // Logique personnalisée après application de la suggestion
 if (modificationType === 'summarize') {
     // Traitement spécifique pour les résumés
     console.log('Résumé appliqué:', aiResponse);
+    console.log('Contenu total du document:', totalContent);
+    
+    // Vérifier la longueur du document après modification
+    if (totalContent.length > 1000) {
+        console.log('Document devenu trop long après résumé');
+    }
 }
 ```
 
@@ -359,7 +368,29 @@ Ce trigger est déclenché lorsqu'un prompt AI est soumis.
   "modificationType": "summarize",
   "action": "replace",
   "selectedText": "Texte sélectionné",
+  "totalContent": "Contenu total du document au moment de l'envoi du prompt",
   "timestamp": "2024-01-15T10:30:00.000Z"
+}
+```
+
+**Exemple d'utilisation dans WeWeb :**
+```javascript
+// Dans un workflow WeWeb
+const eventData = event.event;
+
+// Accéder aux informations du prompt
+const prompt = eventData.prompt;
+const modificationType = eventData.modificationType;
+const totalContent = eventData.totalContent;
+
+// Logique personnalisée avant envoi à l'IA
+if (modificationType === 'summarize') {
+    // Vérifier la longueur du document avant résumé
+    if (totalContent.length < 100) {
+        console.log('Document trop court pour être résumé');
+    } else {
+        console.log('Document de', totalContent.length, 'caractères envoyé pour résumé');
+    }
 }
 ```
 
