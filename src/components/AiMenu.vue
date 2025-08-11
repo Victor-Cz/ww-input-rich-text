@@ -797,8 +797,8 @@ export default {
 }
 
 .icon-check-circle {
-    width: 200px;
-    height: 200px;
+    width: 24px;
+    height: 24px;
     color: var(--primary-color, #007bff);
     animation: successPop 300ms ease-out;
 }
