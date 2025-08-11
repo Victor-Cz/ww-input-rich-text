@@ -92,63 +92,8 @@ export default {
         primaryColor() {
             return this.parameterAiMenuPrimaryColor || '#007bff';
         },
-        // Computed property pour fusionner les types par défaut avec les types personnalisés
+        // Computed property pour récupérer les types de modification personnalisés
         modificationTypes() {
-            // Plus de types par défaut - seuls les types personnalisés de l'utilisateur
-            const defaultTypes = {};
-            
-            // Types commentés pour servir d'exemples lors de la configuration
-            // humanize: {
-            //     label: 'Humaniser',
-            //     description: 'Rendre le texte plus naturel et humain',
-            //     defaultPrompt: 'Rends ce texte plus naturel et humain',
-            //     action: 'replace-all',
-            //     requireInput: false
-            // },
-            // modify: {
-            //     label: 'Modifier',
-            //     description: 'Améliorer ou corriger le texte sélectionné',
-            //     defaultPrompt: 'Améliore ce texte en gardant le même sens',
-            //     action: 'replace',
-            //     requireInput: true
-            // },
-            // extend: {
-            //     label: 'Rallonger',
-            //     description: 'Développer et enrichir le contenu',
-            //     defaultPrompt: 'Développe et enrichis ce texte',
-            //     action: 'replace',
-            //     requireInput: true
-            // },
-            // shorten: {
-            //     label: 'Raccourcir',
-            //     description: 'Condense ce texte en gardant l\'essentiel',
-            //     defaultPrompt: 'Condense ce texte en gardant l\'essentiel',
-            //     action: 'replace',
-            //     requireInput: true
-            // },
-            // formalize: {
-            //     label: 'Formaliser',
-            //     description: 'Rendre le texte plus formel et professionnel',
-            //     defaultPrompt: 'Rends ce texte plus formel et professionnel',
-            //     action: 'replace',
-            //     requireInput: true
-            // },
-            // simplify: {
-            //     label: 'Simplifier',
-            //     description: 'Simplifie ce texte pour le rendre plus accessible',
-            //     defaultPrompt: 'Simplifie ce texte pour le rendre plus accessible',
-            //     action: 'replace',
-            //     requireInput: true
-            // },
-            // translate: {
-            //     label: 'Traduire',
-            //     description: 'Traduire dans une autre langue',
-            //     defaultPrompt: 'Traduis ce texte en français',
-            //     action: 'replace',
-            //     requireInput: true
-            // }
-            
-            // Fusionner avec les types personnalisés
             const customTypes = {};
             if (this.customModificationTypes && Array.isArray(this.customModificationTypes)) {
                 this.customModificationTypes.forEach(type => {
@@ -163,8 +108,7 @@ export default {
                     }
                 });
             }
-            
-            return { ...defaultTypes, ...customTypes };
+            return customTypes;
         },
         isSubmitDisabled() {
             if (!this.selectedModificationType) {

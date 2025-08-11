@@ -1705,6 +1705,7 @@ export default {
                                 },
                                 type: 'Textarea',
                                 bindable: true,
+                                defaultValue: 'Enter your instructions for the AI',
                                 description: 'Default AI prompt for this modification type'
                             },
                             action: {
