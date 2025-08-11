@@ -91,11 +91,12 @@ export default {
             'aiMenuSection',
             [
                 'parameterAiMenuTitleGeneral',
-                ['parameterAiMenuReadOnly', 'parameterAiMenuForceDisplay', 'parameterAiMenuPrimaryColor'],
-                'parameterAiMenuTitlePlaceholders',
-                ['parameterAiMenuPlaceholders'],
-                'parameterAiMenuCustomTypes',
+                'parameterAiMenuReadOnly',
+                'parameterAiMenuForceDisplay',
+                'parameterAiMenuPrimaryColor',
             ],
+            ['parameterAiMenuTitlePlaceholders', 'parameterAiMenuPlaceholders'],
+            ['parameterAiMenuCustomTypes'],
         ],
     },
     options: {
@@ -1605,17 +1606,6 @@ export default {
             },
             defaultValue: true,
         },
-        aiMenuSection: {
-            section: 'settings',
-            hidden: content => content.customMenu,
-            type: 'InfoBox',
-            options: {
-                variant: 'info',
-                icon: 'magic',
-                title: 'AI Menu',
-                content: 'Configure the AI menu functionality for text modification.',
-            },
-        },
         parameterAiMenu: {
             section: 'settings',
             hidden: content => content.customMenu,
@@ -1637,6 +1627,25 @@ export default {
                 ],
             },
             defaultValue: true,
+        },
+        aiMenuSection: {
+            section: 'settings',
+            hidden: content => content.customMenu,
+            type: 'InfoBox',
+            options: {
+                variant: 'info',
+                icon: 'magic',
+                title: 'AI Menu',
+                content: 'Configure the AI menu functionality for text modification.',
+            },
+        },
+        parameterAiMenuTitleGeneral: {
+            section: 'settings',
+            hidden: content => content.customMenu,
+            label: {
+                en: 'General Settings',
+            },
+            type: 'Title',
         },
         parameterAiMenuReadOnly: {
             section: 'settings',
@@ -1784,11 +1793,19 @@ export default {
             description:
                 'Define custom modification types for the AI menu. Each type can have its own label, default prompt, and action behavior. A "Rephrase" example is provided by default.',
         },
+        parameterAiMenuTitlePlaceholders: {
+            section: 'settings',
+            hidden: content => content.customMenu,
+            label: {
+                en: 'Placeholders & Labels',
+            },
+            type: 'Title',
+        },
         parameterAiMenuPlaceholders: {
             section: 'settings',
             hidden: content => content.customMenu,
             label: {
-                en: 'AI Menu Placeholders',
+                en: '',
             },
             type: 'Object',
             options: {
@@ -1900,22 +1917,6 @@ export default {
             bindable: false,
             description:
                 'Customize the placeholder texts and messages displayed in the AI menu interface. You can use simple text or formulas starting with "=" for dynamic content and multilingual support.',
-        },
-        parameterAiMenuTitleGeneral: {
-            section: 'settings',
-            hidden: content => content.customMenu,
-            label: {
-                en: 'General Settings',
-            },
-            type: 'Section',
-        },
-        parameterAiMenuTitlePlaceholders: {
-            section: 'settings',
-            hidden: content => content.customMenu,
-            label: {
-                en: 'Placeholders & Labels',
-            },
-            type: 'Section',
         },
         /* wwEditor:start */
         form: {
