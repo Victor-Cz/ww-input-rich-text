@@ -332,7 +332,7 @@ export default {
                 default: console.warn('Action non reconnue:', action); this.replaceSelection(formattedResponse);
             }
             this.showSuccessCheck = true;
-            setTimeout(() => { this.showSuccessCheck = false; this.closeMenu(); }, 2000);
+            setTimeout(() => { this.showSuccessCheck = false; this.closeMenu(); }, 1000);
         },
         openWithType(typeKey) {
             // Permettre l'ouverture avec ou sans type spécifique
@@ -778,13 +778,13 @@ export default {
 .ai-success-container {
     display: flex;
     flex-direction: row;
-    align-items: start;
+    align-items: center;
     gap: 12px;
     padding: 12px;
 }
 .icon-check-circle {
-    width: 18px;
-    height: 18px;
+    width: 24px;
+    height: 24px;
     color: var(--primary-color, #007bff);
 }
 </style>
