@@ -248,7 +248,8 @@ export default {
                     type: 'select',
                     options: {
                         bindable: true,
-                        bindableProperty: 'availableAiTypes'
+                        bindableProperty: 'availableAiTypes',
+                        options: []
                     },
                     description: 'Optional: Select a modification type to open with. Leave empty to open without a specific type.',
                 },
