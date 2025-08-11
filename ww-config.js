@@ -112,12 +112,12 @@ export default {
         {
             name: 'ai-prompt',
             label: { en: 'On AI prompt' },
-            event: { prompt: '', modificationType: '', action: '', selectedText: '', totalContent: '', timestamp: '' },
+            event: { prompt: '', modificationType: '', action: '', selectedText: '', htmlValue: '', timestamp: '' },
         },
         {
             name: 'ai-suggestion-applied',
             label: { en: 'On AI suggestion applied' },
-            event: { response: '', formattedResponse: '', modificationType: '', action: '', selectedText: '', selectionRange: '', totalContent: '', timestamp: '', position: '' },
+            event: { response: '', formattedResponse: '', modificationType: '', action: '', selectedText: '', selectionRange: '', htmlValue: '', timestamp: '', position: '' },
         },
     ],
     actions: [
