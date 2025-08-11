@@ -245,7 +245,7 @@ export default {
             args: [
                 {
                     name: 'Default type key',
-                    type: 'text',
+                    type: 'Text',
                     options: {
                         bindable: true,
                     },
