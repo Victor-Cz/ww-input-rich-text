@@ -30,7 +30,7 @@
                         <div class="icon-check" aria-hidden="true"></div>
                         <span class="button-label">{{ placeholders.submitButton }}</span>
                     </button>
-                    <button @click="submitPrompt" class="ai-submit-button" title="Envoyer le prompt"
+                    <button @click="submitPrompt" class="ai-submit-button"
                         :disabled="isSubmitDisabled">
                         <div class="icon-arrow-sm-right" aria-hidden="true"></div>
                     </button>
@@ -111,6 +111,7 @@ export default {
             return customTypes;
         },
         isSubmitDisabled() {
+            // Le bouton est désactivé si aucun type n'est sélectionné
             if (!this.selectedModificationType) {
                 return true;
             }
@@ -164,6 +165,13 @@ export default {
             this.isDropdownOpen = !this.isDropdownOpen;
         },
         submitPrompt() {
+            // Vérifier qu'un type est sélectionné avant de permettre la soumission
+            if (!this.selectedModificationType) {
+                // Si aucun type n'est sélectionné, ouvrir la dropdown pour forcer la sélection
+                this.isDropdownOpen = true;
+                return;
+            }
+
             if (this.isSubmitDisabled) {
                 return;
             }
@@ -311,7 +319,8 @@ export default {
             }
         },
         openWithType(typeKey) {
-            this.selectedModificationType = typeKey;
+            // Permettre l'ouverture avec ou sans type spécifique
+            this.selectedModificationType = typeKey || null;
             this.isVisible = true;
             this.isFocused = true;
 
@@ -330,14 +339,24 @@ export default {
             this.isDropdownOpen = false; // Fermer la dropdown après sélection
             this.isVisible = true;
             this.isFocused = true;
+            
+            // Focus sur l'input après la sélection du type
+            this.$nextTick(() => {
+                const textarea = this.$el.querySelector('.ai-input');
+                if (textarea) {
+                    textarea.focus();
+                }
+            });
         },
 
         // Méthode supprimée - maintenant gérée par les placeholders personnalisés
 
         buildFinalPrompt() {
-            if (this.selectedModificationType === 'custom') {
-                return this.aiPrompt;
+            // Si aucun type n'est sélectionné ou si le type n'existe pas, retourner seulement le prompt utilisateur
+            if (!this.selectedModificationType || !this.modificationTypes[this.selectedModificationType]) {
+                return this.aiPrompt || '';
             }
+            
             const basePrompt = this.modificationTypes[this.selectedModificationType].defaultPrompt;
             return this.aiPrompt ? `${basePrompt} : ${this.aiPrompt}` : basePrompt;
         },

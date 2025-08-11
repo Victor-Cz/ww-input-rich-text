@@ -242,6 +242,13 @@ export default {
         {
             label: 'Open AI Menu',
             action: 'openAiMenu',
+            args: [
+                {
+                    name: 'Modification Type',
+                    type: 'Text',
+                    description: 'Optional: Key of the modification type to open with. Leave empty to open without a specific type.',
+                },
+            ],
         },
         {
             label: 'Set AI Response',
@@ -1680,7 +1687,7 @@ export default {
                                     en: 'Key (unique identifier)',
                                 },
                                 type: 'Text',
-                                bindable: true,
+                                bindable: false,
                                 description: 'Unique identifier for this modification type (e.g., "summarize", "rewrite")'
                             },
                             label: {

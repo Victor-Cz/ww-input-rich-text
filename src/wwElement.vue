@@ -890,10 +890,12 @@ export default {
 
         // AI Menu actions
 
-        openAiMenu() {
+        openAiMenu(args = {}) {
             // Ouvrir directement le composant AiMenu
             if (this.$refs.aiMenu) {
-                this.$refs.aiMenu.openWithType('humanize');
+                // Récupérer le type de modification depuis les arguments de l'action
+                const typeKey = args['Modification Type'] || null;
+                this.$refs.aiMenu.openWithType(typeKey);
             }
         },
 
