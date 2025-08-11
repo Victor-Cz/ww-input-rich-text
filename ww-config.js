@@ -89,6 +89,7 @@ export default {
                 'parameterAiMenu',
             ],
             'aiMenuSection',
+            'enableAiMenu',
             [
                 'parameterAiMenuTitleGeneral',
                 'parameterAiMenuReadOnly',
@@ -1639,9 +1640,18 @@ export default {
                 content: 'Configure the AI menu functionality for text modification.',
             },
         },
-        parameterAiMenuTitleGeneral: {
+        enableAiMenu: {
             section: 'settings',
             hidden: content => content.customMenu,
+            label: {
+                en: 'Enable AI Menu',
+            },
+            type: 'OnOff',
+            defaultValue: false,
+        },
+        parameterAiMenuTitleGeneral: {
+            section: 'settings',
+            hidden: content => !content.enableAiMenu,
             label: {
                 en: 'General Settings',
             },
@@ -1649,7 +1659,7 @@ export default {
         },
         parameterAiMenuReadOnly: {
             section: 'settings',
-            hidden: content => content.customMenu,
+            hidden: content => !content.enableAiMenu,
             label: {
                 en: 'Switch text to read only while AI is processing',
             },
@@ -1671,7 +1681,7 @@ export default {
         },
         parameterAiMenuForceDisplay: {
             section: 'settings',
-            hidden: content => content.customMenu,
+            hidden: content => !content.enableAiMenu,
             label: {
                 en: 'Force Display in Editor',
             },
@@ -1695,7 +1705,7 @@ export default {
         },
         parameterAiMenuPrimaryColor: {
             section: 'settings',
-            hidden: content => content.customMenu,
+            hidden: content => !content.enableAiMenu,
             label: {
                 en: 'Primary Color',
             },
@@ -1705,7 +1715,7 @@ export default {
         },
         parameterAiMenuCustomTypes: {
             section: 'settings',
-            hidden: content => content.customMenu,
+            hidden: content => !content.enableAiMenu,
             label: {
                 en: 'Custom Modification Types',
             },
@@ -1795,7 +1805,7 @@ export default {
         },
         parameterAiMenuTitlePlaceholders: {
             section: 'settings',
-            hidden: content => content.customMenu,
+            hidden: content => !content.enableAiMenu,
             label: {
                 en: 'Placeholders & Labels',
             },
@@ -1803,7 +1813,7 @@ export default {
         },
         parameterAiMenuPlaceholders: {
             section: 'settings',
-            hidden: content => content.customMenu,
+            hidden: content => !content.enableAiMenu,
             label: {
                 en: '',
             },
