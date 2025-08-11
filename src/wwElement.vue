@@ -498,6 +498,28 @@ export default {
                 aiMenu: this.content.parameterAiMenu ?? true,
             };
         },
+        // Propriété bindable pour exposer les types AI disponibles
+        availableAiTypes() {
+            const customTypes = this.content.parameterAiMenuCustomTypes || [];
+            if (!Array.isArray(customTypes)) return [];
+            
+            // Commencer par l'option vide
+            const types = [
+                { value: '', label: 'Choose a type (optional)' }
+            ];
+            
+            // Ajouter les types personnalisés
+            customTypes
+                .filter(type => type.key)
+                .forEach(type => {
+                    types.push({
+                        value: type.key,
+                        label: type.key
+                    });
+                });
+            
+            return types;
+        },
         editorConfig() {
             return {
                 placeholder: wwLib.wwLang.getText(this.content.placeholder),
@@ -890,12 +912,10 @@ export default {
 
         // AI Menu actions
 
-        openAiMenu(args = {}) {
+        openAiMenu(modificationType) {
             // Ouvrir directement le composant AiMenu
             if (this.$refs.aiMenu) {
-                // Récupérer le type de modification depuis les arguments de l'action
-                const typeKey = args['Modification Type'] || null;
-                this.$refs.aiMenu.openWithType(typeKey);
+                this.$refs.aiMenu.openWithType(modificationType ?? null);
             }
         },
 

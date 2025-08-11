@@ -39,9 +39,9 @@
         </div>
 
         <!-- Message quand aucun type n'est configuré -->
-        <div class="ai-no-types-message" v-if="!isLoading && Object.keys(modificationTypes).length === 0">
+        <div class="ai-no-types-message" v-if="Object.keys(modificationTypes).length === 0">
             <div class="no-types-icon">⚠️</div>
-                            <div class="no-types-text">{{ placeholders.noTypesMessage }}</div>
+            <div class="no-types-text">No modification types configured. Please configure at least one type in the settings.</div>
         </div>
 
         <!-- État de chargement -->
@@ -81,7 +81,6 @@ export default {
                 processing: 'Processing...',
                 submitButton: 'Apply',
                 cancelButton: 'Cancel',
-                noTypesMessage: 'No modification types configured. Please configure at least one type in the settings.',
                 promptInputTooltip: 'Enter your instructions for the AI',
                 submitButtonTooltip: 'Apply the AI modification',
                 cancelButtonTooltip: 'Cancel the current operation'
