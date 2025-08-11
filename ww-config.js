@@ -244,7 +244,7 @@ export default {
             action: 'openAiMenu',
             args: [
                 {
-                    name: 'Default type key',
+                    name: 'Default type key (optional)',
                     type: 'Text',
                     options: {
                         bindable: true,
@@ -1701,14 +1701,6 @@ export default {
                                 bindable: true,
                                 description: 'Label shown in the dropdown menu'
                             },
-                            description: {
-                                label: { 
-                                    en: 'Description',
-                                },
-                                type: 'Textarea',
-                                bindable: true,
-                                description: 'Description of what this modification type does'
-                            },
                             defaultPrompt: {
                                 label: { 
                                     en: 'Default Prompt',
@@ -1752,14 +1744,13 @@ export default {
                 {
                     key: 'rephrase',
                     label: 'Rephrase',
-                    description: 'Reformuler le texte sélectionné avec un style différent',
                     defaultPrompt: 'Reformule ce texte avec un style différent tout en gardant le même sens',
                     action: 'replace',
                     requireInput: true
                 }
             ],
             bindable: true,
-            description: 'Define custom modification types for the AI menu. Each type can have its own label, description, default prompt, and action behavior. A "Rephrase" example is provided by default.'
+            description: 'Define custom modification types for the AI menu. Each type can have its own label, default prompt, and action behavior. A "Rephrase" example is provided by default.'
         },
         parameterAiMenuPlaceholders: {
             section: 'settings',

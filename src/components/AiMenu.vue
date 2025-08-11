@@ -99,7 +99,6 @@ export default {
                     if (type.key && type.label) {
                         customTypes[type.key] = {
                             label: type.label,
-                            description: type.description || '',
                             defaultPrompt: type.defaultPrompt || '',
                             action: type.action || 'replace',
                             requireInput: type.requireInput !== undefined ? type.requireInput : true
