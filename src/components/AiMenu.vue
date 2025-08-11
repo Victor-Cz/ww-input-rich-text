@@ -332,7 +332,7 @@ export default {
                 default: console.warn('Action non reconnue:', action); this.replaceSelection(formattedResponse);
             }
             this.showSuccessCheck = true;
-            setTimeout(() => { this.showSuccessCheck = false; this.closeMenu(); }, 1000);
+            setTimeout(() => { this.showSuccessCheck = false; this.closeMenu(); }, 1500);
         },
         openWithType(typeKey) {
             // Permettre l'ouverture avec ou sans type spécifique
