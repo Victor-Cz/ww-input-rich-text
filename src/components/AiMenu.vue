@@ -3,7 +3,7 @@
         <!-- Input pour les prompts AI -->
         <div class="ai-input-container" v-if="!isLoading && Object.keys(modificationTypes).length > 0">
             <div class="ai-input-wrapper">
-                <textarea v-model="aiPrompt" :placeholder="placeholders.promptInput" class="ai-input"
+                <textarea v-model="aiPrompt" :placeholder="getPromptPlaceholder" class="ai-input"
                     @keyup.enter="submitPrompt" @focus="onFocus" @blur="onBlur" rows="3"
                     :title="placeholders.promptInputTooltip"></textarea>
                 <div class="modification-type-dropdown">
@@ -119,7 +119,8 @@ export default {
                             label: type.label,
                             defaultPrompt: type.defaultPrompt || '',
                             action: type.action || 'replace',
-                            requireInput: type.requireInput !== undefined ? type.requireInput : true
+                            requireInput: type.requireInput !== undefined ? type.requireInput : true,
+                            promptPlaceholder: type.promptPlaceholder || '' // Ajouter le placeholder personnalisé
                         };
                     }
                 });
@@ -145,8 +146,13 @@ export default {
             // Par défaut, requireInput est true, donc l'input est requis
             return !this.aiPrompt.trim();
         },
-        
-
+        getPromptPlaceholder() {
+            const type = this.selectedModificationType && this.modificationTypes[this.selectedModificationType];
+            if (type && type.promptPlaceholder) {
+                return type.promptPlaceholder;
+            }
+            return this.placeholders.promptInput;
+        },
     },
     data() {
         return {

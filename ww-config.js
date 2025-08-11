@@ -1785,6 +1785,15 @@ export default {
                                 bindable: true,
                                 description: 'Whether the user must provide additional input before submitting',
                             },
+                            promptPlaceholder: {
+                                label: {
+                                    en: 'Prompt Input Placeholder',
+                                },
+                                type: 'Text',
+                                bindable: true,
+                                defaultValue: '',
+                                description: 'Custom placeholder for the prompt input when this modification type is selected. If empty, the global placeholder will be used.',
+                            },
                         },
                     },
                 },
