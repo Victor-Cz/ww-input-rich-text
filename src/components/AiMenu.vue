@@ -9,14 +9,23 @@
                         :title="placeholders.promptInputTooltip"></textarea>
                     <div class="modification-type-dropdown">
                         <div class="dropdown-header" @click="toggleDropdown">
-                            <div class="icon-cog" aria-hidden="true"></div>
+                            <div v-if="getSelectedTypeIcon()" class="type-icon">
+                                <ww-icon v-if="isWwIcon(getSelectedTypeIcon())" v-bind="getSelectedTypeIcon()" />
+                                <div v-else v-html="getSelectedTypeIcon()"></div>
+                            </div>
+                            <div v-else class="icon-cog" aria-hidden="true"></div>
                             <span>{{ getSelectedTypeLabel() }}</span>
                             <div class="icon-chevron-down" :class="{ 'rotated': isDropdownOpen }" aria-hidden="true"></div>
                         </div>
                         <div class="dropdown-options" v-show="isDropdownOpen">
                             <div v-for="(type, key) in modificationTypes" :key="key" class="dropdown-option"
                                 @click="selectModificationType(key)">
-                                {{ type.label }}
+                                <!-- Affichage de l'icône de chaque type -->
+                                <div v-if="type.icon" class="type-icon">
+                                    <ww-icon v-if="isWwIcon(type.icon)" v-bind="type.icon" />
+                                    <div v-else v-html="type.icon"></div>
+                                </div>
+                                <span>{{ type.label }}</span>
                             </div>
                         </div>
                     </div>
@@ -125,7 +134,8 @@ export default {
                             defaultPrompt: type.defaultPrompt || '',
                             action: type.action || 'replace',
                             requireInput: type.requireInput !== undefined ? type.requireInput : true,
-                            promptPlaceholder: type.promptPlaceholder || '' // Ajouter le placeholder personnalisé
+                            promptPlaceholder: type.promptPlaceholder || '', // Ajouter le placeholder personnalisé
+                            icon: type.icon // Ajouter l'icône personnalisée
                         };
                     }
                 });
@@ -490,6 +500,21 @@ export default {
             }
             return this.placeholders.chooseTypePlaceholder || 'Select a type';
         },
+
+        getSelectedTypeIcon() {
+            if (this.selectedModificationType && this.modificationTypes[this.selectedModificationType]) {
+                const icon = this.modificationTypes[this.selectedModificationType].icon;
+                if (icon && icon.isWwObject && icon.type === 'ww-icon') {
+                    // Pour les icônes WeWeb, retourner l'objet icon complet
+                    return icon;
+                }
+                return icon;
+            }
+            return null;
+        },
+        isWwIcon(icon) {
+            return icon && icon.isWwObject && icon.type === 'ww-icon';
+        }
     },
 };
 </script>
@@ -595,6 +620,9 @@ export default {
     text-align: left;
     cursor: pointer;
     transition: border-color 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
 }
 
 .dropdown-option:hover {
@@ -604,6 +632,16 @@ export default {
 .dropdown-option:focus {
     background: rgb(238, 238, 238);
     box-shadow: 0 0 0 3px var(--primary-color-1A);
+}
+
+.dropdown-option span {
+    flex: 1;
+}
+
+.type-icon {
+    width: 20px;
+    height: 20px;
+    color: var(--primary-color);
 }
 
 .ai-input-container {

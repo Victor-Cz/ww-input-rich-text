@@ -316,7 +316,7 @@ Ce trigger est déclenché lorsqu'une suggestion AI est appliquée avec succès 
     "from": 10,
     "to": 50
   },
-  "totalContent": "Contenu total du document après application de la suggestion",
+  "htmlValue": "Contenu total du document après application de la suggestion",
   "timestamp": "2024-01-15T10:30:00.000Z",
   "position": 50
 }
@@ -329,7 +329,7 @@ Ce trigger est déclenché lorsqu'une suggestion AI est appliquée avec succès 
 - **`action`** : L'action appliquée (replace, insert-before, etc.)
 - **`selectedText`** : Le texte qui était sélectionné (si applicable)
 - **`selectionRange`** : La position de la sélection dans le document
-- **`totalContent`** : Le contenu total du document après application de la suggestion
+- **`htmlValue`** : Le contenu total du document après application de la suggestion
 - **`timestamp`** : Horodatage de l'application
 - **`position`** : Position finale où le texte a été inséré
 
@@ -342,16 +342,16 @@ const eventData = event.event;
 const aiResponse = eventData.response;
 const modificationType = eventData.modificationType;
 const selectedText = eventData.selectedText;
-const totalContent = eventData.totalContent;
+const htmlValue = eventData.htmlValue;
 
 // Logique personnalisée après application de la suggestion
 if (modificationType === 'summarize') {
     // Traitement spécifique pour les résumés
     console.log('Résumé appliqué:', aiResponse);
-    console.log('Contenu total du document:', totalContent);
+    console.log('Contenu total du document:', htmlValue);
     
     // Vérifier la longueur du document après modification
-    if (totalContent.length > 1000) {
+    if (htmlValue.length > 1000) {
         console.log('Document devenu trop long après résumé');
     }
 }
@@ -368,7 +368,7 @@ Ce trigger est déclenché lorsqu'un prompt AI est soumis.
   "modificationType": "summarize",
   "action": "replace",
   "selectedText": "Texte sélectionné",
-  "totalContent": "Contenu total du document au moment de l'envoi du prompt",
+  "htmlValue": "Contenu total du document au moment de l'envoi du prompt",
   "timestamp": "2024-01-15T10:30:00.000Z"
 }
 ```
@@ -381,15 +381,15 @@ const eventData = event.event;
 // Accéder aux informations du prompt
 const prompt = eventData.prompt;
 const modificationType = eventData.modificationType;
-const totalContent = eventData.totalContent;
+const htmlValue = eventData.htmlValue;
 
 // Logique personnalisée avant envoi à l'IA
 if (modificationType === 'summarize') {
     // Vérifier la longueur du document avant résumé
-    if (totalContent.length < 100) {
+    if (htmlValue.length < 100) {
         console.log('Document trop court pour être résumé');
     } else {
-        console.log('Document de', totalContent.length, 'caractères envoyé pour résumé');
+        console.log('Document de', htmlValue.length, 'caractères envoyé pour résumé');
     }
 }
 ```
@@ -480,4 +480,87 @@ Voici un exemple complet de configuration pour le menu AI :
 ```
 
 ## Utilisation
+
+# Configuration des Icônes pour les Types de Modification AI
+
+## Vue d'ensemble
+
+Le composant Rich Text avec menu AI permet maintenant de définir des icônes personnalisées pour chaque type de modification. Ces icônes s'affichent dans le menu déroulant des types de modification et dans l'en-tête de la dropdown.
+
+## Configuration des Icônes
+
+### 1. Dans les Paramètres du Composant
+
+1. Activez le menu AI (`Enable AI Menu`)
+2. Dans la section "Custom Modification Types", ajoutez ou modifiez un type
+3. Utilisez le champ "Icon" pour définir l'icône du type
+
+### 2. Types d'Icônes Supportés
+
+#### Icônes WeWeb (Recommandé)
+```javascript
+{
+    isWwObject: true,
+    type: 'ww-icon',
+    state: {
+        name: 'Nom de l\'icône',
+        icon: 'nom-de-l-icone'
+    }
+}
+```
+
+#### Icônes HTML/SVG (Support Legacy)
+```html
+<i class="fas fa-magic"></i>
+```
+
+### 3. Exemples d'Icônes WeWeb Populaires
+
+- `magic` - Pour la reformulation
+- `edit` - Pour l'édition
+- `translate` - Pour la traduction
+- `summarize` - Pour la résumé
+- `expand` - Pour l'expansion
+- `compress` - Pour la compression
+- `sparkles` - Pour l'amélioration
+- `lightbulb` - Pour les suggestions
+
+## Exemple de Configuration Complète
+
+```javascript
+{
+    key: 'rephrase',
+    label: 'Reformuler',
+    icon: {
+        isWwObject: true,
+        type: 'ww-icon',
+        state: {
+            name: 'Magic icon',
+            icon: 'magic'
+        }
+    },
+    defaultPrompt: 'Reformule ce texte avec un style différent',
+    action: 'replace',
+    requireInput: true
+}
+```
+
+## Avantages des Icônes WeWeb
+
+1. **Cohérence visuelle** - Utilise la bibliothèque d'icônes native de WeWeb
+2. **Facilité d'utilisation** - Sélection simple dans l'interface
+3. **Responsive** - S'adapte automatiquement aux différentes tailles d'écran
+4. **Maintenance** - Pas besoin de gérer les dépendances externes
+5. **Accessibilité** - Intégration native avec les fonctionnalités d'accessibilité
+
+## Bonnes Pratiques
+
+1. **Choisir des icônes intuitives** - L'icône doit représenter clairement l'action
+2. **Maintenir la cohérence** - Utiliser un style d'icônes cohérent dans tout le projet
+3. **Tester la visibilité** - S'assurer que l'icône est visible sur tous les fonds
+4. **Limiter le nombre** - Ne pas surcharger l'interface avec trop d'icônes
+
+## Support des Icônes Personnalisées
+
+Si vous avez besoin d'icônes personnalisées non disponibles dans WeWeb, vous pouvez toujours utiliser le support HTML/SVG en définissant directement le code HTML dans le champ icon.
 

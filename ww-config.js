@@ -1732,6 +1732,7 @@ export default {
                         key: '',
                         label: '',
                         description: '',
+                        icon: '',
                         defaultPrompt: '',
                         action: 'replace',
                         requireInput: true,
@@ -1754,6 +1755,14 @@ export default {
                                 type: 'Text',
                                 bindable: true,
                                 description: 'Label shown in the dropdown menu',
+                            },
+                            icon: {
+                                label: {
+                                    en: 'Icon',
+                                },
+                                type: 'Icon',
+                                bindable: true,
+                                description: 'Icon shown in the dropdown menu',
                             },
                             promptPlaceholder: {
                                 label: {
@@ -1807,6 +1816,14 @@ export default {
                 {
                     key: 'rephrase',
                     label: 'Rephrase',
+                    icon: {
+                        isWwObject: true,
+                        type: 'ww-icon',
+                        state: {
+                            name: 'Magic icon',
+                            icon: 'magic',
+                        },
+                    },
                     defaultPrompt: 'Reformule ce texte avec un style différent tout en gardant le même sens',
                     action: 'replace',
                     requireInput: true,
@@ -1814,7 +1831,7 @@ export default {
             ],
             bindable: true,
             description:
-                'Define custom modification types for the AI menu. Each type can have its own label, default prompt, and action behavior. A "Rephrase" example is provided by default.',
+                'Define custom modification types for the AI menu. Each type can have its own label, icon, default prompt, and action behavior. A "Rephrase" example is provided by default.',
         },
         parameterAiMenuTitlePlaceholders: {
             section: 'settings',
