@@ -778,13 +778,28 @@ export default {
 .ai-success-container {
     display: flex;
     flex-direction: row;
-    align-items: start;
+    align-items: center;
+    justify-content: center;
     gap: 12px;
     padding: 8px 12px;
+    min-height: 40px;
 }
+
+@keyframes successPop {
+    0% {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
 .icon-check-circle {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     color: var(--primary-color, #007bff);
+    animation: successPop 180ms ease-out;
 }
 </style>
