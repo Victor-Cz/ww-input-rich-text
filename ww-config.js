@@ -1737,9 +1737,18 @@ export default {
                     }
                 }
             },
-            defaultValue: [],
+            defaultValue: [
+                {
+                    key: 'rephrase',
+                    label: 'Rephrase',
+                    description: 'Reformuler le texte sélectionné avec un style différent',
+                    defaultPrompt: 'Reformule ce texte avec un style différent tout en gardant le même sens',
+                    action: 'replace',
+                    requireInput: true
+                }
+            ],
             bindable: true,
-            description: 'Define custom modification types for the AI menu. Each type can have its own label, description, default prompt, and action behavior.'
+            description: 'Define custom modification types for the AI menu. Each type can have its own label, description, default prompt, and action behavior. A "Rephrase" example is provided by default.'
         },
         parameterAiMenuPlaceholders: {
             section: 'settings',
