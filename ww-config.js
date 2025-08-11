@@ -1861,7 +1861,6 @@ export default {
         // Propriété bindable pour exposer les types AI disponibles
         availableAiTypes: {
             section: 'settings',
-            hidden: content => content.customMenu,
             label: {
                 en: 'Available AI Types',
                 fr: 'Types AI disponibles',
