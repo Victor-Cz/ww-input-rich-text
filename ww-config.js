@@ -244,14 +244,12 @@ export default {
             action: 'openAiMenu',
             args: [
                 {
-                    name: 'Modification Type',
-                    type: 'select',
+                    name: 'Default type key',
+                    type: 'text',
                     options: {
                         bindable: true,
-                        bindableProperty: 'availableAiTypes',
-                        options: []
                     },
-                    description: 'Optional: Select a modification type to open with. Leave empty to open without a specific type.',
+                    description: 'Optional: Specify a modification type key to open the AI menu with. Leave empty to open the menu without a preselected type.',
                 },
             ],
         },
@@ -1858,19 +1856,6 @@ export default {
             },
             bindable: false,
             description: 'Customize the placeholder texts and messages displayed in the AI menu interface. You can use simple text or formulas starting with "=" for dynamic content and multilingual support.'
-        },
-        // Propriété bindable pour exposer les types AI disponibles
-        availableAiTypes: {
-            section: 'settings',
-            label: {
-                en: 'Available AI Types',
-                fr: 'Types AI disponibles',
-            },
-            type: 'Array',
-            bindable: true,
-            readonly: true,
-            description: 'This property exposes the available AI modification types as a bindable array. Each type contains a value (key) and label. Use this in other components to dynamically populate select options.',
-            defaultValue: []
         },
         /* wwEditor:start */
         form: {

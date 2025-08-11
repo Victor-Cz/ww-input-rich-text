@@ -498,28 +498,6 @@ export default {
                 aiMenu: this.content.parameterAiMenu ?? true,
             };
         },
-        // Propriété bindable pour exposer les types AI disponibles
-        availableAiTypes() {
-            const customTypes = this.content.parameterAiMenuCustomTypes || [];
-            if (!Array.isArray(customTypes)) return [];
-            
-            // Commencer par l'option vide
-            const types = [
-                { value: '', label: 'Choose a type (optional)' }
-            ];
-            
-            // Ajouter les types personnalisés
-            customTypes
-                .filter(type => type.key)
-                .forEach(type => {
-                    types.push({
-                        value: type.key,
-                        label: type.key
-                    });
-                });
-            
-            return types;
-        },
         editorConfig() {
             return {
                 placeholder: wwLib.wwLang.getText(this.content.placeholder),
