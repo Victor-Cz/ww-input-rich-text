@@ -3,7 +3,7 @@
         <!-- Input pour les prompts AI -->
         <div class="ai-input-container" v-if="!isLoading && Object.keys(modificationTypes).length > 0">
             <div class="ai-input-wrapper">
-                <textarea v-model="aiPrompt" :placeholder="placeholders.promptInput" class="ai-input"
+                <textarea v-model="aiPrompt" :placeholder="evaluatedPlaceholders.promptInput" class="ai-input"
                     @keyup.enter="submitPrompt" @focus="onFocus" @blur="onBlur" rows="3"></textarea>
                 <div class="modification-type-dropdown">
                     <div class="dropdown-header" @click="toggleDropdown">
@@ -22,12 +22,12 @@
                     <button @click="rejectProposal" class="ai-reject-button" title="Rejeter la proposition"
                         :disabled="!aiResponse" v-if="aiResponse">
                         <div class="icon-x" aria-hidden="true"></div>
-                        <span class="button-label">{{ placeholders.cancelButton }}</span>
+                        <span class="button-label">{{ evaluatedPlaceholders.cancelButton }}</span>
                     </button>
                     <button @click="validateProposal" class="ai-validate-button" title="Valider la proposition"
                         :disabled="!aiResponse" v-if="aiResponse">
                         <div class="icon-check" aria-hidden="true"></div>
-                        <span class="button-label">{{ placeholders.submitButton }}</span>
+                        <span class="button-label">{{ evaluatedPlaceholders.submitButton }}</span>
                     </button>
                     <button @click="submitPrompt" class="ai-submit-button" title="Envoyer le prompt"
                         :disabled="isSubmitDisabled">
@@ -40,13 +40,13 @@
         <!-- Message quand aucun type n'est configuré -->
         <div class="ai-no-types-message" v-if="!isLoading && Object.keys(modificationTypes).length === 0">
             <div class="no-types-icon">⚠️</div>
-            <div class="no-types-text">{{ placeholders.noTypesMessage }}</div>
+            <div class="no-types-text">{{ evaluatedPlaceholders.noTypesMessage }}</div>
         </div>
 
         <!-- État de chargement -->
         <div class="ai-loading-container" v-if="isLoading">
             <div class="ai-loading-spinner"></div>
-            <div class="ai-loading-text">{{ placeholders.processing }}</div>
+            <div class="ai-loading-text">{{ evaluatedPlaceholders.processing }}</div>
         </div>
     </div>
 </template>
@@ -179,6 +179,59 @@ export default {
 
             // Par défaut, requireInput est true, donc l'input est requis
             return !this.aiPrompt.trim();
+        },
+        
+        // Méthode pour évaluer les formules des placeholders
+        evaluatePlaceholder(formula) {
+            if (!formula || typeof formula !== 'string') {
+                return formula;
+            }
+            
+            try {
+                // Si c'est une formule (commence par = ou contient des fonctions)
+                if (formula.startsWith('=') || formula.includes('wwLib.') || formula.includes('getText')) {
+                    // Retirer le = si présent
+                    const cleanFormula = formula.startsWith('=') ? formula.substring(1) : formula;
+                    
+                    // Évaluer la formule
+                    // Note: wwLib devrait être disponible dans le contexte global
+                    if (typeof wwLib !== 'undefined' && wwLib.wwUtils) {
+                        // Utiliser Function pour évaluer de manière sécurisée
+                        const result = new Function('wwLib', 'return ' + cleanFormula)(wwLib);
+                        return result || formula;
+                    }
+                    
+                    // Fallback: essayer d'évaluer directement
+                    try {
+                        const result = eval(cleanFormula);
+                        return result || formula;
+                    } catch (evalError) {
+                        console.warn('Could not evaluate formula:', cleanFormula, evalError);
+                        return formula;
+                    }
+                }
+                
+                // Si c'est juste du texte entre guillemets, le retourner sans guillemets
+                if (formula.startsWith('"') && formula.endsWith('"')) {
+                    return formula.slice(1, -1);
+                }
+                
+                return formula;
+            } catch (error) {
+                console.warn('Error evaluating placeholder formula:', formula, error);
+                return formula;
+            }
+        },
+        
+        // Computed properties pour les placeholders évalués
+        evaluatedPlaceholders() {
+            return {
+                promptInput: this.evaluatePlaceholder(this.placeholders.promptInput),
+                processing: this.evaluatePlaceholder(this.placeholders.processing),
+                submitButton: this.evaluatePlaceholder(this.placeholders.submitButton),
+                cancelButton: this.evaluatePlaceholder(this.placeholders.cancelButton),
+                noTypesMessage: this.evaluatePlaceholder(this.placeholders.noTypesMessage)
+            };
         },
     },
     data() {

@@ -1747,48 +1747,48 @@ export default {
                         label: { 
                             en: 'Prompt Input Placeholder',
                         },
-                        type: 'Text',
-                        description: 'Placeholder text for the prompt input field'
+                        type: 'Formula',
+                        description: 'Placeholder text for the prompt input field. You can use formulas for multilingual support (e.g., wwLib.wwUtils.getText("ai.promptInput", { lang: wwLib.wwUtils.getCurrentLanguage() })'
                     },
                     processing: {
                         label: { 
                             en: 'Processing Message',
                         },
-                        type: 'Text',
-                        description: 'Message displayed while AI is processing the request'
+                        type: 'Formula',
+                        description: 'Message displayed while AI is processing the request. You can use formulas for multilingual support.'
                     },
                     submitButton: {
                         label: { 
                             en: 'Submit Button Text',
                         },
-                        type: 'Text',
-                        description: 'Text displayed on the submit button'
+                        type: 'Formula',
+                        description: 'Text displayed on the submit button. You can use formulas for multilingual support.'
                     },
                     cancelButton: {
                         label: { 
                             en: 'Cancel Button Text',
                         },
-                        type: 'Text',
-                        description: 'Text displayed on the cancel button'
+                        type: 'Formula',
+                        description: 'Text displayed on the cancel button. You can use formulas for multilingual support.'
                     },
                     noTypesMessage: {
                         label: { 
                             en: 'No Types Message',
                         },
-                        type: 'Text',
-                        description: 'Message displayed when no modification types are configured'
+                        type: 'Formula',
+                        description: 'Message displayed when no modification types are configured. You can use formulas for multilingual support.'
                     }
                 }
             },
             defaultValue: {
-                promptInput: 'Enter your prompt...',
-                processing: 'Processing...',
-                submitButton: 'Submit',
-                cancelButton: 'Cancel',
-                noTypesMessage: 'No modification types configured. Please configure at least one type in the settings.'
+                promptInput: '"Enter your prompt..."',
+                processing: '"Processing..."',
+                submitButton: '"Submit"',
+                cancelButton: '"Cancel"',
+                noTypesMessage: '"No modification types configured. Please configure at least one type in the settings."'
             },
             bindable: true,
-            description: 'Customize the placeholder texts and messages displayed in the AI menu interface.'
+            description: 'Customize the placeholder texts and messages displayed in the AI menu interface. You can use formulas for dynamic content and multilingual support.'
         },
         /* wwEditor:start */
         form: {

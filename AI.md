@@ -140,16 +140,43 @@ Chaque type de modification personnalisé doit avoir la structure suivante :
 
 ### Placeholders personnalisables
 
-Vous pouvez personnaliser tous les textes affichés dans l'interface du menu AI :
+Vous pouvez personnaliser tous les textes affichés dans l'interface du menu AI. Les placeholders utilisent maintenant le type **Formula** pour permettre le support multilingue et le contenu dynamique.
 
 ```json
 {
-  "promptInput": "Entrez votre prompt...",
-  "processing": "Traitement en cours...",
-  "submitButton": "Envoyer",
-  "cancelButton": "Annuler",
-  "noTypesMessage": "Aucun type de modification configuré. Veuillez configurer au moins un type dans les paramètres."
+  "promptInput": "=wwLib.wwUtils.getText('ai.promptInput', { lang: wwLib.wwUtils.getCurrentLanguage() })",
+  "processing": "=wwLib.wwUtils.getText('ai.processing', { lang: wwLib.wwUtils.getCurrentLanguage() })",
+  "submitButton": "=wwLib.wwUtils.getText('ai.submitButton', { lang: wwLib.wwUtils.getCurrentLanguage() })",
+  "cancelButton": "=wwLib.wwUtils.getText('ai.cancelButton', { lang: wwLib.wwUtils.getCurrentLanguage() })",
+  "noTypesMessage": "=wwLib.wwUtils.getText('ai.noTypesMessage', { lang: wwLib.wwUtils.getCurrentLanguage() })"
 }
+```
+
+### Support multilingue avec formules
+
+#### Option 1 : Utilisation de wwLib.wwUtils.getText()
+
+```javascript
+// Français
+=wwLib.wwUtils.getText('ai.promptInput', { lang: 'fr' })
+
+// Anglais
+=wwLib.wwUtils.getText('ai.promptInput', { lang: 'en' })
+
+// Langue actuelle
+=wwLib.wwUtils.getText('ai.promptInput', { lang: wwLib.wwUtils.getCurrentLanguage() })
+```
+
+#### Option 2 : Formules conditionnelles
+
+```javascript
+=wwLib.wwUtils.getCurrentLanguage() === 'fr' ? 'Entrez votre prompt...' : 'Enter your prompt...'
+```
+
+#### Option 3 : Utilisation de variables globales
+
+```javascript
+=wwLib.wwUtils.getText('ai.promptInput', { lang: wwLib.wwUtils.getCurrentLanguage() }) || 'Enter your prompt...'
 ```
 
 ### Champs disponibles
@@ -159,6 +186,27 @@ Vous pouvez personnaliser tous les textes affichés dans l'interface du menu AI 
 - **`submitButton`** : Texte du bouton d'envoi
 - **`cancelButton`** : Texte du bouton d'annulation
 - **`noTypesMessage`** : Message affiché quand aucun type n'est configuré
+
+### Valeurs par défaut
+
+Les valeurs par défaut sont maintenant des chaînes de caractères entre guillemets pour éviter la confusion avec les formules :
+
+```json
+{
+  "promptInput": "\"Enter your prompt...\"",
+  "processing": "\"Processing...\"",
+  "submitButton": "\"Submit\"",
+  "cancelButton": "\"Cancel\"",
+  "noTypesMessage": "\"No modification types configured. Please configure at least one type in the settings.\""
+}
+```
+
+### Avantages des formules
+
+1. **Support multilingue** : Changement automatique de langue selon la configuration
+2. **Contenu dynamique** : Possibilité d'utiliser des variables et des conditions
+3. **Flexibilité** : Intégration avec le système de gestion des langues de la plateforme
+4. **Performance** : Évaluation à la demande, pas de surcharge au chargement
 
 ## Utilisation
 
@@ -218,13 +266,39 @@ Voici un exemple complet de configuration pour le menu AI :
 
 ### Placeholders personnalisés
 
+#### Configuration simple (texte statique)
+
 ```json
 {
-  "promptInput": "Entrez votre prompt personnalisé...",
-  "processing": "L'IA traite votre demande...",
-  "submitButton": "Envoyer à l'IA",
-  "cancelButton": "Annuler",
-  "noTypesMessage": "Aucun type de modification configuré. Veuillez configurer au moins un type dans les paramètres."
+  "promptInput": "\"Entrez votre prompt personnalisé...\"",
+  "processing": "\"L'IA traite votre demande...\"",
+  "submitButton": "\"Envoyer à l'IA\"",
+  "cancelButton": "\"Annuler\"",
+  "noTypesMessage": "\"Aucun type de modification configuré. Veuillez configurer au moins un type dans les paramètres.\""
+}
+```
+
+#### Configuration multilingue avancée (avec formules)
+
+```json
+{
+  "promptInput": "=wwLib.wwUtils.getCurrentLanguage() === 'fr' ? 'Entrez votre prompt...' : 'Enter your prompt...'",
+  "processing": "=wwLib.wwUtils.getCurrentLanguage() === 'fr' ? 'Traitement en cours...' : 'Processing...'",
+  "submitButton": "=wwLib.wwUtils.getCurrentLanguage() === 'fr' ? 'Envoyer' : 'Submit'",
+  "cancelButton": "=wwLib.wwUtils.getCurrentLanguage() === 'fr' ? 'Annuler' : 'Cancel'",
+  "noTypesMessage": "=wwLib.wwUtils.getCurrentLanguage() === 'fr' ? 'Aucun type de modification configuré. Veuillez configurer au moins un type dans les paramètres.' : 'No modification types configured. Please configure at least one type in the settings.'"
+}
+```
+
+#### Configuration avec système de traduction intégré
+
+```json
+{
+  "promptInput": "=wwLib.wwUtils.getText('ai.promptInput', { lang: wwLib.wwUtils.getCurrentLanguage() }) || 'Enter your prompt...'",
+  "processing": "=wwLib.wwUtils.getText('ai.processing', { lang: wwLib.wwUtils.getCurrentLanguage() }) || 'Processing...'",
+  "submitButton": "=wwLib.wwUtils.getText('ai.submitButton', { lang: wwLib.wwUtils.getCurrentLanguage() }) || 'Submit'",
+  "cancelButton": "=wwLib.wwUtils.getText('ai.cancelButton', { lang: wwLib.wwUtils.getCurrentLanguage() }) || 'Cancel'",
+  "noTypesMessage": "=wwLib.wwUtils.getText('ai.noTypesMessage', { lang: wwLib.wwUtils.getCurrentLanguage() }) || 'No modification types configured. Please configure at least one type in the settings.'"
 }
 ```
 
