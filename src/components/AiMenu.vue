@@ -83,7 +83,8 @@ export default {
                 cancelButton: 'Cancel',
                 promptInputTooltip: 'Enter your instructions for the AI',
                 submitButtonTooltip: 'Apply the AI modification',
-                cancelButtonTooltip: 'Cancel the current operation'
+                cancelButtonTooltip: 'Cancel the current operation',
+                chooseTypePlaceholder: 'Select a type'
             }),
         },
     },
@@ -456,7 +457,7 @@ export default {
             if (this.selectedModificationType && this.modificationTypes[this.selectedModificationType]) {
                 return this.modificationTypes[this.selectedModificationType].label;
             }
-            return 'Choisir un type';
+            return this.placeholders.chooseTypePlaceholder || 'Select a type';
         },
     },
 };

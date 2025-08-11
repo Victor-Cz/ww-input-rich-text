@@ -1832,6 +1832,15 @@ export default {
                         bindable: true,
                         defaultValue: 'Cancel the current operation',
                         description: 'Tooltip text displayed when hovering over the cancel button. You can use simple text or formulas starting with "=" for multilingual support.'
+                    },
+                    chooseTypePlaceholder: {
+                        label: { 
+                            en: 'Choose Type Placeholder',
+                        },
+                        type: 'Text',
+                        bindable: true,
+                        defaultValue: 'Select a type',
+                        description: 'Text displayed in the modification type dropdown when no type is selected. You can use simple text or formulas starting with "=" for multilingual support.'
                     }
                 }
             },
@@ -1843,7 +1852,8 @@ export default {
                 noTypesMessage: 'No modification types configured. Please configure at least one type in the settings.',
                 promptInputTooltip: 'Enter your instructions for the AI',
                 submitButtonTooltip: 'Apply the AI modification',
-                cancelButtonTooltip: 'Cancel the current operation'
+                cancelButtonTooltip: 'Cancel the current operation',
+                chooseTypePlaceholder: 'Select a type'
             },
             bindable: false,
             description: 'Customize the placeholder texts and messages displayed in the AI menu interface. You can use simple text or formulas starting with "=" for dynamic content and multilingual support.'
