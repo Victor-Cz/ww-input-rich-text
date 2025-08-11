@@ -787,7 +787,7 @@ export default {
 
 @keyframes successPop {
     0% {
-        transform: scale(0.9);
+        transform: scale(0.8);
         opacity: 0;
     }
     100% {
@@ -797,8 +797,6 @@ export default {
 }
 
 .icon-check-circle {
-    width: 24px;
-    height: 24px;
     color: var(--primary-color, #007bff);
     animation: successPop 300ms ease-out;
 }
