@@ -25,13 +25,12 @@
                         <div class="icon-x" aria-hidden="true"></div>
                         <span class="button-label">{{ placeholders.cancelButton }}</span>
                     </button>
-                    <button @click="validateProposal" class="ai-validate-button" :title="placeholders.submitButtonTooltip"
-                        :disabled="!aiResponse" v-if="aiResponse">
+                    <button @click="validateProposal" class="ai-validate-button"
+                        :title="placeholders.submitButtonTooltip" :disabled="!aiResponse" v-if="aiResponse">
                         <div class="icon-check" aria-hidden="true"></div>
                         <span class="button-label">{{ placeholders.submitButton }}</span>
                     </button>
-                    <button @click="submitPrompt" class="ai-submit-button"
-                        :disabled="isSubmitDisabled">
+                    <button @click="submitPrompt" class="ai-submit-button" :disabled="isSubmitDisabled">
                         <div class="icon-arrow-sm-right" aria-hidden="true"></div>
                     </button>
                 </div>
@@ -41,13 +40,14 @@
         <!-- Message quand aucun type n'est configuré -->
         <div class="ai-no-types-message" v-if="Object.keys(modificationTypes).length === 0">
             <div class="no-types-icon">⚠️</div>
-            <div class="no-types-text">No modification types configured. Please configure at least one type in the settings.</div>
+            <div class="no-types-text">No modification types configured. Please configure at least one type in the
+                settings.</div>
         </div>
 
         <!-- État de chargement -->
         <div class="ai-loading-container" v-if="isLoading">
             <div class="ai-loading-spinner"></div>
-                            <div class="ai-loading-text">{{ placeholders.processing }}</div>
+            <div class="ai-loading-text">{{ placeholders.processing }}</div>
         </div>
     </div>
 </template>
@@ -101,7 +101,7 @@ export default {
         isMenuVisible() {
             // Détecter si on est dans l'éditeur WeWeb
             const isInEditor = typeof window.wwLib !== "undefined";
-            
+
             // Si forceDisplay est activé ET qu'on est dans l'éditeur, le menu est toujours visible
             if (this.forceDisplay && isInEditor) {
                 return true;
@@ -280,13 +280,13 @@ export default {
         },
 
         validateProposal() {
+            // Appliquer la proposition à l'éditeur
+            this.applyResponse(this.aiResponse);
+
             // Effacer la suggestion
             this.richEditor.commands.clearSuggestion();
             this.richEditor.commands.clearHighlight();
             this.richEditor.commands.clearStrike();
-
-            // Appliquer la proposition à l'éditeur
-            this.applyResponse(this.aiResponse);
 
             // Réinitialiser et fermer le menu
             this.closeMenu();
@@ -361,7 +361,7 @@ export default {
             this.isDropdownOpen = false; // Fermer la dropdown après sélection
             this.isVisible = true;
             this.isFocused = true;
-            
+
             // Focus sur l'input après la sélection du type
             this.$nextTick(() => {
                 const textarea = this.$el.querySelector('.ai-input');
@@ -378,7 +378,7 @@ export default {
             if (!this.selectedModificationType || !this.modificationTypes[this.selectedModificationType]) {
                 return this.aiPrompt || '';
             }
-            
+
             const basePrompt = this.modificationTypes[this.selectedModificationType].defaultPrompt;
             return this.aiPrompt ? `${basePrompt} : ${this.aiPrompt}` : basePrompt;
         },
