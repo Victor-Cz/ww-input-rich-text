@@ -103,79 +103,62 @@ Le menu AI n'inclut **aucun type de modification par défaut**. Tous les types d
 
 ## Configuration des types de modification personnalisés
 
-### Étape 1 : Accéder aux paramètres
+### Structure d'un type de modification
 
-1. Sélectionnez votre composant Rich Text Editor
-2. Dans le panneau de droite, allez dans la section "Settings"
-3. Trouvez la section "AI Menu"
-
-### Étape 2 : Configurer les types personnalisés
-
-Dans le paramètre "Custom Modification Types", vous pouvez ajouter autant de types que vous le souhaitez. Chaque type doit avoir les propriétés suivantes :
-
-#### Propriétés requises
-
-- **Key (identifiant unique)** : Un identifiant unique pour ce type (ex: "summarize", "rewrite", "academic")
-- **Display Label** : Le nom affiché dans le menu déroulant (ex: "Résumer", "Réécrire", "Style académique")
-
-#### Propriétés optionnelles
-
-- **Description** : Description de ce que fait ce type de modification
-- **Default Prompt** : Le prompt par défaut pour l'IA
-- **Action** : Comment la réponse de l'IA doit être appliquée au texte
-- **Require User Input** : Si l'utilisateur doit fournir une saisie supplémentaire
-
-### Étape 3 : Exemples de configuration
-
-#### Exemple 1 : Type "Résumer"
+Chaque type de modification personnalisé doit avoir la structure suivante :
 
 ```json
 {
   "key": "summarize",
   "label": "Résumer",
-  "description": "Condenser le texte en gardant les points essentiels",
-  "defaultPrompt": "Résume ce texte en gardant les informations importantes",
-  "action": "replace",
-  "requireInput": false
-}
-```
-
-#### Exemple 2 : Type "Style académique"
-
-```json
-{
-  "key": "academic",
-  "label": "Style académique",
-  "description": "Transformer le texte en style académique formel",
-  "defaultPrompt": "Transforme ce texte en style académique formel et professionnel",
+  "description": "Créer un résumé concis du texte sélectionné",
+  "defaultPrompt": "Résume ce texte en gardant les points essentiels",
   "action": "replace",
   "requireInput": true
 }
 ```
 
-#### Exemple 3 : Type "Corriger l'orthographe"
+### Champs disponibles
+
+- **`key`** : Identifiant unique du type (ex: "summarize", "rewrite", "translate")
+- **`label`** : Nom affiché dans le menu déroulant
+- **`description`** : Description de ce que fait ce type de modification
+- **`defaultPrompt`** : Prompt par défaut pour l'IA
+- **`action`** : Comment appliquer la réponse de l'IA
+- **`requireInput`** : Si l'utilisateur doit fournir un input supplémentaire
+
+### Actions disponibles
+
+- **`replace`** : Remplacer la sélection
+- **`replace-all`** : Remplacer tout le texte
+- **`insert-before`** : Insérer avant la sélection
+- **`insert-after`** : Insérer après la sélection
+- **`append`** : Ajouter à la fin
+- **`prepend`** : Ajouter au début
+
+## Configuration des placeholders et messages
+
+### Placeholders personnalisables
+
+Vous pouvez personnaliser tous les textes affichés dans l'interface du menu AI :
 
 ```json
 {
-  "key": "spellcheck",
-  "label": "Corriger l'orthographe",
-  "description": "Corriger les erreurs d'orthographe et de grammaire",
-  "defaultPrompt": "Corrige les erreurs d'orthographe et de grammaire dans ce texte",
-  "action": "replace",
-  "requireInput": false
+  "promptInput": "Entrez votre prompt...",
+  "processing": "Traitement en cours...",
+  "submitButton": "Envoyer",
+  "cancelButton": "Annuler",
+  "noTypesMessage": "Aucun type de modification configuré. Veuillez configurer au moins un type dans les paramètres."
 }
 ```
 
-## Actions disponibles
+### Champs disponibles
 
-L'action détermine comment la réponse de l'IA sera appliquée au texte :
-
-- **replace** : Remplacer la sélection actuelle
-- **replace-all** : Remplacer tout le texte
-- **insert-before** : Insérer avant la sélection
-- **insert-after** : Insérer après la sélection
-- **append** : Ajouter à la fin du texte
-- **prepend** : Ajouter au début du texte
+- **`promptInput`** : Placeholder du champ de saisie du prompt
+- **`processing`** : Message affiché pendant le traitement par l'IA
+- **`submitButton`** : Texte du bouton d'envoi
+- **`cancelButton`** : Texte du bouton d'annulation
+- **`noTypesMessage`** : Message affiché quand aucun type n'est configuré
 
 ## Utilisation
 
@@ -197,4 +180,53 @@ Une fois configurés, vos types personnalisés apparaîtront dans le menu dérou
 ## Support
 
 Si vous rencontrez des problèmes ou avez des questions sur la configuration des types de modification personnalisés, consultez la documentation de votre plateforme ou contactez le support technique.
+
+## Exemple de configuration complète
+
+Voici un exemple complet de configuration pour le menu AI :
+
+### Types de modification personnalisés
+
+```json
+[
+  {
+    "key": "summarize",
+    "label": "Résumer",
+    "description": "Créer un résumé concis du texte sélectionné",
+    "defaultPrompt": "Résume ce texte en gardant les points essentiels",
+    "action": "replace",
+    "requireInput": true
+  },
+  {
+    "key": "academic",
+    "label": "Style académique",
+    "description": "Transformer le texte en style académique formel",
+    "defaultPrompt": "Transforme ce texte en style académique formel et professionnel",
+    "action": "replace",
+    "requireInput": true
+  },
+  {
+    "key": "simplify",
+    "label": "Simplifier",
+    "description": "Simplifier le texte pour le rendre plus accessible",
+    "defaultPrompt": "Simplifie ce texte pour le rendre plus facile à comprendre",
+    "action": "replace",
+    "requireInput": false
+  }
+]
+```
+
+### Placeholders personnalisés
+
+```json
+{
+  "promptInput": "Entrez votre prompt personnalisé...",
+  "processing": "L'IA traite votre demande...",
+  "submitButton": "Envoyer à l'IA",
+  "cancelButton": "Annuler",
+  "noTypesMessage": "Aucun type de modification configuré. Veuillez configurer au moins un type dans les paramètres."
+}
+```
+
+## Utilisation
 

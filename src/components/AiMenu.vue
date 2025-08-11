@@ -1,9 +1,9 @@
 <template>
     <div class="bubble-menu" v-show="isVisible" :class="{ 'is-focused': isFocused }">
         <!-- Input pour les prompts AI -->
-        <div class="ai-input-container" v-if="!isLoading">
+        <div class="ai-input-container" v-if="!isLoading && Object.keys(modificationTypes).length > 0">
             <div class="ai-input-wrapper">
-                <textarea v-model="aiPrompt" :placeholder="getPromptPlaceholder()" class="ai-input"
+                <textarea v-model="aiPrompt" :placeholder="placeholders.promptInput" class="ai-input"
                     @keyup.enter="submitPrompt" @focus="onFocus" @blur="onBlur" rows="3"></textarea>
                 <div class="modification-type-dropdown">
                     <div class="dropdown-header" @click="toggleDropdown">
@@ -22,12 +22,12 @@
                     <button @click="rejectProposal" class="ai-reject-button" title="Rejeter la proposition"
                         :disabled="!aiResponse" v-if="aiResponse">
                         <div class="icon-x" aria-hidden="true"></div>
-                        <span class="button-label">Discard</span>
+                        <span class="button-label">{{ placeholders.cancelButton }}</span>
                     </button>
                     <button @click="validateProposal" class="ai-validate-button" title="Valider la proposition"
                         :disabled="!aiResponse" v-if="aiResponse">
                         <div class="icon-check" aria-hidden="true"></div>
-                        <span class="button-label">Apply</span>
+                        <span class="button-label">{{ placeholders.submitButton }}</span>
                     </button>
                     <button @click="submitPrompt" class="ai-submit-button" title="Envoyer le prompt"
                         :disabled="isSubmitDisabled">
@@ -37,10 +37,16 @@
             </div>
         </div>
 
+        <!-- Message quand aucun type n'est configuré -->
+        <div class="ai-no-types-message" v-if="!isLoading && Object.keys(modificationTypes).length === 0">
+            <div class="no-types-icon">⚠️</div>
+            <div class="no-types-text">{{ placeholders.noTypesMessage }}</div>
+        </div>
+
         <!-- État de chargement -->
         <div class="ai-loading-container" v-if="isLoading">
             <div class="ai-loading-spinner"></div>
-            <div class="ai-loading-text">Traitement en cours...</div>
+            <div class="ai-loading-text">{{ placeholders.processing }}</div>
         </div>
     </div>
 </template>
@@ -65,6 +71,17 @@ export default {
         customModificationTypes: {
             type: Array,
             default: () => [],
+        },
+        // Nouvelle propriété pour les placeholders personnalisés
+        placeholders: {
+            type: Object,
+            default: () => ({
+                promptInput: 'Enter your prompt...',
+                processing: 'Processing...',
+                submitButton: 'Submit',
+                cancelButton: 'Cancel',
+                noTypesMessage: 'No modification types configured. Please configure at least one type in the settings.'
+            }),
         },
     },
     computed: {
@@ -365,12 +382,7 @@ export default {
             this.isFocused = true;
         },
 
-        getPromptPlaceholder() {
-            if (this.selectedModificationType && this.modificationTypes[this.selectedModificationType]) {
-                return this.modificationTypes[this.selectedModificationType].defaultPrompt;
-            }
-            return 'Entrez votre prompt...';
-        },
+        // Méthode supprimée - maintenant gérée par les placeholders personnalisés
 
         buildFinalPrompt() {
             if (this.selectedModificationType === 'custom') {
@@ -754,5 +766,27 @@ export default {
     100% {
         transform: rotate(360deg);
     }
+}
+
+/* Message quand aucun type n'est configuré */
+.ai-no-types-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 24px;
+    text-align: center;
+}
+
+.no-types-icon {
+    font-size: 24px;
+    opacity: 0.7;
+}
+
+.no-types-text {
+    font-size: 14px;
+    color: #6c757d;
+    line-height: 1.4;
+    max-width: 280px;
 }
 </style>

@@ -93,6 +93,7 @@ export default {
                 'parameterAiMenuReadOnly',
                 'parameterAiMenuPrimaryColor',
                 'parameterAiMenuCustomTypes',
+                'parameterAiMenuPlaceholders',
             ],
         ],
     },
@@ -1732,6 +1733,62 @@ export default {
             defaultValue: [],
             bindable: true,
             description: 'Define custom modification types for the AI menu. Each type can have its own label, description, default prompt, and action behavior.'
+        },
+        parameterAiMenuPlaceholders: {
+            section: 'settings',
+            hidden: content => content.customMenu,
+            label: {
+                en: 'AI Menu Placeholders',
+            },
+            type: 'Object',
+            options: {
+                item: {
+                    promptInput: {
+                        label: { 
+                            en: 'Prompt Input Placeholder',
+                        },
+                        type: 'Text',
+                        description: 'Placeholder text for the prompt input field'
+                    },
+                    processing: {
+                        label: { 
+                            en: 'Processing Message',
+                        },
+                        type: 'Text',
+                        description: 'Message displayed while AI is processing the request'
+                    },
+                    submitButton: {
+                        label: { 
+                            en: 'Submit Button Text',
+                        },
+                        type: 'Text',
+                        description: 'Text displayed on the submit button'
+                    },
+                    cancelButton: {
+                        label: { 
+                            en: 'Cancel Button Text',
+                        },
+                        type: 'Text',
+                        description: 'Text displayed on the cancel button'
+                    },
+                    noTypesMessage: {
+                        label: { 
+                            en: 'No Types Message',
+                        },
+                        type: 'Text',
+                        description: 'Message displayed when no modification types are configured'
+                    }
+                }
+            },
+            defaultValue: {
+                promptInput: 'Enter your prompt...',
+                processing: 'Processing...',
+                submitButton: 'Submit',
+                cancelButton: 'Cancel',
+                noTypesMessage: 'No modification types configured. Please configure at least one type in the settings.'
+            },
+            bindable: true,
+            description: 'Customize the placeholder texts and messages displayed in the AI menu interface.'
         },
         /* wwEditor:start */
         form: {
