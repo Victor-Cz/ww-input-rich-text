@@ -628,8 +628,8 @@ export default {
 }
 
 .type-icon {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     color: var(--primary-color);
     display: flex;
     align-items: center;
@@ -637,7 +637,7 @@ export default {
 }
 
 .type-icon::before {
-    font-size: 16px;
+    font-size: 14px;
     line-height: 1;
 }
 
