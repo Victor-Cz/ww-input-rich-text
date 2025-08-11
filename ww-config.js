@@ -1664,6 +1664,7 @@ export default {
             options: {
                 item: {
                     type: 'Object',
+                    bindable: true,
                     defaultValue: {
                         key: '',
                         label: '',
@@ -1679,6 +1680,7 @@ export default {
                                     en: 'Key (unique identifier)',
                                 },
                                 type: 'Text',
+                                bindable: true,
                                 description: 'Unique identifier for this modification type (e.g., "summarize", "rewrite")'
                             },
                             label: {
@@ -1686,6 +1688,7 @@ export default {
                                     en: 'Display Label',
                                 },
                                 type: 'Text',
+                                bindable: true,
                                 description: 'Label shown in the dropdown menu'
                             },
                             description: {
@@ -1693,6 +1696,7 @@ export default {
                                     en: 'Description',
                                 },
                                 type: 'Textarea',
+                                bindable: true,
                                 description: 'Description of what this modification type does'
                             },
                             defaultPrompt: {
@@ -1700,6 +1704,7 @@ export default {
                                     en: 'Default Prompt',
                                 },
                                 type: 'Textarea',
+                                bindable: true,
                                 description: 'Default AI prompt for this modification type'
                             },
                             action: {
@@ -1707,6 +1712,7 @@ export default {
                                     en: 'Action',
                                 },
                                 type: 'TextSelect',
+                                bindable: true,
                                 options: {
                                     options: [
                                         { value: 'replace', label: { en: 'Replace selection' } },
@@ -1724,6 +1730,7 @@ export default {
                                     en: 'Require User Input',
                                 },
                                 type: 'OnOff',
+                                bindable: true,
                                 description: 'Whether the user must provide additional input before submitting'
                             }
                         }
