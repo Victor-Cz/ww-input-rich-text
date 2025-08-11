@@ -1,58 +1,60 @@
 <template>
-    <div class="bubble-menu" v-show="isMenuVisible" :class="{ 'is-focused': isFocused, 'force-display': forceDisplay }">
-        <!-- Input pour les prompts AI -->
-        <div class="ai-input-container" v-if="!isLoading && !showSuccessCheck && Object.keys(modificationTypes).length > 0">
-            <div class="ai-input-wrapper">
-                <textarea v-model="aiPrompt" :placeholder="getPromptPlaceholder" class="ai-input"
-                    @keyup.enter="submitPrompt" @focus="onFocus" @blur="onBlur" rows="3"
-                    :title="placeholders.promptInputTooltip"></textarea>
-                <div class="modification-type-dropdown">
-                    <div class="dropdown-header" @click="toggleDropdown">
-                        <div class="icon-cog" aria-hidden="true"></div>
-                        <span>{{ getSelectedTypeLabel() }}</span>
-                        <div class="icon-chevron-down" :class="{ 'rotated': isDropdownOpen }" aria-hidden="true"></div>
-                    </div>
-                    <div class="dropdown-options" v-show="isDropdownOpen">
-                        <div v-for="(type, key) in modificationTypes" :key="key" class="dropdown-option"
-                            @click="selectModificationType(key)">
-                            {{ type.label }}
+    <transition name="ai-menu" appear>
+        <div class="bubble-menu" v-show="isMenuVisible" :class="{ 'is-focused': isFocused, 'force-display': forceDisplay }">
+            <!-- Input pour les prompts AI -->
+            <div class="ai-input-container" v-if="!isLoading && !showSuccessCheck && Object.keys(modificationTypes).length > 0">
+                <div class="ai-input-wrapper">
+                    <textarea v-model="aiPrompt" :placeholder="getPromptPlaceholder" class="ai-input"
+                        @keyup.enter="submitPrompt" @focus="onFocus" @blur="onBlur" rows="3"
+                        :title="placeholders.promptInputTooltip"></textarea>
+                    <div class="modification-type-dropdown">
+                        <div class="dropdown-header" @click="toggleDropdown">
+                            <div class="icon-cog" aria-hidden="true"></div>
+                            <span>{{ getSelectedTypeLabel() }}</span>
+                            <div class="icon-chevron-down" :class="{ 'rotated': isDropdownOpen }" aria-hidden="true"></div>
+                        </div>
+                        <div class="dropdown-options" v-show="isDropdownOpen">
+                            <div v-for="(type, key) in modificationTypes" :key="key" class="dropdown-option"
+                                @click="selectModificationType(key)">
+                                {{ type.label }}
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="ai-action-buttons">
-                    <button @click="rejectProposal" class="ai-reject-button" :title="placeholders.cancelButtonTooltip"
-                        :disabled="!aiResponse" v-if="aiResponse">
-                        <div class="icon-x" aria-hidden="true"></div>
-                        <span class="button-label">{{ placeholders.cancelButton }}</span>
-                    </button>
-                    <button @click="validateProposal" class="ai-validate-button"
-                        :title="placeholders.submitButtonTooltip" :disabled="!aiResponse" v-if="aiResponse">
-                        <div class="icon-check" aria-hidden="true"></div>
-                        <span class="button-label">{{ placeholders.submitButton }}</span>
-                    </button>
-                    <button @click="submitPrompt" class="ai-submit-button" :disabled="isSubmitDisabled">
-                        <div class="icon-arrow-sm-right" aria-hidden="true"></div>
-                    </button>
+                    <div class="ai-action-buttons">
+                        <button @click="rejectProposal" class="ai-reject-button" :title="placeholders.cancelButtonTooltip"
+                            :disabled="!aiResponse" v-if="aiResponse">
+                            <div class="icon-x" aria-hidden="true"></div>
+                            <span class="button-label">{{ placeholders.cancelButton }}</span>
+                        </button>
+                        <button @click="validateProposal" class="ai-validate-button"
+                            :title="placeholders.submitButtonTooltip" :disabled="!aiResponse" v-if="aiResponse">
+                            <div class="icon-check" aria-hidden="true"></div>
+                            <span class="button-label">{{ placeholders.submitButton }}</span>
+                        </button>
+                        <button @click="submitPrompt" class="ai-submit-button" :disabled="isSubmitDisabled">
+                            <div class="icon-arrow-sm-right" aria-hidden="true"></div>
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Message quand aucun type n'est configuré -->
-        <div class="ai-no-types-message" v-if="Object.keys(modificationTypes).length === 0">
-            <div class="no-types-icon">⚠️</div>
-            <div class="no-types-text">No modification types configured. Please configure at least one type in the
-                settings.</div>
-        </div>
+            <!-- Message quand aucun type n'est configuré -->
+            <div class="ai-no-types-message" v-if="Object.keys(modificationTypes).length === 0">
+                <div class="no-types-icon">⚠️</div>
+                <div class="no-types-text">No modification types configured. Please configure at least one type in the
+                    settings.</div>
+            </div>
 
-        <!-- État de chargement -->
-        <div class="ai-loading-container" v-if="isLoading">
-            <div class="ai-loading-spinner"></div>
-            <div class="ai-loading-text">{{ placeholders.processing }}</div>
+            <!-- État de chargement -->
+            <div class="ai-loading-container" v-if="isLoading">
+                <div class="ai-loading-spinner"></div>
+                <div class="ai-loading-text">{{ placeholders.processing }}</div>
+            </div>
+            <div class="ai-success-container" v-if="showSuccessCheck">
+                <div class="icon-check-circle" aria-hidden="true"></div>
+            </div>
         </div>
-        <div class="ai-success-container" v-if="showSuccessCheck">
-            <div class="icon-check-circle" aria-hidden="true"></div>
-        </div>
-    </div>
+    </transition>
 </template>
 
 <script>
@@ -481,6 +483,28 @@ export default {
 </script>
 
 <style scoped>
+/* Transitions pour le menu AI */
+.ai-menu-enter-active,
+.ai-menu-leave-active {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ai-menu-enter-from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+}
+
+.ai-menu-leave-to {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.98);
+}
+
+.ai-menu-enter-to,
+.ai-menu-leave-from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
 .bubble-menu {
     position: relative;
     margin-top: 8px;
