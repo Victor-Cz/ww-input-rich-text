@@ -1756,6 +1756,7 @@ export default {
                         },
                         type: 'Text',
                         bindable: true,
+                        defaultValue: 'Enter your prompt...',
                         description: 'Placeholder text for the prompt input field. You can use simple text or formulas starting with "=" for multilingual support (e.g., "Enter your prompt..." or "=wwLib.wwUtils.getText(\'ai.promptInput\')")'
                     },
                     processing: {
@@ -1764,15 +1765,17 @@ export default {
                         },
                         type: 'Text',
                         bindable: true,
+                        defaultValue: 'Processing...',
                         description: 'Message displayed while AI is processing the request. You can use simple text or formulas starting with "=" for multilingual support.'
                     },
                     submitButton: {
                         label: { 
-                            en: 'Submit Button Text',
+                            en: 'Apply Button Text',
                         },
                         type: 'Text',
                         bindable: true,
-                        description: 'Text displayed on the submit button. You can use simple text or formulas starting with "=" for multilingual support.'
+                        defaultValue: 'Apply',
+                        description: 'Text displayed on the apply button. You can use simple text or formulas starting with "=" for multilingual support.'
                     },
                     cancelButton: {
                         label: { 
@@ -1780,6 +1783,7 @@ export default {
                         },
                         type: 'Text',
                         bindable: true,
+                        defaultValue: 'Cancel',
                         description: 'Text displayed on the cancel button. You can use simple text or formulas starting with "=" for multilingual support.'
                     },
                     noTypesMessage: {
@@ -1788,16 +1792,47 @@ export default {
                         },
                         type: 'Text',
                         bindable: true,
+                        defaultValue: 'No modification types configured. Please configure at least one type in the settings.',
                         description: 'Message displayed when no modification types are configured. You can use simple text or formulas starting with "=" for multilingual support.'
+                    },
+                    promptInputTooltip: {
+                        label: { 
+                            en: 'Prompt Input Tooltip',
+                        },
+                        type: 'Text',
+                        bindable: true,
+                        defaultValue: 'Enter your instructions for the AI',
+                        description: 'Tooltip text displayed when hovering over the prompt input field. You can use simple text or formulas starting with "=" for multilingual support.'
+                    },
+                    submitButtonTooltip: {
+                        label: { 
+                            en: 'Apply Button Tooltip',
+                        },
+                        type: 'Text',
+                        bindable: true,
+                        defaultValue: 'Apply the AI modification',
+                        description: 'Tooltip text displayed when hovering over the apply button. You can use simple text or formulas starting with "=" for multilingual support.'
+                    },
+                    cancelButtonTooltip: {
+                        label: { 
+                            en: 'Cancel Button Tooltip',
+                        },
+                        type: 'Text',
+                        bindable: true,
+                        defaultValue: 'Cancel the current operation',
+                        description: 'Tooltip text displayed when hovering over the cancel button. You can use simple text or formulas starting with "=" for multilingual support.'
                     }
                 }
             },
             defaultValue: {
                 promptInput: 'Enter your prompt...',
                 processing: 'Processing...',
-                submitButton: 'Submit',
+                submitButton: 'Apply',
                 cancelButton: 'Cancel',
-                noTypesMessage: 'No modification types configured. Please configure at least one type in the settings.'
+                noTypesMessage: 'No modification types configured. Please configure at least one type in the settings.',
+                promptInputTooltip: 'Enter your instructions for the AI',
+                submitButtonTooltip: 'Apply the AI modification',
+                cancelButtonTooltip: 'Cancel the current operation'
             },
             bindable: false,
             description: 'Customize the placeholder texts and messages displayed in the AI menu interface. You can use simple text or formulas starting with "=" for dynamic content and multilingual support.'

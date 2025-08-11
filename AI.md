@@ -200,9 +200,15 @@ Vous pouvez personnaliser tous les textes affichés dans l'interface du menu AI.
 
 - **`promptInput`** : Placeholder du champ de saisie du prompt
 - **`processing`** : Message affiché pendant le traitement par l'IA
-- **`submitButton`** : Texte du bouton d'envoi
+- **`submitButton`** : Texte du bouton d'application (anciennement "Submit")
 - **`cancelButton`** : Texte du bouton d'annulation
 - **`noTypesMessage`** : Message affiché quand aucun type n'est configuré
+
+### Tooltips disponibles
+
+- **`promptInputTooltip`** : Tooltip du champ de saisie du prompt
+- **`submitButtonTooltip`** : Tooltip du bouton d'application
+- **`cancelButtonTooltip`** : Tooltip du bouton d'annulation
 
 ### Valeurs par défaut
 
@@ -212,32 +218,72 @@ Les valeurs par défaut sont maintenant du texte simple (sans guillemets) pour u
 {
   "promptInput": "Enter your prompt...",
   "processing": "Processing...",
-  "submitButton": "Submit",
+  "submitButton": "Apply",
   "cancelButton": "Cancel",
-  "noTypesMessage": "No modification types configured. Please configure at least one type in the settings."
+  "noTypesMessage": "No modification types configured. Please configure at least one type in the settings.",
+  "promptInputTooltip": "Enter your instructions for the AI",
+  "submitButtonTooltip": "Apply the AI modification",
+  "cancelButtonTooltip": "Cancel the current operation"
 }
 ```
 
-### Logique d'évaluation
+### Utilisation dans le code
 
-Le système détecte automatiquement le type de valeur :
+Les placeholders sont utilisés directement dans le composant Vue :
 
-- **Si la valeur commence par `=`** → Évaluée comme une formule
-- **Sinon** → Utilisée directement comme texte
+```vue
+<!-- Bouton d'annulation -->
+<span class="button-label">{{ placeholders.cancelButton }}</span>
 
-### Avantages des formules
+<!-- Bouton d'application -->
+<span class="button-label">{{ placeholders.submitButton }}</span>
 
-1. **Support multilingue** : Changement automatique de langue selon la configuration
-2. **Contenu dynamique** : Possibilité d'utiliser des variables et des conditions
-3. **Flexibilité** : Intégration avec le système de gestion des langues de la plateforme
-4. **Performance** : Évaluation à la demande, pas de surcharge au chargement
+<!-- Placeholder du champ de saisie -->
+<textarea :placeholder="placeholders.promptInput"></textarea>
 
-### Avantages du texte simple
+<!-- Message de traitement -->
+<div class="ai-loading-text">{{ placeholders.processing }}</div>
 
-1. **Configuration rapide** : Pas besoin de connaître la syntaxe des formules
-2. **Performance optimale** : Aucun calcul d'évaluation
-3. **Simplicité** : Idéal pour les configurations statiques
-4. **Débogage facile** : Pas de risque d'erreur de formule
+<!-- Message quand aucun type n'est configuré -->
+<div class="no-types-text">{{ placeholders.noTypesMessage }}</div>
+```
+
+### Avantages de cette approche
+
+1. **Simplicité maximale** : Utilisation directe de `{{ placeholders.propertyName }}`
+2. **Système de binding natif** : La plateforme gère automatiquement l'évaluation des formules
+3. **Performance optimale** : Pas de logique d'évaluation personnalisée
+4. **Maintenance facile** : Code plus simple et plus fiable
+5. **Support multilingue** : Formules évaluées automatiquement par le système de binding
+6. **Flexibilité** : Texte simple ET formules supportés nativement
+
+## Fonctionnement technique
+
+### Système de binding automatique
+
+Le composant utilise maintenant le système de binding natif de la plateforme :
+
+```javascript
+// Dans le composant Vue
+props: {
+    placeholders: {
+        type: Object,
+        default: () => ({
+            promptInput: 'Enter your prompt...',
+            processing: 'Processing...',
+            submitButton: 'Apply',
+            cancelButton: 'Cancel',
+            noTypesMessage: 'No modification types configured...'
+        })
+    }
+}
+```
+
+### Évaluation automatique
+
+- **Texte simple** : Affiché directement
+- **Formules** : Évaluées automatiquement par le système de binding de la plateforme
+- **Valeurs dynamiques** : Mises à jour automatiquement
 
 ## Utilisation
 
