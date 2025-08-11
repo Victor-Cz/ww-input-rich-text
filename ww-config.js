@@ -111,8 +111,13 @@ export default {
         { name: 'blur', label: { en: 'On blur' }, event: { value: '' } },
         {
             name: 'ai-prompt',
-            label: { en: 'On AI prompt', fr: 'Sur prompt IA' },
+            label: { en: 'On AI prompt' },
             event: { prompt: '', modificationType: '', action: '', selectedText: '', timestamp: '' },
+        },
+        {
+            name: 'ai-suggestion-applied',
+            label: { en: 'On AI suggestion applied' },
+            event: { response: '', formattedResponse: '', modificationType: '', action: '', selectedText: '', timestamp: '' },
         },
     ],
     actions: [

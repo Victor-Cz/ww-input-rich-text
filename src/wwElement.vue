@@ -202,7 +202,9 @@
                     :custom-modification-types="content.parameterAiMenuCustomTypes ?? []"
                     :placeholders="content.parameterAiMenuPlaceholders ?? {}"
                     :force-display="content.parameterAiMenuForceDisplay ?? false"
-                    @ai-prompt="handleAiPrompt" v-if="richEditor && content.enableAiMenu" />
+                    @ai-prompt="handleAiPrompt" 
+                    @ai-suggestion-applied="handleAiSuggestionApplied" 
+                    v-if="richEditor && content.enableAiMenu" />
             </template>
         </div>
 </template>
@@ -913,6 +915,11 @@ export default {
         handleAiPrompt(eventData) {
             // Déclencher l'événement WeWeb 'ai-prompt' via $emit
             this.$emit('trigger-event', { name: 'ai-prompt', event: eventData });
+        },
+
+        handleAiSuggestionApplied(eventData) {
+            // Déclencher l'événement WeWeb 'ai-suggestion-applied' via $emit
+            this.$emit('trigger-event', { name: 'ai-suggestion-applied', event: eventData });
         },
     },
     mounted() {

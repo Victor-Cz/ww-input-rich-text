@@ -333,6 +333,19 @@ export default {
                 case 'prepend': this.prependToBeginning(formattedResponse); break;
                 default: console.warn('Action non reconnue:', action); this.replaceSelection(formattedResponse);
             }
+
+            // Émettre l'événement ai-suggestion-applied avec les détails de l'application
+            this.$emit('ai-suggestion-applied', {
+                response: response,
+                formattedResponse: formattedResponse,
+                modificationType: this.selectedModificationType,
+                action: action,
+                selectedText: this.storedSelection,
+                selectionRange: this.storedSelectionRange,
+                timestamp: new Date().toISOString(),
+                position: position
+            });
+
             this.showSuccessCheck = true;
             setTimeout(() => { this.showSuccessCheck = false; this.closeMenu(); }, 1500);
         },

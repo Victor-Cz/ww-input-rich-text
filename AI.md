@@ -294,6 +294,75 @@ Une fois configurés, vos types personnalisés apparaîtront dans le menu dérou
 3. Ajouter des instructions supplémentaires si nécessaire
 4. Soumettre leur demande à l'IA
 
+## Triggers disponibles
+
+### `ai-suggestion-applied`
+
+Ce trigger est déclenché lorsqu'une suggestion AI est appliquée avec succès dans l'éditeur.
+
+**Quand est-il déclenché ?**
+- Après avoir cliqué sur le bouton de validation (✓) d'une suggestion AI
+- Une fois que la modification a été appliquée dans l'éditeur
+
+**Payload de l'événement :**
+```json
+{
+  "response": "Texte brut de la réponse AI",
+  "formattedResponse": "Texte formaté avec espaces intelligents",
+  "modificationType": "summarize",
+  "action": "replace",
+  "selectedText": "Texte qui était sélectionné",
+  "selectionRange": {
+    "from": 10,
+    "to": 50
+  },
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "position": 50
+}
+```
+
+**Champs du payload :**
+- **`response`** : La réponse brute de l'IA
+- **`formattedResponse`** : La réponse formatée avec espaces intelligents
+- **`modificationType`** : La clé du type de modification utilisé
+- **`action`** : L'action appliquée (replace, insert-before, etc.)
+- **`selectedText`** : Le texte qui était sélectionné (si applicable)
+- **`selectionRange`** : La position de la sélection dans le document
+- **`timestamp`** : Horodatage de l'application
+- **`position`** : Position finale où le texte a été inséré
+
+**Exemple d'utilisation dans WeWeb :**
+```javascript
+// Dans un workflow WeWeb
+const eventData = event.event;
+
+// Accéder aux informations de la suggestion appliquée
+const aiResponse = eventData.response;
+const modificationType = eventData.modificationType;
+const selectedText = eventData.selectedText;
+
+// Logique personnalisée après application de la suggestion
+if (modificationType === 'summarize') {
+    // Traitement spécifique pour les résumés
+    console.log('Résumé appliqué:', aiResponse);
+}
+```
+
+### `ai-prompt`
+
+Ce trigger est déclenché lorsqu'un prompt AI est soumis.
+
+**Payload de l'événement :**
+```json
+{
+  "prompt": "Prompt final envoyé à l'IA",
+  "modificationType": "summarize",
+  "action": "replace",
+  "selectedText": "Texte sélectionné",
+  "timestamp": "2024-01-15T10:30:00.000Z"
+}
+```
+
 ## Bonnes pratiques
 
 - **Clés uniques** : Assurez-vous que chaque clé est unique pour éviter les conflits
