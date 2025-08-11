@@ -86,15 +86,15 @@ export default {
                 'parameterQuote',
                 'parameterUndo',
                 'parameterRedo',
+                'parameterAiMenu',
             ],
             'aiMenuSection',
             [
-                'parameterAiMenu',
-                'parameterAiMenuReadOnly',
-                'parameterAiMenuForceDisplay',
-                'parameterAiMenuPrimaryColor',
+                'parameterAiMenuTitleGeneral',
+                ['parameterAiMenuReadOnly', 'parameterAiMenuForceDisplay', 'parameterAiMenuPrimaryColor'],
+                'parameterAiMenuTitlePlaceholders',
+                ['parameterAiMenuPlaceholders'],
                 'parameterAiMenuCustomTypes',
-                'parameterAiMenuPlaceholders',
             ],
         ],
     },
@@ -107,7 +107,11 @@ export default {
         { name: 'mention:click', label: { en: 'On mention click' }, event: { mention: { id: '', label: '' } } },
         { name: 'focus', label: { en: 'On focus' }, event: { value: '' } },
         { name: 'blur', label: { en: 'On blur' }, event: { value: '' } },
-        { name: 'ai-prompt', label: { en: 'On AI prompt', fr: 'Sur prompt IA' }, event: { prompt: '', modificationType: '', action: '', selectedText: '', timestamp: '' } },
+        {
+            name: 'ai-prompt',
+            label: { en: 'On AI prompt', fr: 'Sur prompt IA' },
+            event: { prompt: '', modificationType: '', action: '', selectedText: '', timestamp: '' },
+        },
     ],
     actions: [
         { label: 'Focus Rich text', action: 'focusEditor' },
@@ -250,7 +254,8 @@ export default {
                     options: {
                         bindable: true,
                     },
-                    description: 'Optional: Specify a modification type key to open the AI menu with. Leave empty to open the menu without a preselected type.',
+                    description:
+                        'Optional: Specify a modification type key to open the AI menu with. Leave empty to open the menu without a preselected type.',
                 },
             ],
         },
@@ -703,13 +708,13 @@ export default {
                 singleLine: true,
             },
             defaultValue: {
-                    fontSize: '16px',
-                    fontFamily: '',
-                    fontWeight: '',
-                    color: '#099AF2',
-                    borderSize: '1px',
-                    borderRadius: '6px',
-                },
+                fontSize: '16px',
+                fontFamily: '',
+                fontWeight: '',
+                color: '#099AF2',
+                borderSize: '1px',
+                borderRadius: '6px',
+            },
             states: true,
             classes: true,
             responsive: true,
@@ -1676,7 +1681,8 @@ export default {
                 ],
             },
             defaultValue: false,
-            description: 'When enabled, the AI menu will always be visible in the editor, regardless of text selection or focus state.',
+            description:
+                'When enabled, the AI menu will always be visible in the editor, regardless of text selection or focus state.',
         },
         parameterAiMenuPrimaryColor: {
             section: 'settings',
@@ -1705,37 +1711,38 @@ export default {
                         description: '',
                         defaultPrompt: '',
                         action: 'replace',
-                        requireInput: true
+                        requireInput: true,
                     },
                     options: {
                         item: {
                             key: {
-                                label: { 
+                                label: {
                                     en: 'Key (unique identifier)',
                                 },
                                 type: 'Text',
                                 bindable: false,
-                                description: 'Unique identifier for this modification type (e.g., "summarize", "rewrite")'
+                                description:
+                                    'Unique identifier for this modification type (e.g., "summarize", "rewrite")',
                             },
                             label: {
-                                label: { 
+                                label: {
                                     en: 'Display Label',
                                 },
                                 type: 'Text',
                                 bindable: true,
-                                description: 'Label shown in the dropdown menu'
+                                description: 'Label shown in the dropdown menu',
                             },
                             defaultPrompt: {
-                                label: { 
+                                label: {
                                     en: 'Default Prompt',
                                 },
                                 type: 'Textarea',
                                 bindable: true,
                                 defaultValue: 'Enter your instructions for the AI',
-                                description: 'Default AI prompt for this modification type'
+                                description: 'Default AI prompt for this modification type',
                             },
                             action: {
-                                label: { 
+                                label: {
                                     en: 'Action',
                                 },
                                 type: 'TextSelect',
@@ -1747,22 +1754,22 @@ export default {
                                         { value: 'insert-before', label: { en: 'Insert before selection' } },
                                         { value: 'insert-after', label: { en: 'Insert after selection' } },
                                         { value: 'append', label: { en: 'Append to end' } },
-                                        { value: 'prepend', label: { en: 'Prepend to beginning' } }
-                                    ]
+                                        { value: 'prepend', label: { en: 'Prepend to beginning' } },
+                                    ],
                                 },
-                                description: 'How the AI response should be applied to the text'
+                                description: 'How the AI response should be applied to the text',
                             },
                             requireInput: {
-                                label: { 
+                                label: {
                                     en: 'Require User Input',
                                 },
                                 type: 'OnOff',
                                 bindable: true,
-                                description: 'Whether the user must provide additional input before submitting'
-                            }
-                        }
-                    }
-                }
+                                description: 'Whether the user must provide additional input before submitting',
+                            },
+                        },
+                    },
+                },
             },
             defaultValue: [
                 {
@@ -1770,11 +1777,12 @@ export default {
                     label: 'Rephrase',
                     defaultPrompt: 'Reformule ce texte avec un style différent tout en gardant le même sens',
                     action: 'replace',
-                    requireInput: true
-                }
+                    requireInput: true,
+                },
             ],
             bindable: true,
-            description: 'Define custom modification types for the AI menu. Each type can have its own label, default prompt, and action behavior. A "Rephrase" example is provided by default.'
+            description:
+                'Define custom modification types for the AI menu. Each type can have its own label, default prompt, and action behavior. A "Rephrase" example is provided by default.',
         },
         parameterAiMenuPlaceholders: {
             section: 'settings',
@@ -1786,87 +1794,97 @@ export default {
             options: {
                 item: {
                     promptInput: {
-                        label: { 
+                        label: {
                             en: 'Prompt Input Placeholder',
                         },
                         type: 'Text',
                         bindable: true,
                         defaultValue: 'Enter your prompt...',
-                        description: 'Placeholder text for the prompt input field. You can use simple text or formulas starting with "=" for multilingual support (e.g., "Enter your prompt..." or "=wwLib.wwUtils.getText(\'ai.promptInput\')")'
+                        description:
+                            'Placeholder text for the prompt input field. You can use simple text or formulas starting with "=" for multilingual support (e.g., "Enter your prompt..." or "=wwLib.wwUtils.getText(\'ai.promptInput\')")',
                     },
                     processing: {
-                        label: { 
+                        label: {
                             en: 'Processing Message',
                         },
                         type: 'Text',
                         bindable: true,
                         defaultValue: 'Processing...',
-                        description: 'Message displayed while AI is processing the request. You can use simple text or formulas starting with "=" for multilingual support.'
+                        description:
+                            'Message displayed while AI is processing the request. You can use simple text or formulas starting with "=" for multilingual support.',
                     },
                     submitButton: {
-                        label: { 
+                        label: {
                             en: 'Apply Button Text',
                         },
                         type: 'Text',
                         bindable: true,
                         defaultValue: 'Apply',
-                        description: 'Text displayed on the apply button. You can use simple text or formulas starting with "=" for multilingual support.'
+                        description:
+                            'Text displayed on the apply button. You can use simple text or formulas starting with "=" for multilingual support.',
                     },
                     cancelButton: {
-                        label: { 
+                        label: {
                             en: 'Cancel Button Text',
                         },
                         type: 'Text',
                         bindable: true,
                         defaultValue: 'Cancel',
-                        description: 'Text displayed on the cancel button. You can use simple text or formulas starting with "=" for multilingual support.'
+                        description:
+                            'Text displayed on the cancel button. You can use simple text or formulas starting with "=" for multilingual support.',
                     },
                     noTypesMessage: {
-                        label: { 
+                        label: {
                             en: 'No Types Message',
                         },
                         type: 'Text',
                         bindable: true,
-                        defaultValue: 'No modification types configured. Please configure at least one type in the settings.',
-                        description: 'Message displayed when no modification types are configured. You can use simple text or formulas starting with "=" for multilingual support.'
+                        defaultValue:
+                            'No modification types configured. Please configure at least one type in the settings.',
+                        description:
+                            'Message displayed when no modification types are configured. You can use simple text or formulas starting with "=" for multilingual support.',
                     },
                     promptInputTooltip: {
-                        label: { 
+                        label: {
                             en: 'Prompt Input Tooltip',
                         },
                         type: 'Text',
                         bindable: true,
                         defaultValue: 'Enter your instructions for the AI',
-                        description: 'Tooltip text displayed when hovering over the prompt input field. You can use simple text or formulas starting with "=" for multilingual support.'
+                        description:
+                            'Tooltip text displayed when hovering over the prompt input field. You can use simple text or formulas starting with "=" for multilingual support.',
                     },
                     submitButtonTooltip: {
-                        label: { 
+                        label: {
                             en: 'Apply Button Tooltip',
                         },
                         type: 'Text',
                         bindable: true,
                         defaultValue: 'Apply the AI modification',
-                        description: 'Tooltip text displayed when hovering over the apply button. You can use simple text or formulas starting with "=" for multilingual support.'
+                        description:
+                            'Tooltip text displayed when hovering over the apply button. You can use simple text or formulas starting with "=" for multilingual support.',
                     },
                     cancelButtonTooltip: {
-                        label: { 
+                        label: {
                             en: 'Cancel Button Tooltip',
                         },
                         type: 'Text',
                         bindable: true,
                         defaultValue: 'Cancel the current operation',
-                        description: 'Tooltip text displayed when hovering over the cancel button. You can use simple text or formulas starting with "=" for multilingual support.'
+                        description:
+                            'Tooltip text displayed when hovering over the cancel button. You can use simple text or formulas starting with "=" for multilingual support.',
                     },
                     chooseTypePlaceholder: {
-                        label: { 
+                        label: {
                             en: 'Choose Type Placeholder',
                         },
                         type: 'Text',
                         bindable: true,
                         defaultValue: 'Select a type',
-                        description: 'Text displayed in the modification type dropdown when no type is selected. You can use simple text or formulas starting with "=" for multilingual support.'
-                    }
-                }
+                        description:
+                            'Text displayed in the modification type dropdown when no type is selected. You can use simple text or formulas starting with "=" for multilingual support.',
+                    },
+                },
             },
             defaultValue: {
                 promptInput: 'Enter your prompt...',
@@ -1877,10 +1895,27 @@ export default {
                 promptInputTooltip: 'Enter your instructions for the AI',
                 submitButtonTooltip: 'Apply the AI modification',
                 cancelButtonTooltip: 'Cancel the current operation',
-                chooseTypePlaceholder: 'Select a type'
+                chooseTypePlaceholder: 'Select a type',
             },
             bindable: false,
-            description: 'Customize the placeholder texts and messages displayed in the AI menu interface. You can use simple text or formulas starting with "=" for dynamic content and multilingual support.'
+            description:
+                'Customize the placeholder texts and messages displayed in the AI menu interface. You can use simple text or formulas starting with "=" for dynamic content and multilingual support.',
+        },
+        parameterAiMenuTitleGeneral: {
+            section: 'settings',
+            hidden: content => content.customMenu,
+            label: {
+                en: 'General Settings',
+            },
+            type: 'Section',
+        },
+        parameterAiMenuTitlePlaceholders: {
+            section: 'settings',
+            hidden: content => content.customMenu,
+            label: {
+                en: 'Placeholders & Labels',
+            },
+            type: 'Section',
         },
         /* wwEditor:start */
         form: {
