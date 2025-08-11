@@ -4,7 +4,8 @@
         <div class="ai-input-container" v-if="!isLoading && Object.keys(modificationTypes).length > 0">
             <div class="ai-input-wrapper">
                 <textarea v-model="aiPrompt" :placeholder="placeholders.promptInput" class="ai-input"
-                    @keyup.enter="submitPrompt" @focus="onFocus" @blur="onBlur" rows="3"></textarea>
+                    @keyup.enter="submitPrompt" @focus="onFocus" @blur="onBlur" rows="3"
+                    :title="placeholders.promptInputTooltip"></textarea>
                 <div class="modification-type-dropdown">
                     <div class="dropdown-header" @click="toggleDropdown">
                         <div class="icon-cog" aria-hidden="true"></div>
@@ -19,12 +20,12 @@
                     </div>
                 </div>
                 <div class="ai-action-buttons">
-                    <button @click="rejectProposal" class="ai-reject-button" title="Rejeter la proposition"
+                    <button @click="rejectProposal" class="ai-reject-button" :title="placeholders.cancelButtonTooltip"
                         :disabled="!aiResponse" v-if="aiResponse">
                         <div class="icon-x" aria-hidden="true"></div>
                         <span class="button-label">{{ placeholders.cancelButton }}</span>
                     </button>
-                    <button @click="validateProposal" class="ai-validate-button" title="Valider la proposition"
+                    <button @click="validateProposal" class="ai-validate-button" :title="placeholders.submitButtonTooltip"
                         :disabled="!aiResponse" v-if="aiResponse">
                         <div class="icon-check" aria-hidden="true"></div>
                         <span class="button-label">{{ placeholders.submitButton }}</span>
@@ -78,9 +79,12 @@ export default {
             default: () => ({
                 promptInput: 'Enter your prompt...',
                 processing: 'Processing...',
-                submitButton: 'Submit',
+                submitButton: 'Apply',
                 cancelButton: 'Cancel',
-                noTypesMessage: 'No modification types configured. Please configure at least one type in the settings.'
+                noTypesMessage: 'No modification types configured. Please configure at least one type in the settings.',
+                promptInputTooltip: 'Enter your instructions for the AI',
+                submitButtonTooltip: 'Apply the AI modification',
+                cancelButtonTooltip: 'Cancel the current operation'
             }),
         },
     },
