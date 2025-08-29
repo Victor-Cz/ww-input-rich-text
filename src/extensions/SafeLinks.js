@@ -28,6 +28,8 @@ export const SafeLinks = Extension.create({
                 // Bloquer si l’utilisateur ne maintient PAS Cmd (Mac) ou Ctrl (Win)
                 if (!(event.metaKey || event.ctrlKey) && options.enabled) {
                   event.preventDefault()
+                  event.stopPropagation()
+                  console.log('SafeLinks: Blocage du lien (pas de Cmd/Ctrl)')
                   return true // Empêche le comportement par défaut (ouvrir le lien)
                 }
               }
