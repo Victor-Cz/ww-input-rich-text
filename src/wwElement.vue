@@ -346,6 +346,7 @@ export default {
 
             if (this.isReadonly) this.handleOnUpdate();
         },
+
         isEditable(value) {
             this.richEditor.setEditable(value);
         },
@@ -501,6 +502,9 @@ export default {
 
                 aiMenu: this.content.parameterAiMenu ?? true,
             };
+        },
+        safeLinksEnabled() {
+            return this.content.a?.enableSafeLinks !== false;
         },
         editorConfig() {
             return {
@@ -733,7 +737,9 @@ export default {
                         ranges: [],
                         color: 'var(--primary-color)',
                     }),
-                    (this.content.a?.enableSafeLinks !== false) && SafeLinks,
+                    SafeLinks.configure({
+                        getEnabled: () => this.safeLinksEnabled,
+                    }),
                 ],
                 onCreate: () => {
                     this.setValue(this.getContent());
