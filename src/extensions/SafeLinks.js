@@ -66,7 +66,7 @@ export const SafeLinks = Extension.create({
                   link.classList.add('safe-link')
                   
                   // Ajouter le tooltip selon la plateforme
-                  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+                  const isMac = navigator.userAgent.includes('Mac')
                   const tooltip = isMac ? 'Cmd + clic pour ouvrir' : 'Ctrl + clic pour ouvrir'
                   link.setAttribute('data-tooltip', tooltip)
                 } else {
