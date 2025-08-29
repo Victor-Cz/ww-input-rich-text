@@ -80,11 +80,6 @@ export const SafeLinks = Extension.create({
                                             .replace('{keyboard}', isMac ? 'Cmd' : 'Ctrl')
                                             .replace('{target}', link.href);
                                         link.setAttribute('data-tooltip', tooltipText);
-                                        
-                                        // Appliquer les styles personnalisés
-                                        link.style.setProperty('--tooltip-color', this.options.tooltipColor);
-                                        link.style.setProperty('--tooltip-background-color', this.options.tooltipBackgroundColor);
-                                        link.style.setProperty('--tooltip-font-size', this.options.tooltipFontSize);
                                     } else {
                                         // Modificateur pressé = lien ouvert = curseur pointer
                                         link.classList.remove('safe-link');
