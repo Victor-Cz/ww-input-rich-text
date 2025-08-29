@@ -9,7 +9,7 @@ export const SafeLinks = Extension.create({
     addOptions() {
         return {
             enabled: true,
-            tooltipText: '{keyboard}',
+            tooltipText: '{keyboard} + Clic',
             tooltipColor: '#ffffff',
             tooltipBackgroundColor: '#393d45',
             tooltipFontSize: '12px',

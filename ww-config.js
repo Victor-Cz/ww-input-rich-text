@@ -773,7 +773,9 @@ export default {
                             fr: 'Couleur du tooltip',
                         },
                         bindable: true,
-                        hidden: content => !content.enableSafeLinks,
+                        hidden: (content, sidepanelContent) => {
+                            return content?.enableSafeLinks;
+                        },
                     },
                     tooltipBackgroundColor: {
                         type: 'Color',
@@ -782,7 +784,9 @@ export default {
                             fr: 'Couleur de fond du tooltip',
                         },
                         bindable: true,
-                        hidden: content => !content.enableSafeLinks,
+                        hidden: (content, sidepanelContent) => {
+                            return content?.enableSafeLinks;
+                        },
                     },
                     tooltipFontSize: {
                         type: 'Length',
@@ -791,7 +795,9 @@ export default {
                             fr: 'Taille de la police du tooltip',
                         },
                         bindable: true,
-                        hidden: content => !content.enableSafeLinks,
+                        hidden: (content, sidepanelContent) => {
+                            return content?.enableSafeLinks;
+                        },
                     },
                     tooltipText: {
                         type: 'Text',
@@ -800,7 +806,9 @@ export default {
                             fr: 'Texte du tooltip (peut utiliser {keyboard} et {target})',
                         },
                         bindable: true,
-                        hidden: content => !content.enableSafeLinks,
+                        hidden: (content, sidepanelContent) => {
+                            return content?.enableSafeLinks;
+                        },
                     }
                 },
                 singleLine: true,

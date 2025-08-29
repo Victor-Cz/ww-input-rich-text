@@ -685,7 +685,7 @@ export default {
                     StarterKit,
                     SafeLinks.configure({
                         enabled: this.content.a?.enableSafeLinks !== false,
-                        tooltipText: this.content.a?.tooltipText || '{keyboard}',
+                        tooltipText: this.content.a?.tooltipText || '{keyboard} + Clic',
                         tooltipColor: this.content.a?.tooltipColor || '#ffffff',
                         tooltipBackgroundColor: this.content.a?.tooltipBackgroundColor || '#393d45',
                         tooltipFontSize: this.content.a?.tooltipFontSize || '12px',
