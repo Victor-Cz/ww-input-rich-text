@@ -774,7 +774,7 @@ export default {
                         },
                         bindable: true,
                         hidden: (content, sidepanelContent) => {
-                            return content?.enableSafeLinks;
+                            return content?.a?.enableSafeLinks;
                         },
                     },
                     tooltipBackgroundColor: {
@@ -785,7 +785,7 @@ export default {
                         },
                         bindable: true,
                         hidden: (content, sidepanelContent) => {
-                            return content?.enableSafeLinks;
+                            return content?.a?.enableSafeLinks;
                         },
                     },
                     tooltipFontSize: {
@@ -796,7 +796,7 @@ export default {
                         },
                         bindable: true,
                         hidden: (content, sidepanelContent) => {
-                            return content?.enableSafeLinks;
+                            return content?.a?.enableSafeLinks;
                         },
                     },
                     tooltipText: {
@@ -807,7 +807,7 @@ export default {
                         },
                         bindable: true,
                         hidden: (content, sidepanelContent) => {
-                            return content?.enableSafeLinks;
+                            return content?.a?.enableSafeLinks;
                         },
                     }
                 },
