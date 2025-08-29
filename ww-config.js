@@ -796,7 +796,7 @@ export default {
                     tooltipText: {
                         type: 'Text',
                         label: {
-                            en: 'Tooltip text (can use {keyboard} and{target})',
+                            en: 'Tooltip text (can use {keyboard} and {target})',
                             fr: 'Texte du tooltip (peut utiliser {keyboard} et {target})',
                         },
                         bindable: true,
