@@ -26,11 +26,17 @@ export const SafeLinks = Extension.create({
               // Vérifie si l’élément cliqué est (ou contient) un lien
               if (target && target.closest('a')) {
                 // Bloquer si l’utilisateur ne maintient PAS Cmd (Mac) ou Ctrl (Win)
-                if (!(event.metaKey || event.ctrlKey) && options.enabled) {
-                  event.preventDefault()
-                  event.stopPropagation()
-                  console.log('SafeLinks: Blocage du lien (pas de Cmd/Ctrl)')
-                  return true // Empêche le comportement par défaut (ouvrir le lien)
+                if ((event.metaKey || event.ctrlKey) && options.enabled) {
+                  // Permettre l'ouverture du lien avec Cmd/Ctrl
+                  console.log('SafeLinks: Ouverture du lien avec Cmd/Ctrl autorisée')
+                  
+                  // Ouvrir le lien dans un nouvel onglet
+                  const link = target.closest('a')
+                  if (link && link.href) {
+                    window.open(link.href, '_blank', 'noopener,noreferrer')
+                  }
+                  
+                  return true // Empêche le comportement par défaut mais on a géré l'ouverture
                 }
               }
 
