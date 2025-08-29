@@ -29,7 +29,21 @@ export const SafeLinks = Extension.create({
                 if (!(event.metaKey || event.ctrlKey) && options.enabled) {
                   event.preventDefault()
                   event.stopPropagation()
+                  event.stopImmediatePropagation()
                   console.log('SafeLinks: Blocage du lien (pas de Cmd/Ctrl)')
+                  
+                  // Force le blocage en supprimant temporairement l'attribut href
+                  const link = target.closest('a')
+                  if (link) {
+                    const originalHref = link.getAttribute('href')
+                    link.removeAttribute('href')
+                    setTimeout(() => {
+                      if (originalHref) {
+                        link.setAttribute('href', originalHref)
+                      }
+                    }, 100)
+                  }
+                  
                   return true // Empêche le comportement par défaut (ouvrir le lien)
                 }
               }
