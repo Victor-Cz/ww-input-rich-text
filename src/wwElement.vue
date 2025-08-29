@@ -734,7 +734,9 @@ export default {
                         ranges: [],
                         color: 'var(--primary-color)',
                     }),
-                    SafeLinks,
+                    SafeLinks.configure({
+                        enabled: this.content.a?.enableSafeLinks !== false,
+                    }),
                 ],
                 onCreate: () => {
                     this.setValue(this.getContent());
