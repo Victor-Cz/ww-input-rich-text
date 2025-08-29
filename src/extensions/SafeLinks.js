@@ -64,9 +64,15 @@ export const SafeLinks = Extension.create({
                 if (!hasModifier) {
                   // Pas de modificateur = lien bloqué = curseur default
                   link.classList.add('safe-link')
+                  
+                  // Ajouter le tooltip selon la plateforme
+                  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+                  const tooltip = isMac ? 'Cmd + clic pour ouvrir' : 'Ctrl + clic pour ouvrir'
+                  link.setAttribute('data-tooltip', tooltip)
                 } else {
                   // Modificateur pressé = lien ouvert = curseur pointer
                   link.classList.remove('safe-link')
+                  link.removeAttribute('data-tooltip') // Retirer le tooltip
                 }
               }
               return false

@@ -1310,9 +1310,26 @@ export default {
     // Style pour les liens sécurisés
     .safe-link {
         cursor: default !important;
+        position: relative;
         
         &:hover {
             cursor: default !important;
+            
+            &::after {
+                content: attr(data-tooltip);
+                position: absolute;
+                bottom: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0, 0, 0, 8);
+                color: white;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                white-space: nowrap;
+                z-index: 1000;
+                pointer-events: none;
+            }
         }
     }
 }
