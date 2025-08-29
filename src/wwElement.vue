@@ -1306,5 +1306,14 @@ export default {
     &.-readonly .ProseMirror {
         cursor: inherit;
     }
+
+    // Style pour les liens sécurisés
+    .safe-link {
+        cursor: default !important;
+        
+        &:hover {
+            cursor: default !important;
+        }
+    }
 }
 </style>
