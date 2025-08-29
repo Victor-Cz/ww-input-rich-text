@@ -686,7 +686,7 @@ export default {
                         HTMLAttributes: {
                             rel: 'noopener noreferrer',
                         },
-                        openOnClick: false,
+                        openOnClick: !this.content.a?.enableSafeLinks,
                     }),
                     TextStyle,
                     Color,
