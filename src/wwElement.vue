@@ -656,6 +656,10 @@ export default {
                 '--table-cell-color': this.content.table?.cellColor || '#000',
                 '--table-cell-padding-x': this.content.table?.cellPaddingX || '8px',
                 '--table-cell-padding-y': this.content.table?.cellPaddingY || '6px',
+                // tooltip
+                '--tooltip-color': this.content.a?.tooltipColor || '#393d45',
+                '--tooltip-background-color': this.content.a?.tooltipBackgroundColor || '#393d45',
+                '--tooltip-font-size': this.content.a?.tooltipFontSize || '12px',
             };
         },
         delay() {
@@ -1321,11 +1325,11 @@ export default {
                 bottom: 100%;
                 left: 50%;
                 transform: translateX(-50%);
-                background: #393d45;
-                color: white;
+                background: var(--tooltip-background-color);
+                color: var(--tooltip-color);
                 padding: 4px 8px;
                 border-radius: 4px;
-                font-size: 12px;
+                font-size: var(--tooltip-font-size);
                 white-space: nowrap;
                 z-index: 1000;
                 pointer-events: none;

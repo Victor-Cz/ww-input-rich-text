@@ -72,8 +72,10 @@ export const SafeLinks = Extension.create({
 
                                         // Ajouter le tooltip selon la plateforme
                                         const isMac = navigator.userAgent.includes('Mac');
-                                        const tooltip = isMac ? 'Cmd + clic' : 'Ctrl + clic';
-                                        link.setAttribute('data-tooltip', tooltip);
+                                        const tooltipText = this.options.tooltipText
+                                            .replace('{keyboard}', isMac ? 'Cmd' : 'Ctrl')
+                                            .replace('{target}', link.href);
+                                        link.setAttribute('data-tooltip', tooltipText);
                                     } else {
                                         // Modificateur pressé = lien ouvert = curseur pointer
                                         link.classList.remove('safe-link');

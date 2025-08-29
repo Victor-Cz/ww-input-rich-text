@@ -766,6 +766,42 @@ export default {
                             fr: 'Quand activé, les utilisateurs doivent maintenir Cmd (Mac) ou Ctrl (Windows) pour ouvrir les liens. Cela empêche la navigation accidentelle lors de l\'édition.',
                         },
                     },
+                    tooltipColor: {
+                        type: 'Color',
+                        label: {
+                            en: 'Tooltip color',
+                            fr: 'Couleur du tooltip',
+                        },
+                        bindable: true,
+                        hidden: content => !content.enableSafeLinks,
+                    },
+                    tooltipBackgroundColor: {
+                        type: 'Color',
+                        label: {
+                            en: 'Tooltip background color',
+                            fr: 'Couleur de fond du tooltip',
+                        },
+                        bindable: true,
+                        hidden: content => !content.enableSafeLinks,
+                    },
+                    tooltipFontSize: {
+                        type: 'Length',
+                        label: {
+                            en: 'Tooltip font size',
+                            fr: 'Taille de la police du tooltip',
+                        },
+                        bindable: true,
+                        hidden: content => !content.enableSafeLinks,
+                    },
+                    tooltipText: {
+                        type: 'Text',
+                        label: {
+                            en: 'Tooltip text (can use {keyboard} and{target})',
+                            fr: 'Texte du tooltip (peut utiliser {keyboard} et {target})',
+                        },
+                        bindable: true,
+                        hidden: content => !content.enableSafeLinks,
+                    }
                 },
                 singleLine: true,
             },
@@ -775,6 +811,10 @@ export default {
                 color: '',
                 isUnderline: true,
                 enableSafeLinks: false,
+                tooltipColor: '#393d45',
+                tooltipBackgroundColor: '#393d45',
+                tooltipFontSize: '12px',
+                tooltipText: '{keyboard} > {target}',
             },
             states: true,
             classes: true,
