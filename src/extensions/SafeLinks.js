@@ -1,4 +1,7 @@
 import { Extension } from '@tiptap/core'
+import { Plugin, PluginKey } from 'prosemirror-state'
+
+const safeLinksKey = new PluginKey('safeLinks')
 
 export const SafeLinks = Extension.create({
   name: 'safeLinks',
@@ -10,13 +13,16 @@ export const SafeLinks = Extension.create({
   },
 
   addProseMirrorPlugins() {
+    const options = this.options
     return [
-      new this.editor.view.state.plugins.constructor({
+      new Plugin({
+        key: safeLinksKey,
+
         props: {
           handleDOMEvents: {
             click: (view, event) => {
               // Si l'extension est désactivée, ne rien faire
-              if (!this.options.enabled) {
+              if (!options.enabled) {
                 return false
               }
 
@@ -24,6 +30,7 @@ export const SafeLinks = Extension.create({
 
               // Vérifie si l'élément cliqué est (ou contient) un lien
               if (target && target.closest('a')) {
+                console.log('SafeLinks: Clic sur un lien détecté')
                 // Bloquer si l'utilisateur ne maintient PAS Cmd (Mac) ou Ctrl (Win)
                 if (!(event.metaKey || event.ctrlKey)) {
                   event.preventDefault()
