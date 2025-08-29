@@ -1321,7 +1321,7 @@ export default {
                 bottom: 100%;
                 left: 50%;
                 transform: translateX(-50%);
-                background: rgba(0, 0, 0, 8);
+                background: #393d45;
                 color: white;
                 padding: 4px 8px;
                 border-radius: 4px;
