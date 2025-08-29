@@ -656,10 +656,6 @@ export default {
                 '--table-cell-color': this.content.table?.cellColor || '#000',
                 '--table-cell-padding-x': this.content.table?.cellPaddingX || '8px',
                 '--table-cell-padding-y': this.content.table?.cellPaddingY || '6px',
-                // tooltip
-                '--tooltip-color': this.content.a?.tooltipColor || '#393d45',
-                '--tooltip-background-color': this.content.a?.tooltipBackgroundColor || '#393d45',
-                '--tooltip-font-size': this.content.a?.tooltipFontSize || '12px',
             };
         },
         delay() {
@@ -685,6 +681,10 @@ export default {
                     StarterKit,
                     SafeLinks.configure({
                         enabled: this.content.a?.enableSafeLinks !== false,
+                        tooltipText: this.content.a?.tooltipText || '{keyboard}',
+                        tooltipColor: this.content.a?.tooltipColor || '#ffffff',
+                        tooltipBackgroundColor: this.content.a?.tooltipBackgroundColor || '#393d45',
+                        tooltipFontSize: this.content.a?.tooltipFontSize || '12px',
                     }),
                     Link.configure({
                         HTMLAttributes: {
