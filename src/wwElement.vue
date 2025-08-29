@@ -503,9 +503,6 @@ export default {
                 aiMenu: this.content.parameterAiMenu ?? true,
             };
         },
-        safeLinksEnabled() {
-            return this.content.a?.enableSafeLinks !== false;
-        },
         editorConfig() {
             return {
                 placeholder: wwLib.wwLang.getText(this.content.placeholder),
@@ -737,9 +734,7 @@ export default {
                         ranges: [],
                         color: 'var(--primary-color)',
                     }),
-                    SafeLinks.configure({
-                        getEnabled: () => this.safeLinksEnabled,
-                    }),
+                    SafeLinks,
                 ],
                 onCreate: () => {
                     this.setValue(this.getContent());

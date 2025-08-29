@@ -3,20 +3,18 @@ import { Extension } from '@tiptap/core'
 export const SafeLinks = Extension.create({
   name: 'safeLinks',
 
-  addOptions() {
-    return {
-      getEnabled: () => true, // Fonction par défaut qui retourne toujours true
-    }
-  },
-
   addProseMirrorPlugins() {
     return [
       new this.editor.view.state.plugins.constructor({
         props: {
           handleDOMEvents: {
             click: (view, event) => {
-              // Utilise la fonction getter pour obtenir l'état actuel
-              if (!this.options.getEnabled()) {
+              // Récupère la configuration depuis le composant parent
+              const component = this.editor.view.dom.closest('.ww-rich-text')?.__vueParentComponent?.ctx
+              const safeLinksEnabled = component?.content?.a?.enableSafeLinks !== false
+              
+              // Si les safelinks sont désactivés, ne rien faire
+              if (!safeLinksEnabled) {
                 return false
               }
 
