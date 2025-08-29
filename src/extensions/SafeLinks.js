@@ -19,30 +19,21 @@ export const SafeLinks = Extension.create({
         key: safeLinksKey,
 
         props: {
-          handleClickOn: (view, pos, event) => {
-            // Si l'extension est désactivée, ne rien faire
-            if (!options.enabled) {
-              return false
-            }
+          handleDOMEvents: {
+            click: (view, event) => {
+              const target = event.target
 
-            const target = event.target
-
-            // Vérifie si l'élément cliqué est (ou contient) un lien
-            if (target && target.closest('a')) {
-              console.log('SafeLinks: Clic sur un lien détecté')
-              // Bloquer si l'utilisateur ne maintient PAS Cmd (Mac) ou Ctrl (Win)
-              if (!(event.metaKey || event.ctrlKey)) {
-                console.log('SafeLinks: Blocage du lien (pas de Cmd/Ctrl)')
-                event.preventDefault()
-                event.stopPropagation()
-                event.stopImmediatePropagation()
-                return true // Empêche le comportement par défaut (ouvrir le lien)
-              } else {
-                console.log('SafeLinks: Lien autorisé (Cmd/Ctrl enfoncé)')
+              // Vérifie si l’élément cliqué est (ou contient) un lien
+              if (target && target.closest('a')) {
+                // Bloquer si l’utilisateur ne maintient PAS Cmd (Mac) ou Ctrl (Win)
+                if (!(event.metaKey || event.ctrlKey) && options.enabled) {
+                  event.preventDefault()
+                  return true // Empêche le comportement par défaut (ouvrir le lien)
+                }
               }
-            }
 
-            return false
+              return false
+            },
           },
         },
       }),
