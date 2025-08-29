@@ -236,6 +236,7 @@ import AiMenu from './components/AiMenu.vue';
 import { SelectionHighlighter } from './extensions/SelectionHighlighter.js';
 import { TextSuggestion } from './extensions/TextSuggestion.js';
 import { TextStrike } from './extensions/TextStrike.js';
+import { SafeLinks } from './extensions/SafeLinks.js';
 
 function extractMentions(acc, currentNode) {
     if (currentNode.type === 'mention') {
@@ -732,6 +733,7 @@ export default {
                         ranges: [],
                         color: 'var(--primary-color)',
                     }),
+                    (this.content.a?.enableSafeLinks !== false) && SafeLinks,
                 ],
                 onCreate: () => {
                     this.setValue(this.getContent());

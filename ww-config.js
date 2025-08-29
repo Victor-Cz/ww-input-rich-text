@@ -754,6 +754,18 @@ export default {
                         },
                         bindable: true,
                     },
+                    enableSafeLinks: {
+                        type: 'OnOff',
+                        label: {
+                            en: 'Enable Safe Links',
+                            fr: 'Activer les liens sécurisés',
+                        },
+                        bindable: true,
+                        description: {
+                            en: 'When enabled, users must hold Cmd (Mac) or Ctrl (Windows) to open links. This prevents accidental navigation while editing.',
+                            fr: 'Quand activé, les utilisateurs doivent maintenir Cmd (Mac) ou Ctrl (Windows) pour ouvrir les liens. Cela empêche la navigation accidentelle lors de l\'édition.',
+                        },
+                    },
                 },
                 singleLine: true,
             },
@@ -762,6 +774,7 @@ export default {
                 fontFamily: '',
                 color: '',
                 isUnderline: true,
+                enableSafeLinks: false,
             },
             states: true,
             classes: true,
@@ -1634,6 +1647,7 @@ export default {
             },
             defaultValue: true,
         },
+
         aiMenuSection: {
             section: 'settings',
             hidden: content => content.customMenu,
