@@ -686,6 +686,7 @@ export default {
                         HTMLAttributes: {
                             rel: 'noopener noreferrer',
                         },
+                        openOnClick: false,
                     }),
                     TextStyle,
                     Color,
