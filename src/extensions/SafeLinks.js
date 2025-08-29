@@ -67,7 +67,7 @@ export const SafeLinks = Extension.create({
                   
                   // Ajouter le tooltip selon la plateforme
                   const isMac = navigator.userAgent.includes('Mac')
-                  const tooltip = isMac ? 'Cmd + clic pour ouvrir' : 'Ctrl + clic pour ouvrir'
+                  const tooltip = isMac ? 'Cmd + clic' : 'Ctrl + clic'
                   link.setAttribute('data-tooltip', tooltip)
                 } else {
                   // Modificateur pressé = lien ouvert = curseur pointer

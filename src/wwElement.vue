@@ -1313,7 +1313,7 @@ export default {
         position: relative;
         
         &:hover {
-            cursor: default !important;
+            cursor: text !important;
             
             &::after {
                 content: attr(data-tooltip);
