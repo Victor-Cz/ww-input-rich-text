@@ -679,6 +679,9 @@ export default {
                 },
                 extensions: [
                     StarterKit,
+                    SafeLinks.configure({
+                        enabled: this.content.a?.enableSafeLinks !== false,
+                    }),
                     Link.configure({
                         HTMLAttributes: {
                             rel: 'noopener noreferrer',
@@ -733,9 +736,6 @@ export default {
                         defaultStrikeColor: 'var(--primary-color)',
                         ranges: [],
                         color: 'var(--primary-color)',
-                    }),
-                    SafeLinks.configure({
-                        enabled: this.content.a?.enableSafeLinks !== false,
                     }),
                 ],
                 onCreate: () => {
