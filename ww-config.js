@@ -98,6 +98,15 @@ export default {
             ],
             ['parameterAiMenuTitlePlaceholders', 'parameterAiMenuPlaceholders'],
             ['parameterAiMenuCustomTypes'],
+            'enableCollaboration',
+            [
+                'websocketUrl',
+                'documentId',
+                'authToken',
+                'userName',
+                'autoConnect',
+                'saveMode',
+            ],
         ],
     },
     options: {
@@ -118,6 +127,72 @@ export default {
             name: 'ai-suggestion-applied',
             label: { en: 'On AI suggestion applied' },
             event: { response: '', formattedResponse: '', modificationType: '', action: '', selectedText: '', selectionRange: '', htmlValue: '', timestamp: '', position: '' },
+        },
+        // Collaboration events
+        {
+            name: 'collab:connected',
+            label: { en: 'On connected to collaboration server', fr: 'Connecté au serveur de collaboration' },
+            event: {
+                documentId: '',
+                timestamp: '',
+                connectionId: ''
+            },
+        },
+        {
+            name: 'collab:disconnected',
+            label: { en: 'On disconnected from collaboration server', fr: 'Déconnecté du serveur de collaboration' },
+            event: {
+                documentId: '',
+                timestamp: '',
+                reason: ''
+            },
+        },
+        {
+            name: 'collab:synced',
+            label: { en: 'On document synced', fr: 'Document synchronisé' },
+            event: {
+                documentId: '',
+                timestamp: '',
+                state: 'synced'
+            },
+        },
+        {
+            name: 'collab:syncing',
+            label: { en: 'On document syncing', fr: 'Document en cours de synchronisation' },
+            event: {
+                documentId: '',
+                timestamp: '',
+                state: 'syncing'
+            },
+        },
+        {
+            name: 'collab:error',
+            label: { en: 'On collaboration error', fr: 'Erreur de collaboration' },
+            event: {
+                error: '',
+                message: '',
+                timestamp: ''
+            },
+        },
+        {
+            name: 'collab:awareness-update',
+            label: { en: 'On awareness update (users)', fr: 'Mise à jour des utilisateurs' },
+            event: {
+                users: [],
+                count: 0,
+                timestamp: ''
+            },
+        },
+        {
+            name: 'save-document',
+            label: { en: 'On save document', fr: 'Sur sauvegarde du document' },
+            event: {
+                documentId: '',
+                content: '',
+                format: 'html',
+                timestamp: '',
+                trigger: 'change|unload|manual'
+            },
         },
     ],
     actions: [
@@ -284,6 +359,27 @@ export default {
         {
             label: 'Clear Changes',
             action: 'clearChanges',
+        },
+        // Collaboration actions
+        {
+            label: { en: 'Connect to collaboration', fr: 'Connecter à la collaboration' },
+            action: 'connectCollaboration',
+        },
+        {
+            label: { en: 'Disconnect from collaboration', fr: 'Déconnecter de la collaboration' },
+            action: 'disconnectCollaboration',
+        },
+        {
+            label: { en: 'Force sync', fr: 'Forcer la synchronisation' },
+            action: 'forceSync',
+        },
+        {
+            label: { en: 'Get connection status', fr: 'Obtenir le statut de connexion' },
+            action: 'getConnectionStatus',
+        },
+        {
+            label: { en: 'Save document', fr: 'Sauvegarder le document' },
+            action: 'saveDocument',
         },
     ],
     properties: {
@@ -2050,6 +2146,85 @@ export default {
             defaultValue: '',
             bindable: true,
             hidden: (content, sidePanelContent) => !sidePanelContent.form?.uid || !content.customValidation,
+        },
+        // Collaboration properties
+        enableCollaboration: {
+            section: 'settings',
+            label: { en: 'Enable Collaboration', fr: 'Activer la collaboration' },
+            type: 'OnOff',
+            defaultValue: false,
+            bindable: true,
+        },
+        websocketUrl: {
+            section: 'settings',
+            label: { en: 'WebSocket URL', fr: 'URL WebSocket' },
+            type: 'Text',
+            defaultValue: '',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            placeholder: 'wss://your-hocuspocus-server.com',
+            /* wwEditor:end */
+        },
+        documentId: {
+            section: 'settings',
+            label: { en: 'Document ID', fr: 'ID du document' },
+            type: 'Text',
+            defaultValue: '',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            placeholder: 'document-123',
+            /* wwEditor:end */
+        },
+        authToken: {
+            section: 'settings',
+            label: { en: 'Auth Token', fr: "Token d'authentification" },
+            type: 'Text',
+            defaultValue: '',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            placeholder: '= auth.accessToken',
+            /* wwEditor:end */
+        },
+        userName: {
+            section: 'settings',
+            label: { en: 'User Name', fr: "Nom d'utilisateur" },
+            type: 'Text',
+            defaultValue: 'Anonymous',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            placeholder: '= auth.user.name',
+            /* wwEditor:end */
+        },
+        autoConnect: {
+            section: 'settings',
+            label: { en: 'Auto Connect', fr: 'Connexion automatique' },
+            type: 'OnOff',
+            defaultValue: true,
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+        },
+        saveMode: {
+            section: 'settings',
+            label: { en: 'Save Mode', fr: 'Mode de sauvegarde' },
+            type: 'TextSelect',
+            options: {
+                options: [
+                    { value: 'on-change', label: { en: 'On Change', fr: 'Sur changement' } },
+                    { value: 'on-unload', label: { en: 'On Unload', fr: 'Sur déchargement' } },
+                    { value: 'manual', label: { en: 'Manual (trigger only)', fr: 'Manuel (trigger uniquement)' } },
+                ],
+            },
+            defaultValue: 'manual',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
         },
     },
 };

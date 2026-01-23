@@ -229,6 +229,7 @@ import TableRow from '@tiptap/extension-table-row';
 
 import { computed, inject } from 'vue';
 import suggestion from './suggestion.js';
+import { useCollaboration } from './composables/useCollaboration.js';
 import { Markdown } from 'tiptap-markdown';
 import TableIcon from './icons/table-icon.vue';
 
@@ -308,6 +309,22 @@ export default {
             readonly: true,
         });
 
+        const { value: collaborationStatus, setValue: setCollaborationStatus } = wwLib.wwVariable.useComponentVariable({
+            uid: props.uid,
+            name: 'collaborationStatus',
+            type: 'object',
+            defaultValue: computed(() => ({
+                connected: false,
+                synced: false,
+                syncing: false,
+                error: null,
+                connectionId: null,
+                users: [],
+                userCount: 0,
+            })),
+            readonly: true,
+        });
+
         /* wwEditor:start */
         const { createElement } = wwLib.useCreateElement();
         /* wwEditor:end */
@@ -326,6 +343,10 @@ export default {
             { elementState: props.wwElementState, emit, sidepanelFormPath: 'form' }
         );
 
+        // Initialiser la collaboration
+        const contentRef = computed(() => props.content);
+        const collaboration = useCollaboration(props, contentRef, emit, setCollaborationStatus);
+
         return {
             variableValue,
             setValue,
@@ -335,10 +356,14 @@ export default {
             setStates,
             pendingChangesCount,
             setPendingChangesCount,
+            collaborationStatus,
+            setCollaborationStatus,
             randomUid,
             /* wwEditor:start */
             createElement,
             /* wwEditor:end */
+            // Collaboration
+            ...collaboration,
         };
     },
     data: () => ({
@@ -418,6 +443,34 @@ export default {
             handler(value) {
                 this.setStates(value);
             },
+        },
+        // Watchers de collaboration
+        'collabConfig.documentId'(newId, oldId) {
+            if (newId !== oldId && this.shouldEnableCollaboration) {
+                this.initializeCollaboration(this.collaborationStatus);
+            }
+        },
+        'collabConfig.websocketUrl'(newUrl, oldUrl) {
+            if (newUrl !== oldUrl && this.shouldEnableCollaboration) {
+                this.initializeCollaboration(this.collaborationStatus);
+            }
+        },
+        'collabConfig.authToken'(newToken, oldToken) {
+            if (newToken !== oldToken && this.shouldEnableCollaboration) {
+                this.initializeCollaboration(this.collaborationStatus);
+            }
+        },
+        'collabConfig.userName'(newName, oldName) {
+            if (newName !== oldName) {
+                this.updateUserName(newName);
+            }
+        },
+        'collabConfig.enabled'(enabled) {
+            if (enabled && this.shouldEnableCollaboration) {
+                this.initializeCollaboration(this.collaborationStatus);
+            } else if (!enabled) {
+                this.destroyCollaboration(this.collaborationStatus);
+            }
         },
     },
     computed: {
@@ -682,8 +735,80 @@ export default {
             if (this.loading) return;
             this.loading = true;
             if (this.richEditor) this.richEditor.destroy();
+
+            // Construire la liste des extensions
+            const extensions = [
+                StarterKit,
+                SafeLinks.configure({
+                    enabled: this.content.a?.enableSafeLinks !== false,
+                    tooltipText: this.content.a?.tooltipText || '{keyboard} + Clic',
+                    tooltipColor: this.content.a?.tooltipColor || '#ffffff',
+                    tooltipBackgroundColor: this.content.a?.tooltipBackgroundColor || '#393d45',
+                    tooltipFontSize: this.content.a?.tooltipFontSize || '12px',
+                }),
+                Link.configure({
+                    HTMLAttributes: {
+                        rel: 'noopener noreferrer',
+                    },
+                    openOnClick: !this.content.a?.enableSafeLinks,
+                }),
+                TextStyle,
+                Color,
+                Underline,
+                Table.configure({
+                    resizable: true,
+                }),
+                TableCell,
+                TableHeader,
+                TableRow,
+                TaskList,
+                TaskItem.configure({
+                    nested: true,
+                }),
+                TextAlign.configure({
+                    types: ['heading', 'paragraph'],
+                }),
+                Placeholder.configure({
+                    placeholder: this.editorConfig.placeholder,
+                }),
+                Markdown.configure({ breaks: true }),
+                Image.configure({ ...this.editorConfig.image }),
+                this.editorConfig.mention.enabled &&
+                Mention.configure({
+                    HTMLAttributes: {
+                        class: 'mention',
+                    },
+                    suggestion: {
+                        items: ({ query }) =>
+                            this.editorConfig.mention.list
+                                .filter(({ label }) => label.toLowerCase().startsWith(query.toLowerCase()))
+                                .slice(0, this.mentionListLength),
+                        render: suggestion.render,
+                        allowSpaces: this.editorConfig.mention.allowSpaces,
+                        char: this.editorConfig.mention.char,
+                    },
+                }),
+                SelectionHighlighter.configure({
+                    defaultColor: 'var(--primary-color-33)',
+                }),
+                TextSuggestion.configure({
+                    suggestionText: null,
+                    position: 1,
+                    className: 'suggestion-label',
+                    color: 'var(--primary-color)',
+                }),
+                TextStrike.configure({
+                    defaultStrikeColor: 'var(--primary-color)',
+                    ranges: [],
+                    color: 'var(--primary-color)',
+                }),
+            ];
+
+            // Ajouter les extensions de collaboration si actif
+            extensions.push(...this.getCollaborationExtensions());
+
             this.richEditor = new Editor({
-                content: String(this.content.initialValue || ''),
+                content: this.isCollaborating ? undefined : String(this.content.initialValue || ''),
                 editable: this.isEditable,
                 autofocus: this.editorConfig.autofocus,
                 onFocus: ({ editor, event }) => {
@@ -692,72 +817,7 @@ export default {
                 onBlur: ({ editor, event }) => {
                     this.$emit('trigger-event', { name: 'blur', event: { editor, event } });
                 },
-                extensions: [
-                    StarterKit,
-                    SafeLinks.configure({
-                        enabled: this.content.a?.enableSafeLinks !== false,
-                        tooltipText: this.content.a?.tooltipText || '{keyboard} + Clic',
-                        tooltipColor: this.content.a?.tooltipColor || '#ffffff',
-                        tooltipBackgroundColor: this.content.a?.tooltipBackgroundColor || '#393d45',
-                        tooltipFontSize: this.content.a?.tooltipFontSize || '12px',
-                    }),
-                    Link.configure({
-                        HTMLAttributes: {
-                            rel: 'noopener noreferrer',
-                        },
-                        openOnClick: !this.content.a?.enableSafeLinks,
-                    }),
-                    TextStyle,
-                    Color,
-                    Underline,
-                    Table.configure({
-                        resizable: true,
-                    }),
-                    TableCell,
-                    TableHeader,
-                    TableRow,
-                    TaskList,
-                    TaskItem.configure({
-                        nested: true,
-                    }),
-                    TextAlign.configure({
-                        types: ['heading', 'paragraph'],
-                    }),
-                    Placeholder.configure({
-                        placeholder: this.editorConfig.placeholder,
-                    }),
-                    Markdown.configure({ breaks: true }),
-                    Image.configure({ ...this.editorConfig.image }),
-                    this.editorConfig.mention.enabled &&
-                    Mention.configure({
-                        HTMLAttributes: {
-                            class: 'mention',
-                        },
-                        suggestion: {
-                            items: ({ query }) =>
-                                this.editorConfig.mention.list
-                                    .filter(({ label }) => label.toLowerCase().startsWith(query.toLowerCase()))
-                                    .slice(0, this.mentionListLength),
-                            render: suggestion.render,
-                            allowSpaces: this.editorConfig.mention.allowSpaces,
-                            char: this.editorConfig.mention.char,
-                        },
-                    }),
-                    SelectionHighlighter.configure({
-                        defaultColor: 'var(--primary-color-33)',
-                    }),
-                    TextSuggestion.configure({
-                        suggestionText: null,
-                        position: 1,
-                        className: 'suggestion-label',
-                        color: 'var(--primary-color)',
-                    }),
-                    TextStrike.configure({
-                        defaultStrikeColor: 'var(--primary-color)',
-                        ranges: [],
-                        color: 'var(--primary-color)',
-                    }),
-                ],
+                extensions,
                 onCreate: () => {
                     this.setValue(this.getContent());
                     this.setMentions(this.richEditor.getJSON().content.reduce(extractMentions, []));
@@ -978,11 +1038,41 @@ export default {
             this.pendingSteps = [];
             this.setPendingChangesCount(0);
         },
+
+        // Méthodes de sauvegarde pour la collaboration
+        triggerSave(trigger = 'manual') {
+            const content = this.getContent();
+            const format = this.content.output || 'html';
+
+            this.$emit('trigger-event', {
+                name: 'save-document',
+                event: {
+                    documentId: this.collabConfig.documentId,
+                    content,
+                    format,
+                    timestamp: new Date().toISOString(),
+                    trigger,
+                },
+            });
+        },
+
+        saveDocument() {
+            this.triggerSave('manual');
+        },
     },
     mounted() {
-        this.loadEditor();
+        // Initialiser la collaboration si configurée
+        if (this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
+            this.initializeCollaboration(this.collaborationStatus);
+        } else {
+            this.loadEditor();
+        }
     },
     beforeUnmount() {
+        // Nettoyer la collaboration
+        this.destroyCollaboration(this.collaborationStatus);
+
+        // Nettoyer l'éditeur
         if (this.richEditor) this.richEditor.destroy();
     },
 };
