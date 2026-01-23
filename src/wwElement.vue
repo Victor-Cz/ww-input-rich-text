@@ -1174,6 +1174,7 @@ export default {
         /* Basic editor styles */
         cursor: text;
         max-height: 100%;
+        min-height: 100px;
         width: 100%;
         overflow: auto;
         padding: 8px;
@@ -1448,6 +1449,13 @@ export default {
 
     &.-readonly .ProseMirror {
         cursor: inherit;
+    }
+
+    &__input {
+        display: flex;
+        flex: 1;
+        overflow: auto;
+        min-height: 100px;
     }
 
     // Style pour les liens sécurisés

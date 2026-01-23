@@ -43,6 +43,16 @@ export default {
             ],
         ],
         customSettingsPropertiesOrder: [
+            'enableCollaboration',
+            [
+                'websocketUrl',
+                'documentId',
+                'authToken',
+                'userName',
+                'autoConnect',
+                'saveMode',
+                'maxConnectionAttempts',
+            ],
             'formInfobox',
             ['fieldName', 'customValidation', 'validation'],
             'readonly',
@@ -98,16 +108,6 @@ export default {
             ],
             ['parameterAiMenuTitlePlaceholders', 'parameterAiMenuPlaceholders'],
             ['parameterAiMenuCustomTypes'],
-            'enableCollaboration',
-            [
-                'websocketUrl',
-                'documentId',
-                'authToken',
-                'userName',
-                'autoConnect',
-                'saveMode',
-                'maxConnectionAttempts',
-            ],
         ],
     },
     options: {
@@ -413,6 +413,7 @@ export default {
             type: 'Textarea',
             defaultValue: '',
             bindable: true,
+            hidden: content => content.enableCollaboration,
         },
         output: {
             label: {
@@ -1800,7 +1801,7 @@ export default {
 
         aiMenuSection: {
             section: 'settings',
-            hidden: content => content.customMenu,
+            hidden: content => content.customMenu || !content.enableAiMenu,
             type: 'InfoBox',
             options: {
                 variant: 'info',
