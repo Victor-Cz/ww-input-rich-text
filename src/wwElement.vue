@@ -1,5 +1,13 @@
 <template>
-    <div class="ww-rich-text" :class="{ '-readonly': isReadonly, editing: isEditing }" data-capture :style="{
+    <wwLocalContext
+        :users="collaborationStatus.users || []"
+        :userCount="collaborationStatus.userCount || 0"
+        :isConnected="collaborationStatus.connected || false"
+        :isSynced="collaborationStatus.synced || false"
+        :isCollaborating="isCollaborating || false"
+        :connectionStatus="collaborationStatus"
+    >
+        <div class="ww-rich-text" :class="{ '-readonly': isReadonly, editing: isEditing }" data-capture :style="{
         '--primary-color': content.parameterAiMenuPrimaryColor ?? '#007bff',
         '--primary-color-1A': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '1A', // 10%
         '--primary-color-33': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '33', // 20%
@@ -208,6 +216,7 @@
                     v-if="richEditor && content.enableAiMenu" />
             </template>
         </div>
+    </wwLocalContext>
 </template>
 
 <script>
