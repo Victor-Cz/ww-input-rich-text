@@ -1,5 +1,5 @@
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
-import { TiptapCollabProvider } from '@hocuspocus/provider';
+import { HocuspocusProvider } from '@hocuspocus/provider';
 import * as Y from 'yjs';
 import Collaboration from '@tiptap/extension-collaboration';
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
@@ -216,26 +216,27 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 name: collabConfig.value.documentId,
                 document: ydoc.value,
                 url: fullUrl,
-                parameters: {
-                    saveMode: collabConfig.value.saveMode,
-                    userName: collabConfig.value.userName,
+                token: collabConfig.value.authToken || undefined,
+                // Passer les paramètres personnalisés via onAuthenticate
+                onAuthenticate: () => {
+                    return {
+                        token: collabConfig.value.authToken,
+                        saveMode: collabConfig.value.saveMode,
+                        userName: collabConfig.value.userName,
+                    };
                 },
             };
-
-            // Ajouter le token d'authentification si fourni
-            if (collabConfig.value.authToken) {
-                providerConfig.token = collabConfig.value.authToken;
-            }
 
             console.log('[Collaboration] Initializing connection with config:', {
                 documentId: providerConfig.name,
                 fullUrl: fullUrl,
                 hasToken: !!providerConfig.token,
-                parameters: providerConfig.parameters,
+                saveMode: collabConfig.value.saveMode,
+                userName: collabConfig.value.userName,
             });
 
-            // Créer le provider
-            provider.value = new TiptapCollabProvider(providerConfig);
+            // Créer le provider Hocuspocus
+            provider.value = new HocuspocusProvider(providerConfig);
 
             // Configurer les event listeners
             setupCollaborationListeners(collaborationStatus);
