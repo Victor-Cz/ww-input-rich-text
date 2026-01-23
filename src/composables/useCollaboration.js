@@ -38,21 +38,21 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         return collabConfig.value.enabled && collabConfig.value.documentId && collabConfig.value.websocketUrl;
     });
 
-    // Palette de couleurs pour les curseurs
+    // Palette de couleurs pour les curseurs (couleurs plus foncées et saturées)
     const getRandomColor = () => {
         const colors = [
-            '#958DF1',
-            '#F98181',
-            '#FBBC88',
-            '#FAF594',
-            '#70CFF8',
-            '#94FADB',
-            '#B9F18D',
-            '#C3E2C2',
-            '#EAECCC',
-            '#AFC8AD',
-            '#EEC759',
-            '#9BB8CD',
+            '#6B46C1', // Violet foncé
+            '#DC2626', // Rouge foncé
+            '#EA580C', // Orange foncé
+            '#CA8A04', // Jaune moutarde
+            '#0284C7', // Bleu foncé
+            '#0D9488', // Teal foncé
+            '#16A34A', // Vert foncé
+            '#65A30D', // Vert lime foncé
+            '#C026D3', // Magenta foncé
+            '#DB2777', // Rose foncé
+            '#7C3AED', // Indigo foncé
+            '#0891B2', // Cyan foncé
         ];
         return colors[Math.floor(Math.random() * colors.length)];
     };
