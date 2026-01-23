@@ -796,8 +796,11 @@ export default {
                 }
 
                 // Construire la liste des extensions
+                // Si collaboration est active, désactiver History dans StarterKit (incompatible avec Collaboration)
                 const extensions = [
-                    StarterKit,
+                    StarterKit.configure({
+                        history: !this.isCollaborating, // Désactiver History si collaboration active
+                    }),
                     SafeLinks.configure({
                         enabled: this.content.a?.enableSafeLinks !== false,
                         tooltipText: this.content.a?.tooltipText || '{keyboard} + Clic',
@@ -847,6 +850,8 @@ export default {
                         color: 'var(--primary-color)',
                     }),
                 ];
+
+                console.log('[Editor] StarterKit configured with history:', !this.isCollaborating);
 
                 // Ajouter mention si activé
                 if (this.editorConfig.mention.enabled) {
