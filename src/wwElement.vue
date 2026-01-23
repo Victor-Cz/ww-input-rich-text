@@ -735,6 +735,11 @@ export default {
                 '--tooltip-color': this.content.a?.tooltipColor || '#ffffff',
                 '--tooltip-background-color': this.content.a?.tooltipBackgroundColor || '#393d45',
                 '--tooltip-font-size': this.content.a?.tooltipFontSize || '12px',
+                // editor padding
+                '--editor-padding-top': this.content.editorPadding?.paddingTop || '12px',
+                '--editor-padding-right': this.content.editorPadding?.paddingRight || '12px',
+                '--editor-padding-bottom': this.content.editorPadding?.paddingBottom || '12px',
+                '--editor-padding-left': this.content.editorPadding?.paddingLeft || '12px',
             };
         },
         delay() {
@@ -1351,6 +1356,10 @@ export default {
         height: 100%;
         min-height: 100px;
         width: 100%;
+        padding-top: var(--editor-padding-top, 12px);
+        padding-right: var(--editor-padding-right, 12px);
+        padding-bottom: var(--editor-padding-bottom, 12px);
+        padding-left: var(--editor-padding-left, 12px);
         overflow: auto;
         padding: 8px;
         box-sizing: border-box;

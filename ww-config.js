@@ -54,6 +54,7 @@ export default {
             'initialValue',
             'output',
             'placeholder',
+            'editorPadding',
             'debounce',
             'debounceDelay',
             'autofocus',
@@ -459,6 +460,76 @@ export default {
             type: 'Textarea',
             defaultValue: 'Type here...',
             bindable: true,
+        },
+        editorPadding: {
+            label: {
+                en: 'Editor padding',
+            },
+            type: 'Object',
+            options: {
+                item: {
+                    paddingTop: {
+                        type: 'Length',
+                        label: {
+                            en: 'Padding top',
+                        },
+                        options: {
+                            unitChoices: [
+                                { value: 'px', label: 'px', min: 0, max: 100 },
+                                { value: 'rem', label: 'rem', min: 0, max: 10 },
+                            ],
+                        },
+                        bindable: true,
+                    },
+                    paddingRight: {
+                        type: 'Length',
+                        label: {
+                            en: 'Padding right',
+                        },
+                        options: {
+                            unitChoices: [
+                                { value: 'px', label: 'px', min: 0, max: 100 },
+                                { value: 'rem', label: 'rem', min: 0, max: 10 },
+                            ],
+                        },
+                        bindable: true,
+                    },
+                    paddingBottom: {
+                        type: 'Length',
+                        label: {
+                            en: 'Padding bottom',
+                        },
+                        options: {
+                            unitChoices: [
+                                { value: 'px', label: 'px', min: 0, max: 100 },
+                                { value: 'rem', label: 'rem', min: 0, max: 10 },
+                            ],
+                        },
+                        bindable: true,
+                    },
+                    paddingLeft: {
+                        type: 'Length',
+                        label: {
+                            en: 'Padding left',
+                        },
+                        options: {
+                            unitChoices: [
+                                { value: 'px', label: 'px', min: 0, max: 100 },
+                                { value: 'rem', label: 'rem', min: 0, max: 10 },
+                            ],
+                        },
+                        bindable: true,
+                    },
+                },
+            },
+            defaultValue: {
+                paddingTop: '12px',
+                paddingRight: '12px',
+                paddingBottom: '12px',
+                paddingLeft: '12px',
+            },
+            bindable: true,
+            responsive: true,
         },
         enableMention: {
             section: 'settings',
