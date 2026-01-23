@@ -276,6 +276,15 @@ export default {
                 },
             ],
         },
+        {
+            label: 'Get and Clear Changes',
+            action: 'getAndClearChanges',
+            returnType: 'Array',
+        },
+        {
+            label: 'Clear Changes',
+            action: 'clearChanges',
+        },
     ],
     properties: {
         readonly: {
