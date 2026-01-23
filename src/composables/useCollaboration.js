@@ -366,15 +366,23 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             console.warn('[Collaboration] ⚠️ Provider is null, CollaborationCursor may not work');
         }
 
-        // IMPORTANT: Passer ydocInstance directement (pas via .value) pour une référence stable
+        // IMPORTANT: Créer une référence stable pour éviter les problèmes de timing
+        const doc = ydocInstance;
+        const prov = provider.value;
+
+        if (!doc) {
+            console.error('[Collaboration] ❌ ydocInstance is null when creating extensions!');
+            return [];
+        }
+
         const extensions = [
             Collaboration.configure({
-                document: ydocInstance, // Référence directe, pas via ref
+                document: doc,
                 field: 'default',
             }),
             // On force l'extension. Si le provider est là, l'awareness l'est aussi.
             CollaborationCursor.configure({
-                provider: provider.value,
+                provider: prov,
                 user: {
                     name: collabConfig.value.userName || 'Anonymous',
                     color: getRandomColor(),
