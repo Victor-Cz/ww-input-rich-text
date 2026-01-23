@@ -1616,5 +1616,34 @@ export default {
             }
         }
     }
+
+    /* Styles des curseurs de collaboration */
+    .collaboration-cursor__caret {
+        position: relative;
+        margin-left: -1px;
+        margin-right: -1px;
+        border-left: 2px solid;
+        border-right: none;
+        word-break: normal;
+        pointer-events: none;
+        height: 1.2em;
+        display: inline-block;
+    }
+
+    .collaboration-cursor__label {
+        position: absolute;
+        top: -1.8em;
+        left: -1px;
+        font-size: 12px;
+        font-style: normal;
+        font-weight: 600;
+        line-height: normal;
+        user-select: none;
+        color: #fff;
+        padding: 2px 6px;
+        border-radius: 3px 3px 3px 0;
+        white-space: nowrap;
+        pointer-events: none;
+    }
 }
 </style>
