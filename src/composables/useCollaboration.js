@@ -13,7 +13,10 @@ import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
  */
 export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // États réactifs
-    const ydoc = ref(null);
+    // Note: On stocke ydoc comme une propriété directe au lieu d'une ref
+    // pour éviter les problèmes de référence avec Tiptap
+    let ydocInstance = null;
+    const ydoc = computed(() => ydocInstance);
     const provider = ref(null);
     const isCollaborating = ref(false);
     const connectionAttempts = ref(0);
@@ -226,8 +229,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         }
 
         try {
-            // Créer le document Yjs
-            ydoc.value = new Y.Doc();
+            // Créer le document Yjs et le stocker directement
+            ydocInstance = new Y.Doc();
 
             // Nettoyer l'URL WebSocket (enlever les slashes finaux)
             const cleanBaseUrl = collabConfig.value.websocketUrl.replace(/\/+$/, '');
@@ -238,7 +241,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             const providerConfig = {
                 url: cleanBaseUrl, // URL de base sans le documentId
                 name: collabConfig.value.documentId, // Le provider ajoutera automatiquement /{name}
-                document: ydoc.value,
+                document: ydocInstance,
                 token: collabConfig.value.authToken || undefined,
                 // Passer les paramètres personnalisés via onAuthenticate
                 onAuthenticate: () => {
@@ -286,9 +289,9 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             provider.value = null;
         }
 
-        if (ydoc.value) {
-            ydoc.value.destroy();
-            ydoc.value = null;
+        if (ydocInstance) {
+            ydocInstance.destroy();
+            ydocInstance = null;
         }
 
         isCollaborating.value = false;
@@ -349,12 +352,13 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     const getCollaborationExtensions = () => {
         console.log('[Collaboration] getCollaborationExtensions called:', {
             isCollaborating: isCollaborating.value,
-            hasYdoc: !!ydoc.value,
+            hasYdoc: !!ydocInstance,
             hasProvider: !!provider.value,
+            ydocInstance: ydocInstance,
         });
 
-        if (!isCollaborating.value || !ydoc.value) {
-            console.log('[Collaboration] ⚠️ Cannot load extensions: isCollaborating=' + isCollaborating.value + ', hasYdoc=' + !!ydoc.value);
+        if (!isCollaborating.value || !ydocInstance) {
+            console.log('[Collaboration] ⚠️ Cannot load extensions: isCollaborating=' + isCollaborating.value + ', hasYdoc=' + !!ydocInstance);
             return [];
         }
 
@@ -362,9 +366,10 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             console.warn('[Collaboration] ⚠️ Provider is null, CollaborationCursor may not work');
         }
 
+        // IMPORTANT: Passer ydocInstance directement (pas via .value) pour une référence stable
         const extensions = [
             Collaboration.configure({
-                document: ydoc.value,
+                document: ydocInstance, // Référence directe, pas via ref
                 field: 'default',
             }),
             // On force l'extension. Si le provider est là, l'awareness l'est aussi.
@@ -381,6 +386,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             extensionsCount: extensions.length,
             userName: collabConfig.value.userName,
             hasProviderAwareness: !!provider.value?.awareness,
+            ydocPassedToCollaboration: !!ydocInstance,
         });
 
         return extensions;
@@ -401,8 +407,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         if (provider.value) {
             provider.value.destroy();
         }
-        if (ydoc.value) {
-            ydoc.value.destroy();
+        if (ydocInstance) {
+            ydocInstance.destroy();
         }
     });
 
