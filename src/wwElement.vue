@@ -1,15 +1,5 @@
 <template>
-    <wwLocalContext
-    elementKey="data"
-        :users="collaborationStatus.users || []"
-        :userCount="collaborationStatus.userCount || 0"
-        :isConnected="collaborationStatus.connected || false"
-        :isSynced="collaborationStatus.synced || false"
-        :isCollaborating="isCollaborating || false"
-        :connectionStatus="collaborationStatus"
-        :formatting="currentFormatting"
-    >
-        <div class="ww-rich-text" :class="{ '-readonly': isReadonly, editing: isEditing }" data-capture :style="{
+    <div class="ww-rich-text" :class="{ '-readonly': isReadonly, editing: isEditing }" data-capture :style="{
         '--primary-color': content.parameterAiMenuPrimaryColor ?? '#007bff',
         '--primary-color-1A': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '1A', // 10%
         '--primary-color-33': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '33', // 20%
@@ -218,7 +208,6 @@
                     v-if="richEditor && content.enableAiMenu" />
             </template>
         </div>
-    </wwLocalContext>
 </template>
 
 <script>
@@ -383,7 +372,6 @@ export default {
         richEditor: null,
         loading: false,
         pendingSteps: [], // Accumulateur de diffs
-        selectionUpdateTrigger: 0, // Pour forcer la mise à jour du computed currentFormatting
     }),
 
     watch: {
@@ -758,60 +746,6 @@ export default {
         delay() {
             return wwLib.wwUtils.getLengthUnit(this.content.debounceDelay)[0];
         },
-        // État du formatage actuel (pour le contexte local)
-        currentFormatting() {
-            // Dépendre de selectionUpdateTrigger pour forcer la réévaluation
-            this.selectionUpdateTrigger; // eslint-disable-line no-unused-expressions
-
-            if (!this.richEditor) {
-                return {
-                    isBold: false,
-                    isItalic: false,
-                    isUnderline: false,
-                    isStrike: false,
-                    isCode: false,
-                    isLink: false,
-                    isBulletList: false,
-                    isOrderedList: false,
-                    isTaskList: false,
-                    isBlockquote: false,
-                    isCodeBlock: false,
-                    textAlign: null,
-                    currentLevel: 0,
-                    currentTextType: 'paragraph',
-                };
-            }
-
-            return {
-                isBold: this.richEditor.isActive('bold'),
-                isItalic: this.richEditor.isActive('italic'),
-                isUnderline: this.richEditor.isActive('underline'),
-                isStrike: this.richEditor.isActive('strike'),
-                isCode: this.richEditor.isActive('code'),
-                isLink: this.richEditor.isActive('link'),
-                isBulletList: this.richEditor.isActive('bulletList'),
-                isOrderedList: this.richEditor.isActive('orderedList'),
-                isTaskList: this.richEditor.isActive('taskList'),
-                isBlockquote: this.richEditor.isActive('blockquote'),
-                isCodeBlock: this.richEditor.isActive('codeBlock'),
-                textAlign: this.richEditor.isActive({ textAlign: 'left' }) ? 'left' :
-                          this.richEditor.isActive({ textAlign: 'center' }) ? 'center' :
-                          this.richEditor.isActive({ textAlign: 'right' }) ? 'right' :
-                          this.richEditor.isActive({ textAlign: 'justify' }) ? 'justify' : null,
-                currentLevel: this.richEditor.isActive('heading', { level: 1 }) ? 1 :
-                             this.richEditor.isActive('heading', { level: 2 }) ? 2 :
-                             this.richEditor.isActive('heading', { level: 3 }) ? 3 :
-                             this.richEditor.isActive('heading', { level: 4 }) ? 4 :
-                             this.richEditor.isActive('heading', { level: 5 }) ? 5 :
-                             this.richEditor.isActive('heading', { level: 6 }) ? 6 : 0,
-                currentTextType: this.richEditor.isActive('heading', { level: 1 }) ? 'h1' :
-                                this.richEditor.isActive('heading', { level: 2 }) ? 'h2' :
-                                this.richEditor.isActive('heading', { level: 3 }) ? 'h3' :
-                                this.richEditor.isActive('heading', { level: 4 }) ? 'h4' :
-                                this.richEditor.isActive('heading', { level: 5 }) ? 'h5' :
-                                this.richEditor.isActive('heading', { level: 6 }) ? 'h6' : 'paragraph',
-            };
-        },
     },
     methods: {
         loadEditor() {
@@ -999,10 +933,6 @@ export default {
                     },
                     onBlur: ({ editor, event }) => {
                         this.$emit('trigger-event', { name: 'blur', event: { editor, event } });
-                    },
-                    onSelectionUpdate: () => {
-                        // Incrémenter le trigger pour forcer la mise à jour du computed currentFormatting
-                        this.selectionUpdateTrigger++;
                     },
                     extensions,
                     onCreate: () => {
