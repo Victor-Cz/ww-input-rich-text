@@ -1815,7 +1815,7 @@ export default {
         enableAiMenu: {
             section: 'settings',
             label: {
-                en: 'Enable AI Menu',
+                en: 'AI Menu',
             },
             type: 'OnOff',
             defaultValue: false,
@@ -2159,7 +2159,7 @@ export default {
         // Collaboration properties
         enableCollaboration: {
             section: 'settings',
-            label: { en: 'Enable Collaboration', fr: 'Activer la collaboration' },
+            label: { en: 'Collaboration', fr: 'Collaboration' },
             type: 'OnOff',
             defaultValue: false,
             bindable: true,

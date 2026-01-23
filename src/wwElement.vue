@@ -1083,7 +1083,9 @@ export default {
 <style lang="scss">
 .ww-rich-text {
     --menu-color: unset;
+    display: flex;
     flex-direction: column;
+    min-height: 150px;
 
     &.editing .ww-rich-text__input {
         position: relative;
@@ -1173,11 +1175,12 @@ export default {
     .ProseMirror {
         /* Basic editor styles */
         cursor: text;
-        max-height: 100%;
+        height: 100%;
         min-height: 100px;
         width: 100%;
         overflow: auto;
         padding: 8px;
+        box-sizing: border-box;
         font-size: var(--p-fontSize);
         font-family: var(--p-fontFamily);
         font-weight: var(--p-fontSize);
@@ -1449,13 +1452,6 @@ export default {
 
     &.-readonly .ProseMirror {
         cursor: inherit;
-    }
-
-    &__input {
-        display: flex;
-        flex: 1;
-        overflow: auto;
-        min-height: 100px;
     }
 
     // Style pour les liens sécurisés
