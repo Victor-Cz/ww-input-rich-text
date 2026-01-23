@@ -1336,7 +1336,6 @@ export default {
         width: 100%;
         overflow: auto;
         padding: 8px;
-        padding-top: 24px;
         box-sizing: border-box;
         font-size: var(--p-fontSize);
         font-family: var(--p-fontFamily);
@@ -1664,6 +1663,8 @@ export default {
         border-radius: 3px 3px 3px 0;
         white-space: nowrap;
         pointer-events: none;
+        transition: top 0.2s ease, left 0.2s ease, right 0.2s ease, border-radius 0.2s ease;
+        z-index: 100;
     }
 }
 </style>

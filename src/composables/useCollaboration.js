@@ -383,8 +383,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             }),
         ];
 
-        // Ajouter CollaborationCursor seulement si le provider est prêt
-        // Note: Désactivé temporairement pour debug
+        // Ajouter CollaborationCursor avec rendu personnalisé
         if (prov) {
             extensions.push(
                 CollaborationCursor.configure({
@@ -392,6 +391,41 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                     user: {
                         name: collabConfig.value.userName || 'Anonymous',
                         color: getRandomColor(),
+                    },
+                    render: user => {
+                        const cursor = document.createElement('span');
+                        cursor.classList.add('collaboration-cursor__caret');
+                        cursor.style.borderColor = user.color;
+
+                        const label = document.createElement('span');
+                        label.classList.add('collaboration-cursor__label');
+                        label.style.backgroundColor = user.color;
+                        label.textContent = user.name;
+                        cursor.appendChild(label);
+
+                        // Ajuster la position du label en fonction de la position dans l'éditeur
+                        setTimeout(() => {
+                            const rect = cursor.getBoundingClientRect();
+                            const editorRect = cursor.closest('.ProseMirror')?.getBoundingClientRect();
+
+                            if (editorRect) {
+                                // Si trop en haut (moins de 40px du haut), mettre le label en bas
+                                if (rect.top - editorRect.top < 40) {
+                                    label.style.top = '1.2em';
+                                    label.style.bottom = 'auto';
+                                    label.style.borderRadius = '0 3px 3px 3px';
+                                }
+
+                                // Si trop à droite, aligner à droite
+                                if (editorRect.right - rect.right < 100) {
+                                    label.style.left = 'auto';
+                                    label.style.right = '-1px';
+                                    label.style.borderRadius = '3px 3px 0 3px';
+                                }
+                            }
+                        }, 0);
+
+                        return cursor;
                     },
                 })
             );
