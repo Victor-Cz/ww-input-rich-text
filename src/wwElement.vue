@@ -737,6 +737,19 @@ export default {
             if (this.richEditor) this.richEditor.destroy();
 
             try {
+                // Vérifier les imports d'extensions
+                console.log('[Editor] Checking extension imports:', {
+                    StarterKit: !!StarterKit,
+                    SafeLinks: !!SafeLinks,
+                    Link: !!Link,
+                    TextStyle: !!TextStyle,
+                    Color: !!Color,
+                    Underline: !!Underline,
+                    Table: !!Table,
+                    Markdown: !!Markdown,
+                    Image: !!Image,
+                });
+
                 // Construire la liste des extensions
                 const extensions = [
                     StarterKit,
