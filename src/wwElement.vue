@@ -892,36 +892,14 @@ export default {
                 }
 
                 // Déterminer le contenu initial
-                let initialContent = String(this.content.initialValue || '');
-
-                // Si collaboration active, vérifier si le document Y.js est vide
-                if (this.isCollaborating && this.ydoc) {
-                    const xmlFragment = this.ydoc.getXmlFragment('default');
-                    const isYdocEmpty = xmlFragment.length === 0;
-
-                    console.log('[Editor] Checking Y.doc state:', {
-                        isYdocEmpty,
-                        hasInitialValue: !!this.content.initialValue,
-                        xmlFragmentLength: xmlFragment.length,
-                    });
-
-                    // Si le doc Y.js est vide et qu'on a un initialValue, on l'utilise
-                    // Sinon, on laisse undefined pour que Yjs gère le contenu existant
-                    if (!isYdocEmpty) {
-                        initialContent = undefined;
-                        console.log('[Editor] Y.doc not empty, using collaborative content');
-                    } else if (this.content.initialValue) {
-                        console.log('[Editor] Y.doc empty, initializing with initialValue');
-                    } else {
-                        initialContent = undefined;
-                        console.log('[Editor] Y.doc empty, no initialValue');
-                    }
-                }
+                // En mode collaboration, on laisse Y.js gérer le contenu
+                // Le contenu initial sera injecté dans onCreate si le Y.doc est vide
+                const initialContent = this.isCollaborating ? undefined : String(this.content.initialValue || '');
 
                 console.log('[Editor] Creating editor with:', {
                     isCollaborating: this.isCollaborating,
                     hasInitialContent: !!initialContent,
-                    initialContentPreview: initialContent ? initialContent.substring(0, 50) : 'none',
+                    hasInitialValue: !!this.content.initialValue,
                     extensionsCount: extensions.length,
                     extensionNames: extensions.map(ext => ext.name || ext.type || 'unknown'),
                 });
@@ -953,6 +931,21 @@ export default {
                     extensions,
                     onCreate: () => {
                         console.log('[Editor] Editor created successfully');
+
+                        // Si collaboration active et Y.doc vide, injecter l'initialValue
+                        if (this.isCollaborating && this.ydoc && this.content.initialValue) {
+                            const xmlFragment = this.ydoc.getXmlFragment('default');
+                            const isYdocEmpty = xmlFragment.length === 0;
+
+                            if (isYdocEmpty) {
+                                console.log('[Editor] Y.doc is empty, injecting initialValue into editor');
+                                // Injecter le contenu dans l'éditeur (sera automatiquement synchronisé via Y.js)
+                                this.richEditor.commands.setContent(this.content.initialValue);
+                            } else {
+                                console.log('[Editor] Y.doc has content, skipping initialValue injection');
+                            }
+                        }
+
                         this.setValue(this.getContent());
                         this.setMentions(this.richEditor.getJSON().content.reduce(extractMentions, []));
                         // Initialiser l'accumulateur de diffs à vide lors de la création
