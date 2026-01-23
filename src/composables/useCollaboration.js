@@ -199,11 +199,21 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         if (provider.value.awareness) {
             provider.value.awareness.on('change', () => {
                 const states = Array.from(provider.value.awareness.getStates().values());
-                const users = states.filter(state => state.user).map(state => state.user);
+
+                // On récupère tout l'objet user pour être sûr d'avoir 'name' ET 'color'
+                const users = states
+                    .filter(state => state.user)
+                    .map(state => ({
+                        name: state.user.name,
+                        color: state.user.color, // <-- On s'assure que c'est bien mappé ici
+                        id: state.user.id || null, // Optionnel: pour des listes Vue.js plus stables
+                    }));
+
+                console.log('[Collaboration] Awareness update - Users with colors:', users);
 
                 setCollaborationStatus({
                     ...collaborationStatus.value,
-                    users,
+                    users, // Ici, 'users' contient maintenant des objets {name, color}
                     userCount: users.length,
                 });
 
@@ -358,7 +368,12 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         });
 
         if (!isCollaborating.value || !ydocInstance) {
-            console.log('[Collaboration] ⚠️ Cannot load extensions: isCollaborating=' + isCollaborating.value + ', hasYdoc=' + !!ydocInstance);
+            console.log(
+                '[Collaboration] ⚠️ Cannot load extensions: isCollaborating=' +
+                    isCollaborating.value +
+                    ', hasYdoc=' +
+                    !!ydocInstance
+            );
             return [];
         }
 
