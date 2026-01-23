@@ -496,25 +496,15 @@ export default {
         const contentRef = computed(() => props.content);
         const collaboration = useCollaboration(props, contentRef, emit, setCollaborationStatus);
 
-        // On crée une fonction pour déclencher loadEditor depuis le setup
-        const triggerLoadEditor = () => {
-            // Dans WeWeb, les méthodes sont accessibles sur l'instance (proxy)
-            // On attend le prochain tick pour s'assurer que l'instance est prête
-            setTimeout(() => {
-                const instance = wwLib.wwUtils.getComponentInstance(props.uid);
-                if (instance && typeof instance.loadEditor === 'function') {
-                    instance.loadEditor();
-                }
-            }, 100);
-        };
-
-        // CE WATCHER EST LA CLÉ : Il attend que l'awareness soit prête
+        // --- AJOUTER CE WATCHER ICI ---
+        // Il sert à forcer l'éditeur à se charger quand la collab est prête
         watch(
-            () => collaboration.provider.value?.awareness,
-            awareness => {
-                if (props.content.enableCollaboration && awareness) {
-                    console.log('🚀 [Collab] Awareness connectée, chargement des curseurs...');
-                    triggerLoadEditor();
+            () => [collaboration.isCollaborating.value, collaboration.provider.value?.awareness],
+            ([isReady, awareness]) => {
+                if (props.content.enableCollaboration && isReady && awareness) {
+                    // Ici, on appelle la fonction qui crée ton éditeur (souvent appelée initEditor ou setupEditor)
+                    // Si elle est définie plus bas dans ton fichier, elle sera appelée ici au bon moment.
+                    if (typeof initEditor === 'function') initEditor();
                 }
             }
         );
@@ -988,13 +978,10 @@ export default {
                 }
 
                 // Ajouter les extensions de collaboration si actif
-                if (this.content.enableCollaboration) {
-                    // IMPORTANT : On récupère les extensions via le composable
-                    // Elles incluront le CollaborationCursor car l'awareness est maintenant prête
-                    extensions.push(...this.getCollaborationExtensions());
-                } else {
-                    // On n'ajoute Markdown que si la collab est désactivée
-                    extensions.push(Markdown.configure({ breaks: true }));
+                const collabExtensions = this.getCollaborationExtensions();
+                if (collabExtensions && collabExtensions.length > 0) {
+                    extensions.push(...collabExtensions);
+                    console.log('[Editor] Collaboration extensions loaded:', collabExtensions.length);
                 }
 
                 // Déterminer le contenu initial
