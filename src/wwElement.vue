@@ -1343,7 +1343,7 @@ export default {
         width: 100%;
         overflow: auto;
         padding: 8px;
-        padding-top: 16px;
+        padding-top: 24px;
         box-sizing: border-box;
         font-size: var(--p-fontSize);
         font-family: var(--p-fontFamily);
