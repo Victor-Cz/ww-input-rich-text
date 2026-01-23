@@ -56,6 +56,14 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         // Événement de connexion
         provider.value.on('connect', () => {
             connectionAttempts.value = 0;
+
+            // LOG DE SUCCÈS CLAIR
+            console.log('✅ [Collaboration] Successfully connected to Hocuspocus server!', {
+                documentId: collabConfig.value.documentId,
+                websocketUrl: collabConfig.value.websocketUrl,
+                userName: collabConfig.value.userName,
+            });
+
             setCollaborationStatus({
                 ...collaborationStatus.value,
                 connected: true,
@@ -92,6 +100,11 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
 
         // Événement de synchronisation
         provider.value.on('synced', () => {
+            // LOG DE SUCCÈS POUR LA SYNC
+            console.log('✅ [Collaboration] Document synced successfully!', {
+                documentId: collabConfig.value.documentId,
+            });
+
             setCollaborationStatus({
                 ...collaborationStatus.value,
                 synced: true,
@@ -131,7 +144,10 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         provider.value.on('error', ({ error }) => {
             connectionAttempts.value++;
 
-            console.error(`[Collaboration] Connection error (attempt ${connectionAttempts.value}/${collabConfig.value.maxConnectionAttempts}):`, {
+            // Utiliser console.warn au lieu de console.error pour les premières tentatives
+            const logLevel = connectionAttempts.value < collabConfig.value.maxConnectionAttempts ? 'warn' : 'error';
+
+            console[logLevel](`[Collaboration] Connection ${logLevel} (attempt ${connectionAttempts.value}/${collabConfig.value.maxConnectionAttempts}):`, {
                 errorName: error.name,
                 errorMessage: error.message,
                 documentId: collabConfig.value.documentId,
