@@ -1633,7 +1633,7 @@ export default {
     .collaboration-cursor__label {
         position: absolute;
         top: -1.8em;
-        left: -1px;
+        left: -2px;
         font-size: 12px;
         font-style: normal;
         font-weight: 600;
