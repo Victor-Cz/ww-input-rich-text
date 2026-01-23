@@ -756,9 +756,46 @@ export default {
                     Color: !!Color,
                     Underline: !!Underline,
                     Table: !!Table,
+                    TableCell: !!TableCell,
+                    TableHeader: !!TableHeader,
+                    TableRow: !!TableRow,
+                    TaskList: !!TaskList,
+                    TaskItem: !!TaskItem,
+                    TextAlign: !!TextAlign,
+                    Placeholder: !!Placeholder,
                     Markdown: !!Markdown,
                     Image: !!Image,
+                    SelectionHighlighter: !!SelectionHighlighter,
+                    TextSuggestion: !!TextSuggestion,
+                    TextStrike: !!TextStrike,
                 });
+
+                // Identifier quelle extension est undefined
+                const undefinedExtensions = [];
+                if (!StarterKit) undefinedExtensions.push('StarterKit');
+                if (!SafeLinks) undefinedExtensions.push('SafeLinks');
+                if (!Link) undefinedExtensions.push('Link');
+                if (!TextStyle) undefinedExtensions.push('TextStyle');
+                if (!Color) undefinedExtensions.push('Color');
+                if (!Underline) undefinedExtensions.push('Underline');
+                if (!Table) undefinedExtensions.push('Table');
+                if (!TableCell) undefinedExtensions.push('TableCell');
+                if (!TableHeader) undefinedExtensions.push('TableHeader');
+                if (!TableRow) undefinedExtensions.push('TableRow');
+                if (!TaskList) undefinedExtensions.push('TaskList');
+                if (!TaskItem) undefinedExtensions.push('TaskItem');
+                if (!TextAlign) undefinedExtensions.push('TextAlign');
+                if (!Placeholder) undefinedExtensions.push('Placeholder');
+                if (!Markdown) undefinedExtensions.push('Markdown');
+                if (!Image) undefinedExtensions.push('Image');
+                if (!SelectionHighlighter) undefinedExtensions.push('SelectionHighlighter');
+                if (!TextSuggestion) undefinedExtensions.push('TextSuggestion');
+                if (!TextStrike) undefinedExtensions.push('TextStrike');
+
+                if (undefinedExtensions.length > 0) {
+                    console.error('[Editor] ❌ Undefined extensions:', undefinedExtensions);
+                    throw new Error(`Cannot load editor: ${undefinedExtensions.join(', ')} extension(s) are undefined. Check imports.`);
+                }
 
                 // Construire la liste des extensions
                 const extensions = [
