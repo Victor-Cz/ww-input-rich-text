@@ -892,10 +892,36 @@ export default {
                 }
 
                 // Déterminer le contenu initial
-                const initialContent = this.isCollaborating ? undefined : String(this.content.initialValue || '');
+                let initialContent = String(this.content.initialValue || '');
+
+                // Si collaboration active, vérifier si le document Y.js est vide
+                if (this.isCollaborating && this.ydoc) {
+                    const xmlFragment = this.ydoc.getXmlFragment('default');
+                    const isYdocEmpty = xmlFragment.length === 0;
+
+                    console.log('[Editor] Checking Y.doc state:', {
+                        isYdocEmpty,
+                        hasInitialValue: !!this.content.initialValue,
+                        xmlFragmentLength: xmlFragment.length,
+                    });
+
+                    // Si le doc Y.js est vide et qu'on a un initialValue, on l'utilise
+                    // Sinon, on laisse undefined pour que Yjs gère le contenu existant
+                    if (!isYdocEmpty) {
+                        initialContent = undefined;
+                        console.log('[Editor] Y.doc not empty, using collaborative content');
+                    } else if (this.content.initialValue) {
+                        console.log('[Editor] Y.doc empty, initializing with initialValue');
+                    } else {
+                        initialContent = undefined;
+                        console.log('[Editor] Y.doc empty, no initialValue');
+                    }
+                }
+
                 console.log('[Editor] Creating editor with:', {
                     isCollaborating: this.isCollaborating,
                     hasInitialContent: !!initialContent,
+                    initialContentPreview: initialContent ? initialContent.substring(0, 50) : 'none',
                     extensionsCount: extensions.length,
                     extensionNames: extensions.map(ext => ext.name || ext.type || 'unknown'),
                 });
