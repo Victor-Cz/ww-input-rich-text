@@ -496,19 +496,25 @@ export default {
         const contentRef = computed(() => props.content);
         const collaboration = useCollaboration(props, contentRef, emit, setCollaborationStatus);
 
-        // --- LA COLLABORATION ---
-        const contentRef = computed(() => props.content);
-        const collaboration = useCollaboration(props, contentRef, emit, setCollaborationStatus);
+        // On crée une fonction pour déclencher loadEditor depuis le setup
+        const triggerLoadEditor = () => {
+            // Dans WeWeb, les méthodes sont accessibles sur l'instance (proxy)
+            // On attend le prochain tick pour s'assurer que l'instance est prête
+            setTimeout(() => {
+                const instance = wwLib.wwUtils.getComponentInstance(props.uid);
+                if (instance && typeof instance.loadEditor === 'function') {
+                    instance.loadEditor();
+                }
+            }, 100);
+        };
 
-        // Ce watcher surveille quand la connexion "Awareness" (curseurs) est établie
+        // CE WATCHER EST LA CLÉ : Il attend que l'awareness soit prête
         watch(
-            () => [collaboration.isCollaborating.value, collaboration.provider.value?.awareness],
-            ([isReady, awareness]) => {
-                // Dès que le provider est là avec son awareness, on recharge l'éditeur
-                if (props.content.enableCollaboration && isReady && awareness) {
-                    // On utilise un petit hack pour accéder à la méthode loadEditor de l'instance
-                    // car nous sommes à l'intérieur du setup
-                    console.log("🚀 [Collab] Prêt ! Relance de l'éditeur avec les curseurs.");
+            () => collaboration.provider.value?.awareness,
+            awareness => {
+                if (props.content.enableCollaboration && awareness) {
+                    console.log('🚀 [Collab] Awareness connectée, chargement des curseurs...');
+                    triggerLoadEditor();
                 }
             }
         );
@@ -613,15 +619,6 @@ export default {
             immediate: true,
             handler(value) {
                 this.setStates(value);
-            },
-        },
-        // Watcher provider de collaboration
-        'provider.awareness': {
-            handler(awareness) {
-                // Si l'awareness apparaît alors qu'on est en collab, on recharge tout
-                if (awareness && this.content.enableCollaboration) {
-                    this.loadEditor();
-                }
             },
         },
         // Watchers de collaboration
