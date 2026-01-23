@@ -26,7 +26,6 @@ export default {
         },
         customStylePropertiesOrder: [
             'customMenu',
-            ['customMenuElement'],
             'menuColor',
             [
                 'selectedTag',
@@ -1247,6 +1246,9 @@ export default {
         },
         customMenuElement: {
             hidden: true,
+            navigator: {
+                group: 'Menu',
+            },
             defaultValue: {
                 isWwObject: true,
                 type: 'ww-flexbox',
