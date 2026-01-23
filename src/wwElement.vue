@@ -213,7 +213,7 @@
 import { Editor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import Mention from '@tiptap/extension-mention';
-import TextStyle from '@tiptap/extension-text-style';
+import { TextStyle } from '@tiptap/extension-text-style/text-style';
 import Color from '@tiptap/extension-color';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -222,10 +222,10 @@ import Image from '@tiptap/extension-image';
 import TaskItem from '@tiptap/extension-task-item';
 import TextAlign from '@tiptap/extension-text-align';
 import TaskList from '@tiptap/extension-task-list';
-import Table from '@tiptap/extension-table';
-import TableCell from '@tiptap/extension-table-cell';
-import TableHeader from '@tiptap/extension-table-header';
-import TableRow from '@tiptap/extension-table-row';
+import { Table } from '@tiptap/extension-table/table';
+import { TableCell } from '@tiptap/extension-table/cell';
+import { TableHeader } from '@tiptap/extension-table/header';
+import { TableRow } from '@tiptap/extension-table/row';
 
 import { computed, inject } from 'vue';
 import suggestion from './suggestion.js';
@@ -737,19 +737,6 @@ export default {
             if (this.richEditor) this.richEditor.destroy();
 
             try {
-                // Vérifier les imports d'extensions
-                console.log('[Editor] Checking extension imports:', {
-                    StarterKit: !!StarterKit,
-                    SafeLinks: !!SafeLinks,
-                    Link: !!Link,
-                    TextStyle: !!TextStyle,
-                    Color: !!Color,
-                    Underline: !!Underline,
-                    Table: !!Table,
-                    Markdown: !!Markdown,
-                    Image: !!Image,
-                });
-
                 // Construire la liste des extensions
                 const extensions = [
                     StarterKit,
