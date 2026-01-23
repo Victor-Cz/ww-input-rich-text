@@ -21,8 +21,12 @@ export default {
         label: {
             en: 'Rich text',
         },
+        navigator: {
+            groups: ['Menu'],
+        },
         customStylePropertiesOrder: [
             'customMenu',
+            ['customMenuElement'],
             'menuColor',
             [
                 'selectedTag',
