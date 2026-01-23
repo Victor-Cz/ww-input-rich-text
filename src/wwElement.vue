@@ -300,6 +300,14 @@ export default {
             readonly: true,
         });
 
+        const { value: pendingChangesCount, setValue: setPendingChangesCount } = wwLib.wwVariable.useComponentVariable({
+            uid: props.uid,
+            name: 'pendingChangesCount',
+            type: 'number',
+            defaultValue: 0,
+            readonly: true,
+        });
+
         /* wwEditor:start */
         const { createElement } = wwLib.useCreateElement();
         /* wwEditor:end */
@@ -325,6 +333,8 @@ export default {
             setMentions,
             states,
             setStates,
+            pendingChangesCount,
+            setPendingChangesCount,
             randomUid,
             /* wwEditor:start */
             createElement,
@@ -334,6 +344,7 @@ export default {
     data: () => ({
         richEditor: null,
         loading: false,
+        pendingSteps: [], // Accumulateur de diffs
     }),
 
     watch: {
@@ -750,8 +761,21 @@ export default {
                 onCreate: () => {
                     this.setValue(this.getContent());
                     this.setMentions(this.richEditor.getJSON().content.reduce(extractMentions, []));
+                    // Initialiser l'accumulateur de diffs à vide lors de la création
+                    this.pendingSteps = [];
+                    this.setPendingChangesCount(0);
                 },
-                onUpdate: this.handleOnUpdate,
+                onUpdate: ({ transaction }) => {
+                    // Intercepter les transactions pour enregistrer les steps
+                    if (transaction.docChanged) {
+                        transaction.steps.forEach(step => {
+                            this.pendingSteps.push(step.toJSON());
+                        });
+                        this.setPendingChangesCount(this.pendingSteps.length);
+                    }
+                    // Appeler la fonction handleOnUpdate existante
+                    this.handleOnUpdate();
+                },
                 editorProps: {
                     handleClickOn: (view, pos, node) => {
                         if (node.type.name === 'mention') {
@@ -934,6 +958,25 @@ export default {
         handleAiSuggestionApplied(eventData) {
             // Déclencher l'événement WeWeb 'ai-suggestion-applied' via $emit
             this.$emit('trigger-event', { name: 'ai-suggestion-applied', event: eventData });
+        },
+
+        // Gestion de l'accumulateur de diffs
+        getAndClearChanges() {
+            // Récupérer une copie des steps accumulés
+            const steps = [...this.pendingSteps];
+
+            // Vider l'accumulateur
+            this.pendingSteps = [];
+            this.setPendingChangesCount(0);
+
+            // Retourner les steps pour que WeWeb puisse les envoyer à l'API
+            return steps;
+        },
+
+        clearChanges() {
+            // Vider l'accumulateur sans récupération
+            this.pendingSteps = [];
+            this.setPendingChangesCount(0);
         },
     },
     mounted() {
