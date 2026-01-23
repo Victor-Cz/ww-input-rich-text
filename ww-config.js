@@ -27,6 +27,7 @@ export default {
         customStylePropertiesOrder: [
             'customMenu',
             'menuColor',
+            'editorPadding',
             [
                 'selectedTag',
                 'h1',
@@ -57,7 +58,6 @@ export default {
             'initialValue',
             'output',
             'placeholder',
-            'editorPadding',
             'debounce',
             'debounceDelay',
             'autofocus',
@@ -1246,9 +1246,6 @@ export default {
         },
         customMenuElement: {
             hidden: true,
-            navigator: {
-                group: 'Menu',
-            },
             defaultValue: {
                 isWwObject: true,
                 type: 'ww-flexbox',
@@ -1262,6 +1259,7 @@ export default {
                 },
             },
             navigator: {
+                group: 'Menu',
                 hidden: content => !content.customMenu,
             },
         },

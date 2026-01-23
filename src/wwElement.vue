@@ -7,6 +7,7 @@
         '--primary-color-40': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '66', // 40%
         '--primary-color-active': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '99', // 60%
         '--primary-color-hover': (content.parameterAiMenuPrimaryColor ?? '#007bff') + 'CC', // 80%
+        ...cssVariables
     }">
         <template v-if="richEditor">
                 <div class="ww-rich-text__menu native-menu" v-if="!hideMenu && !content.customMenu" :style="menuStyles">
