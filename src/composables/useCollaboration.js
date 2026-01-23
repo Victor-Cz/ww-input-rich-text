@@ -32,25 +32,30 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
 
     // Vérification si la collaboration doit être activée
     const shouldEnableCollaboration = computed(() => {
-        return (
-            collabConfig.value.enabled &&
-            collabConfig.value.documentId &&
-            collabConfig.value.websocketUrl
-        );
+        return collabConfig.value.enabled && collabConfig.value.documentId && collabConfig.value.websocketUrl;
     });
 
     // Palette de couleurs pour les curseurs
     const getRandomColor = () => {
         const colors = [
-            '#958DF1', '#F98181', '#FBBC88', '#FAF594',
-            '#70CFF8', '#94FADB', '#B9F18D', '#C3E2C2',
-            '#EAECCC', '#AFC8AD', '#EEC759', '#9BB8CD'
+            '#958DF1',
+            '#F98181',
+            '#FBBC88',
+            '#FAF594',
+            '#70CFF8',
+            '#94FADB',
+            '#B9F18D',
+            '#C3E2C2',
+            '#EAECCC',
+            '#AFC8AD',
+            '#EEC759',
+            '#9BB8CD',
         ];
         return colors[Math.floor(Math.random() * colors.length)];
     };
 
     // Configuration des event listeners du provider
-    const setupCollaborationListeners = (collaborationStatus) => {
+    const setupCollaborationListeners = collaborationStatus => {
         if (!provider.value) return;
 
         // Événement de connexion
@@ -147,12 +152,15 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             // Utiliser console.warn au lieu de console.error pour les premières tentatives
             const logLevel = connectionAttempts.value < collabConfig.value.maxConnectionAttempts ? 'warn' : 'error';
 
-            console[logLevel](`[Collaboration] Connection ${logLevel} (attempt ${connectionAttempts.value}/${collabConfig.value.maxConnectionAttempts}):`, {
-                errorName: error.name,
-                errorMessage: error.message,
-                documentId: collabConfig.value.documentId,
-                websocketUrl: collabConfig.value.websocketUrl,
-            });
+            console[logLevel](
+                `[Collaboration] Connection ${logLevel} (attempt ${connectionAttempts.value}/${collabConfig.value.maxConnectionAttempts}):`,
+                {
+                    errorName: error.name,
+                    errorMessage: error.message,
+                    documentId: collabConfig.value.documentId,
+                    websocketUrl: collabConfig.value.websocketUrl,
+                }
+            );
 
             setCollaborationStatus({
                 ...collaborationStatus.value,
@@ -209,7 +217,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     };
 
     // Initialisation de la collaboration
-    const initializeCollaboration = (collaborationStatus) => {
+    const initializeCollaboration = collaborationStatus => {
         // Nettoyer si déjà existant
         destroyCollaboration(collaborationStatus);
 
@@ -258,7 +266,6 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             setupCollaborationListeners(collaborationStatus);
 
             isCollaborating.value = true;
-
         } catch (error) {
             console.error('Error initializing collaboration:', error);
             emit('trigger-event', {
@@ -273,7 +280,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     };
 
     // Destruction de la collaboration
-    const destroyCollaboration = (collaborationStatus) => {
+    const destroyCollaboration = collaborationStatus => {
         if (provider.value) {
             provider.value.destroy();
             provider.value = null;
@@ -314,7 +321,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         }
     };
 
-    const attemptConnection = (collaborationStatus) => {
+    const attemptConnection = collaborationStatus => {
         console.log('[Collaboration] Manually attempting connection (resetting retry counter)');
         // Réinitialiser le compteur de tentatives
         connectionAttempts.value = 0;
@@ -328,7 +335,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         }
     };
 
-    const getConnectionStatus = (collaborationStatus) => {
+    const getConnectionStatus = collaborationStatus => {
         return {
             connected: provider.value?.isConnected || false,
             synced: provider.value?.isSynced || false,
@@ -347,27 +354,23 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         const extensions = [
             Collaboration.configure({
                 document: ydoc.value,
-            })
+                field: 'default',
+            }),
+            // On force l'extension. Si le provider est là, l'awareness l'est aussi.
+            CollaborationCursor.configure({
+                provider: provider.value,
+                user: {
+                    name: collabConfig.value.userName || 'Anonymous',
+                    color: getRandomColor(),
+                },
+            }),
         ];
-
-        // Ajouter les curseurs collaboratifs si awareness est disponible
-        if (provider.value?.awareness) {
-            extensions.push(
-                CollaborationCursor.configure({
-                    provider: provider.value,
-                    user: {
-                        name: collabConfig.value.userName || 'Anonymous',
-                        color: getRandomColor(),
-                    },
-                })
-            );
-        }
 
         return extensions;
     };
 
     // Mettre à jour le nom d'utilisateur dans awareness
-    const updateUserName = (newName) => {
+    const updateUserName = newName => {
         if (provider.value?.awareness) {
             provider.value.awareness.setLocalStateField('user', {
                 name: newName,
