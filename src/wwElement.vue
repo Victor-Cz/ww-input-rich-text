@@ -1064,6 +1064,8 @@ export default {
         // Initialiser la collaboration si configurée
         if (this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
             this.initializeCollaboration(this.collaborationStatus);
+            // Charger l'éditeur avec les extensions de collaboration
+            this.loadEditor();
         } else {
             this.loadEditor();
         }
