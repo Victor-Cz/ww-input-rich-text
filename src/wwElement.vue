@@ -446,17 +446,17 @@ export default {
         },
         // Watchers de collaboration
         'collabConfig.documentId'(newId, oldId) {
-            if (newId !== oldId && this.shouldEnableCollaboration) {
+            if (newId !== oldId && this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
                 this.initializeCollaboration(this.collaborationStatus);
             }
         },
         'collabConfig.websocketUrl'(newUrl, oldUrl) {
-            if (newUrl !== oldUrl && this.shouldEnableCollaboration) {
+            if (newUrl !== oldUrl && this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
                 this.initializeCollaboration(this.collaborationStatus);
             }
         },
         'collabConfig.authToken'(newToken, oldToken) {
-            if (newToken !== oldToken && this.shouldEnableCollaboration) {
+            if (newToken !== oldToken && this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
                 this.initializeCollaboration(this.collaborationStatus);
             }
         },
@@ -466,7 +466,7 @@ export default {
             }
         },
         'collabConfig.enabled'(enabled) {
-            if (enabled && this.shouldEnableCollaboration) {
+            if (enabled && this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
                 this.initializeCollaboration(this.collaborationStatus);
             } else if (!enabled) {
                 this.destroyCollaboration(this.collaborationStatus);

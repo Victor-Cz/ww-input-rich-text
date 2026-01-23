@@ -17,7 +17,6 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     const provider = ref(null);
     const isCollaborating = ref(false);
     const connectionAttempts = ref(0);
-    const maxConnectionAttempts = 5;
 
     // Configuration de collaboration
     const collabConfig = computed(() => ({
@@ -28,6 +27,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         userName: content.value.userName || 'Anonymous',
         autoConnect: content.value.autoConnect ?? true,
         saveMode: content.value.saveMode || 'manual',
+        maxConnectionAttempts: content.value.maxConnectionAttempts || 5,
     }));
 
     // Vérification si la collaboration doit être activée
@@ -131,6 +131,13 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         provider.value.on('error', ({ error }) => {
             connectionAttempts.value++;
 
+            console.error(`[Collaboration] Connection error (attempt ${connectionAttempts.value}/${collabConfig.value.maxConnectionAttempts}):`, {
+                errorName: error.name,
+                errorMessage: error.message,
+                documentId: collabConfig.value.documentId,
+                websocketUrl: collabConfig.value.websocketUrl,
+            });
+
             setCollaborationStatus({
                 ...collaborationStatus.value,
                 error: error.message,
@@ -142,16 +149,22 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                     error: error.name,
                     message: error.message,
                     timestamp: new Date().toISOString(),
+                    attempt: connectionAttempts.value,
+                    maxAttempts: collabConfig.value.maxConnectionAttempts,
                 },
             });
 
-            // Retry logic
-            if (connectionAttempts.value < maxConnectionAttempts) {
+            // Retry logic avec nombre de tentatives configurable
+            if (connectionAttempts.value < collabConfig.value.maxConnectionAttempts) {
+                const retryDelay = 2000 * connectionAttempts.value;
+                console.log(`[Collaboration] Retrying in ${retryDelay}ms...`);
                 setTimeout(() => {
                     if (provider.value && !provider.value.isConnected) {
                         provider.value.connect();
                     }
-                }, 2000 * connectionAttempts.value);
+                }, retryDelay);
+            } else {
+                console.error(`[Collaboration] Max connection attempts reached. Stopping retries.`);
             }
         });
 
@@ -207,6 +220,13 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             if (collabConfig.value.authToken) {
                 providerConfig.token = collabConfig.value.authToken;
             }
+
+            console.log('[Collaboration] Initializing connection with config:', {
+                documentId: providerConfig.name,
+                baseUrl: providerConfig.baseUrl,
+                hasToken: !!providerConfig.token,
+                parameters: providerConfig.parameters,
+            });
 
             // Créer le provider
             provider.value = new TiptapCollabProvider(providerConfig);
