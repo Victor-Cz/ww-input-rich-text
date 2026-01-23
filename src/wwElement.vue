@@ -796,11 +796,9 @@ export default {
                 }
 
                 // Construire la liste des extensions
-                // Si collaboration est active, désactiver History dans StarterKit (incompatible avec Collaboration)
+                // Note: On garde History pour le moment, on verra si ça pose problème
                 const extensions = [
-                    StarterKit.configure({
-                        history: !this.isCollaborating, // Désactiver History si collaboration active
-                    }),
+                    StarterKit,
                     SafeLinks.configure({
                         enabled: this.content.a?.enableSafeLinks !== false,
                         tooltipText: this.content.a?.tooltipText || '{keyboard} + Clic',
@@ -851,8 +849,6 @@ export default {
                     }),
                 ];
 
-                console.log('[Editor] StarterKit configured with history:', !this.isCollaborating);
-
                 // Ajouter mention si activé
                 if (this.editorConfig.mention.enabled) {
                     extensions.push(
@@ -895,7 +891,22 @@ export default {
                     isCollaborating: this.isCollaborating,
                     hasInitialContent: !!initialContent,
                     extensionsCount: extensions.length,
+                    extensionNames: extensions.map(ext => ext.name || ext.type || 'unknown'),
                 });
+
+                // Log spécial pour la collaboration
+                if (this.isCollaborating) {
+                    const collabExt = extensions.find(ext => ext.name === 'collaboration');
+                    if (collabExt) {
+                        console.log('[Editor] Collaboration extension found:', {
+                            hasOptions: !!collabExt.options,
+                            hasDocument: !!collabExt.options?.document,
+                            documentType: collabExt.options?.document?.constructor?.name,
+                        });
+                    } else {
+                        console.error('[Editor] ❌ Collaboration extension NOT found in extensions array!');
+                    }
+                }
 
                 this.richEditor = new Editor({
                     content: initialContent,
