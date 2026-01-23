@@ -205,11 +205,17 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             // Créer le document Yjs
             ydoc.value = new Y.Doc();
 
+            // Nettoyer l'URL WebSocket (enlever les slashes finaux)
+            const cleanBaseUrl = collabConfig.value.websocketUrl.replace(/\/+$/, '');
+
+            // Construire l'URL complète: websocketUrl/documentId
+            const fullUrl = `${cleanBaseUrl}/${collabConfig.value.documentId}`;
+
             // Configurer le provider pour serveur Hocuspocus auto-hébergé
             const providerConfig = {
                 name: collabConfig.value.documentId,
                 document: ydoc.value,
-                baseUrl: collabConfig.value.websocketUrl,
+                url: fullUrl,
                 parameters: {
                     saveMode: collabConfig.value.saveMode,
                     userName: collabConfig.value.userName,
@@ -223,7 +229,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
 
             console.log('[Collaboration] Initializing connection with config:', {
                 documentId: providerConfig.name,
-                baseUrl: providerConfig.baseUrl,
+                fullUrl: fullUrl,
                 hasToken: !!providerConfig.token,
                 parameters: providerConfig.parameters,
             });
@@ -289,6 +295,14 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         if (provider.value && provider.value.isConnected) {
             provider.value.disconnect();
         }
+    };
+
+    const attemptConnection = (collaborationStatus) => {
+        console.log('[Collaboration] Manually attempting connection (resetting retry counter)');
+        // Réinitialiser le compteur de tentatives
+        connectionAttempts.value = 0;
+        // Réinitialiser et reconnecter
+        initializeCollaboration(collaborationStatus);
     };
 
     const forceSync = () => {
@@ -368,6 +382,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         destroyCollaboration,
         connectCollaboration,
         disconnectCollaboration,
+        attemptConnection,
         forceSync,
         getConnectionStatus,
         getCollaborationExtensions,

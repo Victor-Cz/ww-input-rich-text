@@ -367,6 +367,10 @@ export default {
             action: 'connectCollaboration',
         },
         {
+            label: { en: 'Attempt connection', fr: 'Tenter la connexion' },
+            action: 'attemptConnection',
+        },
+        {
             label: { en: 'Disconnect from collaboration', fr: 'Déconnecter de la collaboration' },
             action: 'disconnectCollaboration',
         },
