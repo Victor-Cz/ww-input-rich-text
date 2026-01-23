@@ -416,7 +416,6 @@ export default {
             type: 'Textarea',
             defaultValue: '',
             bindable: true,
-            hidden: content => content.enableCollaboration,
         },
         output: {
             label: {
