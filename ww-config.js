@@ -44,15 +44,7 @@ export default {
         ],
         customSettingsPropertiesOrder: [
             'enableCollaboration',
-            [
-                'websocketUrl',
-                'documentId',
-                'authToken',
-                'userName',
-                'autoConnect',
-                'saveMode',
-                'maxConnectionAttempts',
-            ],
+            ['websocketUrl', 'documentId', 'authToken', 'userName', 'autoConnect', 'saveMode', 'maxConnectionAttempts'],
             'formInfobox',
             ['fieldName', 'customValidation', 'validation'],
             'readonly',
@@ -98,16 +90,17 @@ export default {
                 'parameterRedo',
                 'parameterAiMenu',
             ],
-            'aiMenuSection',
-            'enableAiMenu',
             [
+                'aiMenuSection',
+                'enableAiMenu',
                 'parameterAiMenuTitleGeneral',
                 'parameterAiMenuReadOnly',
                 'parameterAiMenuForceDisplay',
                 'parameterAiMenuPrimaryColor',
+                'parameterAiMenuTitlePlaceholders',
+                'parameterAiMenuPlaceholders',
+                'parameterAiMenuCustomTypes',
             ],
-            ['parameterAiMenuTitlePlaceholders', 'parameterAiMenuPlaceholders'],
-            ['parameterAiMenuCustomTypes'],
         ],
     },
     options: {
@@ -127,7 +120,17 @@ export default {
         {
             name: 'ai-suggestion-applied',
             label: { en: 'On AI suggestion applied' },
-            event: { response: '', formattedResponse: '', modificationType: '', action: '', selectedText: '', selectionRange: '', htmlValue: '', timestamp: '', position: '' },
+            event: {
+                response: '',
+                formattedResponse: '',
+                modificationType: '',
+                action: '',
+                selectedText: '',
+                selectionRange: '',
+                htmlValue: '',
+                timestamp: '',
+                position: '',
+            },
         },
         // Collaboration events
         {
@@ -136,7 +139,7 @@ export default {
             event: {
                 documentId: '',
                 timestamp: '',
-                connectionId: ''
+                connectionId: '',
             },
         },
         {
@@ -145,7 +148,7 @@ export default {
             event: {
                 documentId: '',
                 timestamp: '',
-                reason: ''
+                reason: '',
             },
         },
         {
@@ -154,7 +157,7 @@ export default {
             event: {
                 documentId: '',
                 timestamp: '',
-                state: 'synced'
+                state: 'synced',
             },
         },
         {
@@ -163,7 +166,7 @@ export default {
             event: {
                 documentId: '',
                 timestamp: '',
-                state: 'syncing'
+                state: 'syncing',
             },
         },
         {
@@ -172,7 +175,7 @@ export default {
             event: {
                 error: '',
                 message: '',
-                timestamp: ''
+                timestamp: '',
             },
         },
         {
@@ -181,7 +184,7 @@ export default {
             event: {
                 users: [],
                 count: 0,
-                timestamp: ''
+                timestamp: '',
             },
         },
         {
@@ -192,7 +195,7 @@ export default {
                 content: '',
                 format: 'html',
                 timestamp: '',
-                trigger: 'change|unload|manual'
+                trigger: 'change|unload|manual',
             },
         },
     ],
@@ -874,7 +877,7 @@ export default {
                         bindable: true,
                         description: {
                             en: 'When enabled, users must hold Cmd (Mac) or Ctrl (Windows) to open links. This prevents accidental navigation while editing.',
-                            fr: 'Quand activé, les utilisateurs doivent maintenir Cmd (Mac) ou Ctrl (Windows) pour ouvrir les liens. Cela empêche la navigation accidentelle lors de l\'édition.',
+                            fr: "Quand activé, les utilisateurs doivent maintenir Cmd (Mac) ou Ctrl (Windows) pour ouvrir les liens. Cela empêche la navigation accidentelle lors de l'édition.",
                         },
                     },
                     tooltipColor: {
@@ -912,7 +915,7 @@ export default {
                         },
                         bindable: true,
                         hidden: content => !content?.a?.enableSafeLinks,
-                    }
+                    },
                 },
                 singleLine: true,
             },
@@ -1811,7 +1814,6 @@ export default {
         },
         enableAiMenu: {
             section: 'settings',
-            hidden: content => content.customMenu,
             label: {
                 en: 'Enable AI Menu',
             },
@@ -1936,7 +1938,8 @@ export default {
                                 type: 'Text',
                                 bindable: true,
                                 defaultValue: '',
-                                description: 'Custom placeholder for the prompt input when this modification type is selected. If empty, the global placeholder will be used.',
+                                description:
+                                    'Custom placeholder for the prompt input when this modification type is selected. If empty, the global placeholder will be used.',
                             },
                             defaultPrompt: {
                                 label: {
