@@ -385,7 +385,6 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
 
         // Ajouter CollaborationCursor seulement si le provider est prêt
         // Note: Désactivé temporairement pour debug
-        /*
         if (prov) {
             extensions.push(
                 CollaborationCursor.configure({
@@ -397,7 +396,6 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 })
             );
         }
-        */
 
         console.log('[Collaboration] ✅ Extensions configured:', {
             extensionsCount: extensions.length,
