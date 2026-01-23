@@ -736,117 +736,148 @@ export default {
             this.loading = true;
             if (this.richEditor) this.richEditor.destroy();
 
-            // Construire la liste des extensions
-            const extensions = [
-                StarterKit,
-                SafeLinks.configure({
-                    enabled: this.content.a?.enableSafeLinks !== false,
-                    tooltipText: this.content.a?.tooltipText || '{keyboard} + Clic',
-                    tooltipColor: this.content.a?.tooltipColor || '#ffffff',
-                    tooltipBackgroundColor: this.content.a?.tooltipBackgroundColor || '#393d45',
-                    tooltipFontSize: this.content.a?.tooltipFontSize || '12px',
-                }),
-                Link.configure({
-                    HTMLAttributes: {
-                        rel: 'noopener noreferrer',
-                    },
-                    openOnClick: !this.content.a?.enableSafeLinks,
-                }),
-                TextStyle,
-                Color,
-                Underline,
-                Table.configure({
-                    resizable: true,
-                }),
-                TableCell,
-                TableHeader,
-                TableRow,
-                TaskList,
-                TaskItem.configure({
-                    nested: true,
-                }),
-                TextAlign.configure({
-                    types: ['heading', 'paragraph'],
-                }),
-                Placeholder.configure({
-                    placeholder: this.editorConfig.placeholder,
-                }),
-                Markdown.configure({ breaks: true }),
-                Image.configure({ ...this.editorConfig.image }),
-                this.editorConfig.mention.enabled &&
-                Mention.configure({
-                    HTMLAttributes: {
-                        class: 'mention',
-                    },
-                    suggestion: {
-                        items: ({ query }) =>
-                            this.editorConfig.mention.list
-                                .filter(({ label }) => label.toLowerCase().startsWith(query.toLowerCase()))
-                                .slice(0, this.mentionListLength),
-                        render: suggestion.render,
-                        allowSpaces: this.editorConfig.mention.allowSpaces,
-                        char: this.editorConfig.mention.char,
-                    },
-                }),
-                SelectionHighlighter.configure({
-                    defaultColor: 'var(--primary-color-33)',
-                }),
-                TextSuggestion.configure({
-                    suggestionText: null,
-                    position: 1,
-                    className: 'suggestion-label',
-                    color: 'var(--primary-color)',
-                }),
-                TextStrike.configure({
-                    defaultStrikeColor: 'var(--primary-color)',
-                    ranges: [],
-                    color: 'var(--primary-color)',
-                }),
-            ];
+            try {
+                // Construire la liste des extensions
+                const extensions = [
+                    StarterKit,
+                    SafeLinks.configure({
+                        enabled: this.content.a?.enableSafeLinks !== false,
+                        tooltipText: this.content.a?.tooltipText || '{keyboard} + Clic',
+                        tooltipColor: this.content.a?.tooltipColor || '#ffffff',
+                        tooltipBackgroundColor: this.content.a?.tooltipBackgroundColor || '#393d45',
+                        tooltipFontSize: this.content.a?.tooltipFontSize || '12px',
+                    }),
+                    Link.configure({
+                        HTMLAttributes: {
+                            rel: 'noopener noreferrer',
+                        },
+                        openOnClick: !this.content.a?.enableSafeLinks,
+                    }),
+                    TextStyle,
+                    Color,
+                    Underline,
+                    Table.configure({
+                        resizable: true,
+                    }),
+                    TableCell,
+                    TableHeader,
+                    TableRow,
+                    TaskList,
+                    TaskItem.configure({
+                        nested: true,
+                    }),
+                    TextAlign.configure({
+                        types: ['heading', 'paragraph'],
+                    }),
+                    Placeholder.configure({
+                        placeholder: this.editorConfig.placeholder,
+                    }),
+                    Markdown.configure({ breaks: true }),
+                    Image.configure({ ...this.editorConfig.image }),
+                    SelectionHighlighter.configure({
+                        defaultColor: 'var(--primary-color-33)',
+                    }),
+                    TextSuggestion.configure({
+                        suggestionText: null,
+                        position: 1,
+                        className: 'suggestion-label',
+                        color: 'var(--primary-color)',
+                    }),
+                    TextStrike.configure({
+                        defaultStrikeColor: 'var(--primary-color)',
+                        ranges: [],
+                        color: 'var(--primary-color)',
+                    }),
+                ];
 
-            // Ajouter les extensions de collaboration si actif
-            extensions.push(...this.getCollaborationExtensions());
+                // Ajouter mention si activé
+                if (this.editorConfig.mention.enabled) {
+                    extensions.push(
+                        Mention.configure({
+                            HTMLAttributes: {
+                                class: 'mention',
+                            },
+                            suggestion: {
+                                items: ({ query }) =>
+                                    this.editorConfig.mention.list
+                                        .filter(({ label }) => label.toLowerCase().startsWith(query.toLowerCase()))
+                                        .slice(0, this.mentionListLength),
+                                render: suggestion.render,
+                                allowSpaces: this.editorConfig.mention.allowSpaces,
+                                char: this.editorConfig.mention.char,
+                            },
+                        })
+                    );
+                }
 
-            this.richEditor = new Editor({
-                content: this.isCollaborating ? undefined : String(this.content.initialValue || ''),
-                editable: this.isEditable,
-                autofocus: this.editorConfig.autofocus,
-                onFocus: ({ editor, event }) => {
-                    this.$emit('trigger-event', { name: 'focus', event: { editor, event } });
-                },
-                onBlur: ({ editor, event }) => {
-                    this.$emit('trigger-event', { name: 'blur', event: { editor, event } });
-                },
-                extensions,
-                onCreate: () => {
-                    this.setValue(this.getContent());
-                    this.setMentions(this.richEditor.getJSON().content.reduce(extractMentions, []));
-                    // Initialiser l'accumulateur de diffs à vide lors de la création
-                    this.pendingSteps = [];
-                    this.setPendingChangesCount(0);
-                },
-                onUpdate: ({ transaction }) => {
-                    // Intercepter les transactions pour enregistrer les steps
-                    if (transaction.docChanged) {
-                        transaction.steps.forEach(step => {
-                            this.pendingSteps.push(step.toJSON());
-                        });
-                        this.setPendingChangesCount(this.pendingSteps.length);
-                    }
-                    // Appeler la fonction handleOnUpdate existante
-                    this.handleOnUpdate();
-                },
-                editorProps: {
-                    handleClickOn: (view, pos, node) => {
-                        if (node.type.name === 'mention') {
-                            this.$emit('trigger-event', {
-                                name: 'mention:click',
-                                event: { mention: { id: node.attrs.id, label: node.attrs.label } },
+                // Ajouter les extensions de collaboration si actif
+                const collabExtensions = this.getCollaborationExtensions();
+                if (collabExtensions && collabExtensions.length > 0) {
+                    extensions.push(...collabExtensions);
+                    console.log('[Editor] Collaboration extensions loaded:', collabExtensions.length);
+                }
+
+                // Déterminer le contenu initial
+                const initialContent = this.isCollaborating ? undefined : String(this.content.initialValue || '');
+                console.log('[Editor] Creating editor with:', {
+                    isCollaborating: this.isCollaborating,
+                    hasInitialContent: !!initialContent,
+                    extensionsCount: extensions.length,
+                });
+
+                this.richEditor = new Editor({
+                    content: initialContent,
+                    editable: this.isEditable,
+                    autofocus: this.editorConfig.autofocus,
+                    onFocus: ({ editor, event }) => {
+                        this.$emit('trigger-event', { name: 'focus', event: { editor, event } });
+                    },
+                    onBlur: ({ editor, event }) => {
+                        this.$emit('trigger-event', { name: 'blur', event: { editor, event } });
+                    },
+                    extensions,
+                    onCreate: () => {
+                        console.log('[Editor] Editor created successfully');
+                        this.setValue(this.getContent());
+                        this.setMentions(this.richEditor.getJSON().content.reduce(extractMentions, []));
+                        // Initialiser l'accumulateur de diffs à vide lors de la création
+                        this.pendingSteps = [];
+                        this.setPendingChangesCount(0);
+                    },
+                    onUpdate: ({ transaction }) => {
+                        // Intercepter les transactions pour enregistrer les steps
+                        if (transaction.docChanged) {
+                            transaction.steps.forEach(step => {
+                                this.pendingSteps.push(step.toJSON());
                             });
+                            this.setPendingChangesCount(this.pendingSteps.length);
                         }
+                        // Appeler la fonction handleOnUpdate existante
+                        this.handleOnUpdate();
                     },
-                },
-            });
+                    editorProps: {
+                        handleClickOn: (_view, _pos, node) => {
+                            if (node.type.name === 'mention') {
+                                this.$emit('trigger-event', {
+                                    name: 'mention:click',
+                                    event: { mention: { id: node.attrs.id, label: node.attrs.label } },
+                                });
+                            }
+                        },
+                    },
+                });
+
+                console.log('[Editor] Editor instance created:', !!this.richEditor);
+            } catch (error) {
+                console.error('[Editor] Error creating editor:', error);
+                // Créer un éditeur basique en fallback
+                this.richEditor = new Editor({
+                    content: String(this.content.initialValue || ''),
+                    editable: this.isEditable,
+                    extensions: [StarterKit],
+                });
+            }
+
             this.loading = false;
         },
         handleOnUpdate() {
