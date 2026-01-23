@@ -375,20 +375,29 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             return [];
         }
 
+        // Tester d'abord uniquement avec Collaboration pour isoler le problème
         const extensions = [
             Collaboration.configure({
                 document: doc,
                 field: 'default',
             }),
-            // On force l'extension. Si le provider est là, l'awareness l'est aussi.
-            CollaborationCursor.configure({
-                provider: prov,
-                user: {
-                    name: collabConfig.value.userName || 'Anonymous',
-                    color: getRandomColor(),
-                },
-            }),
         ];
+
+        // Ajouter CollaborationCursor seulement si le provider est prêt
+        // Note: Désactivé temporairement pour debug
+        /*
+        if (prov) {
+            extensions.push(
+                CollaborationCursor.configure({
+                    provider: prov,
+                    user: {
+                        name: collabConfig.value.userName || 'Anonymous',
+                        color: getRandomColor(),
+                    },
+                })
+            );
+        }
+        */
 
         console.log('[Collaboration] ✅ Extensions configured:', {
             extensionsCount: extensions.length,
