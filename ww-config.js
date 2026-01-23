@@ -88,12 +88,12 @@ export default {
                 'parameterQuote',
                 'parameterUndo',
                 'parameterRedo',
-                'parameterAiMenu',
             ],
             [
                 'aiMenuSection',
                 'enableAiMenu',
                 'parameterAiMenuTitleGeneral',
+                'parameterAiMenu',
                 'parameterAiMenuReadOnly',
                 'parameterAiMenuForceDisplay',
                 'parameterAiMenuPrimaryColor',
@@ -1783,7 +1783,7 @@ export default {
             section: 'settings',
             hidden: content => !content.enableAiMenu,
             label: {
-                en: 'AI Menu',
+                en: 'AI Menu button',
             },
             type: 'TextRadioGroup',
             options: {
