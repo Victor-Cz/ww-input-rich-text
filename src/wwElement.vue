@@ -796,9 +796,12 @@ export default {
                 }
 
                 // Construire la liste des extensions
-                // Note: On garde History pour le moment, on verra si ça pose problème
+                // IMPORTANT: Désactiver History dans StarterKit si collaboration active
+                // car History et Collaboration sont incompatibles
                 const extensions = [
-                    StarterKit,
+                    StarterKit.configure({
+                        history: this.isCollaborating ? false : true,
+                    }),
                     SafeLinks.configure({
                         enabled: this.content.a?.enableSafeLinks !== false,
                         tooltipText: this.content.a?.tooltipText || '{keyboard} + Clic',
