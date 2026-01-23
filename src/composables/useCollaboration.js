@@ -232,14 +232,13 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             // Nettoyer l'URL WebSocket (enlever les slashes finaux)
             const cleanBaseUrl = collabConfig.value.websocketUrl.replace(/\/+$/, '');
 
-            // Construire l'URL complète: websocketUrl/documentId
-            const fullUrl = `${cleanBaseUrl}/${collabConfig.value.documentId}`;
-
-            // Configurer le provider pour serveur Hocuspocus auto-hébergé
+            // HocuspocusProvider attend:
+            // - url: l'URL du serveur WebSocket
+            // - name: le nom du document (sera ajouté à l'URL par le provider)
             const providerConfig = {
-                name: collabConfig.value.documentId,
+                url: cleanBaseUrl, // URL de base sans le documentId
+                name: collabConfig.value.documentId, // Le provider ajoutera automatiquement /{name}
                 document: ydoc.value,
-                url: fullUrl,
                 token: collabConfig.value.authToken || undefined,
                 // Passer les paramètres personnalisés via onAuthenticate
                 onAuthenticate: () => {
@@ -252,8 +251,9 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             };
 
             console.log('[Collaboration] Initializing connection with config:', {
+                baseUrl: cleanBaseUrl,
                 documentId: providerConfig.name,
-                fullUrl: fullUrl,
+                willConnectTo: `${cleanBaseUrl}/${providerConfig.name}`,
                 hasToken: !!providerConfig.token,
                 saveMode: collabConfig.value.saveMode,
                 userName: collabConfig.value.userName,
@@ -347,8 +347,19 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
 
     // Obtenir les extensions Tiptap pour la collaboration
     const getCollaborationExtensions = () => {
+        console.log('[Collaboration] getCollaborationExtensions called:', {
+            isCollaborating: isCollaborating.value,
+            hasYdoc: !!ydoc.value,
+            hasProvider: !!provider.value,
+        });
+
         if (!isCollaborating.value || !ydoc.value) {
+            console.log('[Collaboration] ⚠️ Cannot load extensions: isCollaborating=' + isCollaborating.value + ', hasYdoc=' + !!ydoc.value);
             return [];
+        }
+
+        if (!provider.value) {
+            console.warn('[Collaboration] ⚠️ Provider is null, CollaborationCursor may not work');
         }
 
         const extensions = [
@@ -365,6 +376,12 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 },
             }),
         ];
+
+        console.log('[Collaboration] ✅ Extensions configured:', {
+            extensionsCount: extensions.length,
+            userName: collabConfig.value.userName,
+            hasProviderAwareness: !!provider.value?.awareness,
+        });
 
         return extensions;
     };

@@ -448,16 +448,22 @@ export default {
         'collabConfig.documentId'(newId, oldId) {
             if (newId !== oldId && this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
                 this.initializeCollaboration(this.collaborationStatus);
+                // Recharger l'éditeur pour inclure les extensions de collaboration
+                this.loadEditor();
             }
         },
         'collabConfig.websocketUrl'(newUrl, oldUrl) {
             if (newUrl !== oldUrl && this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
                 this.initializeCollaboration(this.collaborationStatus);
+                // Recharger l'éditeur pour inclure les extensions de collaboration
+                this.loadEditor();
             }
         },
         'collabConfig.authToken'(newToken, oldToken) {
             if (newToken !== oldToken && this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
                 this.initializeCollaboration(this.collaborationStatus);
+                // Recharger l'éditeur pour inclure les extensions de collaboration
+                this.loadEditor();
             }
         },
         'collabConfig.userName'(newName, oldName) {
@@ -468,8 +474,12 @@ export default {
         'collabConfig.enabled'(enabled) {
             if (enabled && this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
                 this.initializeCollaboration(this.collaborationStatus);
+                // Recharger l'éditeur pour inclure les extensions de collaboration
+                this.loadEditor();
             } else if (!enabled) {
                 this.destroyCollaboration(this.collaborationStatus);
+                // Recharger l'éditeur sans les extensions de collaboration
+                this.loadEditor();
             }
         },
     },
@@ -824,10 +834,19 @@ export default {
                 }
 
                 // Ajouter les extensions de collaboration si actif
+                console.log('[Editor] Checking collaboration state:', {
+                    isCollaborating: this.isCollaborating,
+                    hasYdoc: !!this.ydoc,
+                    hasProvider: !!this.provider,
+                    shouldEnableCollaboration: this.shouldEnableCollaboration,
+                });
+
                 const collabExtensions = this.getCollaborationExtensions();
                 if (collabExtensions && collabExtensions.length > 0) {
                     extensions.push(...collabExtensions);
-                    console.log('[Editor] Collaboration extensions loaded:', collabExtensions.length);
+                    console.log('[Editor] ✅ Collaboration extensions loaded:', collabExtensions.length, collabExtensions.map(ext => ext.name));
+                } else {
+                    console.log('[Editor] ⚠️ No collaboration extensions loaded');
                 }
 
                 // Déterminer le contenu initial
@@ -1105,12 +1124,29 @@ export default {
         },
     },
     mounted() {
+        console.log('[Editor] Component mounted, checking collaboration config:', {
+            autoConnect: this.collabConfig.autoConnect,
+            shouldEnable: this.shouldEnableCollaboration,
+            documentId: this.collabConfig.documentId,
+            websocketUrl: this.collabConfig.websocketUrl,
+        });
+
         // Initialiser la collaboration si configurée
         if (this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
+            console.log('[Editor] Initializing collaboration before loading editor...');
             this.initializeCollaboration(this.collaborationStatus);
+
+            // Vérifier que la collaboration est bien initialisée
+            console.log('[Editor] Collaboration initialized:', {
+                isCollaborating: this.isCollaborating,
+                hasYdoc: !!this.ydoc,
+                hasProvider: !!this.provider,
+            });
+
             // Charger l'éditeur avec les extensions de collaboration
             this.loadEditor();
         } else {
+            console.log('[Editor] Loading editor without collaboration');
             this.loadEditor();
         }
     },
