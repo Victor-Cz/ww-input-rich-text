@@ -191,17 +191,6 @@ export default {
                 timestamp: '',
             },
         },
-        {
-            name: 'save-document',
-            label: { en: 'On save document', fr: 'Sur sauvegarde du document' },
-            event: {
-                documentId: '',
-                content: '',
-                format: 'html',
-                timestamp: '',
-                trigger: 'change|unload|manual',
-            },
-        },
     ],
     actions: [
         { label: 'Focus Rich text', action: 'focusEditor' },
@@ -370,27 +359,27 @@ export default {
         },
         // Collaboration actions
         {
-            label: { en: 'Connect to collaboration', fr: 'Connecter à la collaboration' },
+            label: { en: 'Collab: Connect to collaboration', fr: 'Collab: Connecter à la collaboration' },
             action: 'connectCollaboration',
         },
         {
-            label: { en: 'Attempt connection', fr: 'Tenter la connexion' },
+            label: { en: 'Collab: Attempt connection', fr: 'Collab: Tenter la connexion' },
             action: 'attemptConnection',
         },
         {
-            label: { en: 'Disconnect from collaboration', fr: 'Déconnecter de la collaboration' },
+            label: { en: 'Collab: Disconnect from collaboration', fr: 'Collab: Déconnecter de la collaboration' },
             action: 'disconnectCollaboration',
         },
         {
-            label: { en: 'Force sync', fr: 'Forcer la synchronisation' },
+            label: { en: 'Collab: Force sync', fr: 'Collab: Forcer la synchronisation' },
             action: 'forceSync',
         },
         {
-            label: { en: 'Get connection status', fr: 'Obtenir le statut de connexion' },
+            label: { en: 'Collab: Get connection status', fr: 'Collab: Obtenir le statut de connexion' },
             action: 'getConnectionStatus',
         },
         {
-            label: { en: 'Save document', fr: 'Sauvegarder le document' },
+            label: { en: 'Collab: Save document', fr: 'Collab: Sauvegarder le document' },
             action: 'saveDocument',
         },
     ],

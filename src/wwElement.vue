@@ -1201,25 +1201,8 @@ export default {
             this.setPendingChangesCount(0);
         },
 
-        // Méthodes de sauvegarde pour la collaboration
-        triggerSave(trigger = 'manual') {
-            const content = this.getContent();
-            const format = this.content.output || 'html';
-
-            this.$emit('trigger-event', {
-                name: 'save-document',
-                event: {
-                    documentId: this.collabConfig.documentId,
-                    content,
-                    format,
-                    timestamp: new Date().toISOString(),
-                    trigger,
-                },
-            });
-        },
-
         saveDocument() {
-            this.triggerSave('manual');
+            this.sendSaveSignal(true);
         },
     },
     mounted() {

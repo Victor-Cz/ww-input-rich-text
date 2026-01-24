@@ -431,6 +431,22 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         }
     };
 
+    // Envoyer un signal de sauvegarde au serveur via stateless message
+    const sendSaveSignal = (force = false) => {
+        if (provider.value && provider.value.isConnected) {
+            provider.value.sendStateless(
+                JSON.stringify({
+                    action: 'save-document',
+                    payload: { force },
+                })
+            );
+            console.log('[Collaboration] Save signal sent to server', { force });
+            return true;
+        }
+        console.warn('[Collaboration] Cannot send save signal: provider not connected');
+        return false;
+    };
+
     // Cleanup automatique
     onBeforeUnmount(() => {
         if (provider.value) {
@@ -460,5 +476,6 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         getCollaborationExtensions,
         updateUserName,
         getRandomColor,
+        sendSaveSignal,
     };
 }
