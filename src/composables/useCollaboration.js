@@ -21,6 +21,23 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     const isCollaborating = ref(false);
     const connectionAttempts = ref(0);
 
+    // État local du statut de collaboration (pour éviter les problèmes de closure)
+    let currentStatus = {
+        connected: false,
+        synced: false,
+        syncing: false,
+        error: null,
+        connectionId: null,
+        users: [],
+        userCount: 0,
+    };
+
+    // Helper pour mettre à jour le statut
+    const updateStatus = updates => {
+        currentStatus = { ...currentStatus, ...updates };
+        setCollaborationStatus(currentStatus);
+    };
+
     // Configuration de collaboration
     const collabConfig = computed(() => ({
         enabled: content.value.enableCollaboration || false,
@@ -58,7 +75,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     };
 
     // Configuration des event listeners du provider
-    const setupCollaborationListeners = collaborationStatus => {
+    const setupCollaborationListeners = () => {
         if (!provider.value) return;
 
         // Événement de connexion
@@ -72,8 +89,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 userName: collabConfig.value.userName,
             });
 
-            setCollaborationStatus({
-                ...collaborationStatus,
+            updateStatus({
                 connected: true,
                 error: null,
             });
@@ -90,8 +106,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
 
         // Événement de déconnexion
         provider.value.on('disconnect', ({ event }) => {
-            setCollaborationStatus({
-                ...collaborationStatus,
+            updateStatus({
                 connected: false,
                 synced: false,
             });
@@ -113,8 +128,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 documentId: collabConfig.value.documentId,
             });
 
-            setCollaborationStatus({
-                ...collaborationStatus,
+            updateStatus({
                 synced: true,
                 syncing: false,
             });
@@ -132,8 +146,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         // Événement de synchronisation en cours
         provider.value.on('status', ({ status }) => {
             if (status === 'connecting' || status === 'syncing') {
-                setCollaborationStatus({
-                    ...collaborationStatus,
+                updateStatus({
                     syncing: true,
                 });
 
@@ -165,8 +178,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 }
             );
 
-            setCollaborationStatus({
-                ...collaborationStatus,
+            updateStatus({
                 error: error.message,
             });
 
@@ -211,9 +223,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
 
                 console.log('[Collaboration] Awareness update - Users with colors:', users);
 
-                setCollaborationStatus({
-                    ...collaborationStatus,
-                    users, // Ici, 'users' contient maintenant des objets {name, color}
+                updateStatus({
+                    users,
                     userCount: users.length,
                 });
 
@@ -230,9 +241,9 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     };
 
     // Initialisation de la collaboration
-    const initializeCollaboration = collaborationStatus => {
+    const initializeCollaboration = () => {
         // Nettoyer si déjà existant
-        destroyCollaboration(collaborationStatus);
+        destroyCollaboration();
 
         if (!shouldEnableCollaboration.value) {
             return;
@@ -277,7 +288,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             provider.value = new HocuspocusProvider(providerConfig);
 
             // Configurer les event listeners
-            setupCollaborationListeners(collaborationStatus);
+            setupCollaborationListeners();
 
             isCollaborating.value = true;
         } catch (error) {
@@ -294,7 +305,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     };
 
     // Destruction de la collaboration
-    const destroyCollaboration = collaborationStatus => {
+    const destroyCollaboration = () => {
         if (provider.value) {
             provider.value.destroy();
             provider.value = null;
@@ -308,7 +319,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         isCollaborating.value = false;
         connectionAttempts.value = 0;
 
-        setCollaborationStatus({
+        // Réinitialiser l'état local et le statut externe
+        currentStatus = {
             connected: false,
             synced: false,
             syncing: false,
@@ -316,7 +328,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             connectionId: null,
             users: [],
             userCount: 0,
-        });
+        };
+        setCollaborationStatus(currentStatus);
     };
 
     // Actions publiques
@@ -335,12 +348,12 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         }
     };
 
-    const attemptConnection = collaborationStatus => {
+    const attemptConnection = () => {
         console.log('[Collaboration] Manually attempting connection (resetting retry counter)');
         // Réinitialiser le compteur de tentatives
         connectionAttempts.value = 0;
         // Réinitialiser et reconnecter
-        initializeCollaboration(collaborationStatus);
+        initializeCollaboration();
     };
 
     const forceSync = () => {
@@ -349,13 +362,13 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         }
     };
 
-    const getConnectionStatus = collaborationStatus => {
+    const getConnectionStatus = () => {
         return {
             connected: provider.value?.isConnected || false,
             synced: provider.value?.isSynced || false,
             documentId: collabConfig.value.documentId,
-            users: collaborationStatus.users || [],
-            userCount: collaborationStatus.userCount || 0,
+            users: currentStatus.users || [],
+            userCount: currentStatus.userCount || 0,
         };
     };
 

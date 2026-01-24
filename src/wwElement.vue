@@ -449,21 +449,21 @@ export default {
         // Watchers de collaboration
         'collabConfig.documentId'(newId, oldId) {
             if (newId !== oldId && this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
-                this.initializeCollaboration(this.collaborationStatus);
+                this.initializeCollaboration();
                 // Recharger l'éditeur pour inclure les extensions de collaboration
                 this.loadEditor();
             }
         },
         'collabConfig.websocketUrl'(newUrl, oldUrl) {
             if (newUrl !== oldUrl && this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
-                this.initializeCollaboration(this.collaborationStatus);
+                this.initializeCollaboration();
                 // Recharger l'éditeur pour inclure les extensions de collaboration
                 this.loadEditor();
             }
         },
         'collabConfig.authToken'(newToken, oldToken) {
             if (newToken !== oldToken && this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
-                this.initializeCollaboration(this.collaborationStatus);
+                this.initializeCollaboration();
                 // Recharger l'éditeur pour inclure les extensions de collaboration
                 this.loadEditor();
             }
@@ -475,11 +475,11 @@ export default {
         },
         'collabConfig.enabled'(enabled) {
             if (enabled && this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
-                this.initializeCollaboration(this.collaborationStatus);
+                this.initializeCollaboration();
                 // Recharger l'éditeur pour inclure les extensions de collaboration
                 this.loadEditor();
             } else if (!enabled) {
-                this.destroyCollaboration(this.collaborationStatus);
+                this.destroyCollaboration();
                 // Recharger l'éditeur sans les extensions de collaboration
                 this.loadEditor();
             }
@@ -1216,7 +1216,7 @@ export default {
         // Initialiser la collaboration si configurée
         if (this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
             console.log('[Editor] Initializing collaboration before loading editor...');
-            this.initializeCollaboration(this.collaborationStatus);
+            this.initializeCollaboration();
 
             // Vérifier que la collaboration est bien initialisée
             console.log('[Editor] Collaboration initialized:', {
@@ -1234,7 +1234,7 @@ export default {
     },
     beforeUnmount() {
         // Nettoyer la collaboration
-        this.destroyCollaboration(this.collaborationStatus);
+        this.destroyCollaboration();
 
         // Nettoyer l'éditeur
         if (this.richEditor) this.richEditor.destroy();
