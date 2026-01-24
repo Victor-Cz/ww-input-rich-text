@@ -72,26 +72,34 @@ export default {
             this.editor.on('selectionUpdate', this.handleSelectionUpdate);
             this.editor.on('blur', this.handleBlur);
 
-            // RECALCULER AU SCROLL :
-            // On écoute le scroll sur tout le document pour être sûr d'attraper
-            // le scroll du parent de l'éditeur dans WeWeb.
+            // On écoute le scroll sur absolument TOUT (grâce au paramètre true)
             window.addEventListener('scroll', this.handleScroll, true);
 
-            // RECALCULER QUAND LE TEXTE BOUGE :
-            this.editor.on('transaction', this.handleTransaction);
+            // On écoute les changements de contenu (ex: ajout de ligne au-dessus)
+            this.editor.on('transaction', this.handleScroll);
         }
         document.addEventListener('mousedown', this.handleClickOutside);
     },
+
     beforeUnmount() {
         if (this.editor) {
             this.editor.off('selectionUpdate', this.handleSelectionUpdate);
             this.editor.off('blur', this.handleBlur);
-            this.editor.off('transaction', this.handleTransaction);
+            this.editor.off('transaction', this.handleScroll);
         }
+        // Nettoyage impératif des événements globaux
         window.removeEventListener('scroll', this.handleScroll, true);
         document.removeEventListener('mousedown', this.handleClickOutside);
     },
     methods: {
+        handleScroll() {
+            if (this.isVisible) {
+                // requestAnimationFrame garantit que le calcul se fait en synchro avec l'écran
+                window.requestAnimationFrame(() => {
+                    this.updatePosition();
+                });
+            }
+        },
         handleSelectionUpdate() {
             if (this.editor.isActive('link')) {
                 const { href } = this.editor.getAttributes('link');
@@ -127,35 +135,28 @@ export default {
             }
         },
         updatePosition() {
+            if (!this.isVisible || !this.$refs.popover) return;
+
             const { view } = this.editor;
             const { from } = view.state.selection;
 
-            const pos = view.domAtPos(from);
-            const linkElement = pos.node.nodeType === 1 ? pos.node.closest('a') : pos.node.parentElement.closest('a');
+            try {
+                const coords = view.coordsAtPos(from);
+                const popover = this.$refs.popover;
+                const popoverHeight = popover.offsetHeight;
 
-            if (linkElement && this.$refs.popover) {
-                const rect = linkElement.getBoundingClientRect();
-                const popoverWidth = this.$refs.popover.offsetWidth;
-                const screenMargin = 20; // Sécurité pour ne pas coller au bord de l'écran
+                // On calcule la position finale
+                const finalTop = coords.top - popoverHeight - 10;
+                const finalLeft = coords.left;
 
-                // Position de base : aligné sur le bord gauche du lien
-                let left = rect.left;
+                // On applique DIRECTEMENT au DOM pour une fluidité maximale
+                popover.style.top = `${finalTop}px`;
+                popover.style.left = `${finalLeft}px`;
 
-                // SÉCURITÉ DROITE : Si le popover dépasse de l'écran
-                if (left + popoverWidth > window.innerWidth - screenMargin) {
-                    left = window.innerWidth - popoverWidth - screenMargin;
-                }
-
-                // SÉCURITÉ GAUCHE : Si le lien est tellement à gauche que le popover sortirait (écran très petit)
-                if (left < screenMargin) {
-                    left = screenMargin;
-                }
-
-                this.popoverPosition = {
-                    // On le place 10px au-dessus du lien
-                    top: rect.top - this.$refs.popover.offsetHeight - 10,
-                    left: left,
-                };
+                // On met aussi à jour la data pour la cohérence Vue
+                this.popoverPosition = { top: finalTop, left: finalLeft };
+            } catch (e) {
+                // Au cas où la sélection Tiptap est temporairement perdue
             }
         },
         openLink() {
