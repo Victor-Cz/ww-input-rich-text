@@ -577,33 +577,48 @@ export default {
         updateMenuPosition() {
             const { view } = this.richEditor;
             const { state } = view;
-            const { from } = state.selection;
+            const { from, to } = state.selection;
 
-            // 1. Trouver l'élément DOM au niveau de la sélection
-            // On cherche le noeud de type 'Block' le plus proche
-            let node = view.nodeDOM(from);
+            let rect;
 
-            // Si la sélection est à l'intérieur d'un texte, node sera null,
-            // on remonte au parent direct
-            if (!node) {
-                const pos = view.domAtPos(from);
-                node = pos.node.parentElement;
+            if (from === to) {
+                // CAS 1 : Pas de sélection (curseur simple)
+                // On cible le bloc parent (paragraphe, titre, etc.)
+                let node = view.nodeDOM(from);
+                if (!node) {
+                    const pos = view.domAtPos(from);
+                    node = pos.node.parentElement;
+                }
+                rect = node.getBoundingClientRect();
+            } else {
+                // CAS 2 : Sélection de texte
+                // On récupère le rectangle exact de la zone surlignée
+                // coordsAtPos donne la position précise, mais pour une sélection
+                // on préfère le rectangle global de la sélection :
+                const start = view.coordsAtPos(from);
+                const end = view.coordsAtPos(to);
+
+                // On crée un rectangle virtuel qui englobe la sélection
+                rect = {
+                    left: Math.min(start.left, end.left),
+                    bottom: Math.max(start.bottom, end.bottom),
+                    top: Math.min(start.top, end.top),
+                    width: Math.abs(end.left - start.left),
+                };
             }
 
-            // 2. Récupérer les coordonnées du bloc
-            const rect = node.getBoundingClientRect();
-
-            // 3. Appliquer la position au menu
-            // On place le menu sous le bord bas du bloc sélectionné
+            // Appliquer la position au menu
             const menuEl = this.$el;
-            if (menuEl) {
-                menuEl.style.top = `${rect.bottom + 10}px`; // 10px d'écart
+            if (menuEl && rect) {
+                // On place le menu 10px sous le bas de la sélection/du bloc
+                menuEl.style.position = 'fixed';
+                menuEl.style.top = `${rect.bottom + 10}px`;
                 menuEl.style.left = `${rect.left}px`;
 
-                // Optionnel : s'assurer que le menu ne sort pas de l'écran à droite
-                const menuRect = menuEl.getBoundingClientRect();
-                if (rect.left + menuRect.width > window.innerWidth) {
-                    menuEl.style.left = `${window.innerWidth - menuRect.width - 20}px`;
+                // Sécurité : éviter que le menu ne sorte de l'écran à droite
+                const menuWidth = menuEl.offsetWidth;
+                if (rect.left + menuWidth > window.innerWidth) {
+                    menuEl.style.left = `${window.innerWidth - menuWidth - 20}px`;
                 }
             }
         },
