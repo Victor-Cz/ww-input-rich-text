@@ -135,28 +135,39 @@ export default {
             }
         },
         updatePosition() {
-            if (!this.isVisible || !this.$refs.popover) return;
-
             const { view } = this.editor;
             const { from } = view.state.selection;
 
-            try {
-                const coords = view.coordsAtPos(from);
-                const popover = this.$refs.popover;
-                const popoverHeight = popover.offsetHeight;
+            const pos = view.domAtPos(from);
+            const linkElement = pos.node.nodeType === 1 ? pos.node.closest('a') : pos.node.parentElement.closest('a');
 
-                // On calcule la position finale
-                const finalTop = coords.top - popoverHeight - 10;
-                const finalLeft = coords.left;
+            if (linkElement && this.$refs.popover) {
+                const rect = linkElement.getBoundingClientRect();
+                const popoverWidth = this.$refs.popover.offsetWidth;
+                const screenMargin = 20;
 
-                // On applique DIRECTEMENT au DOM pour une fluidité maximale
-                popover.style.top = `${finalTop}px`;
-                popover.style.left = `${finalLeft}px`;
+                let left;
 
-                // On met aussi à jour la data pour la cohérence Vue
-                this.popoverPosition = { top: finalTop, left: finalLeft };
-            } catch (e) {
-                // Au cas où la sélection Tiptap est temporairement perdue
+                // Vérification : est-ce que l'alignement à gauche fait déborder ?
+                if (rect.left + popoverWidth > window.innerWidth - screenMargin) {
+                    // ALIGNEMENT DROITE : Le bord droit du popover = le bord droit du lien
+                    left = rect.right - popoverWidth;
+                } else {
+                    // ALIGNEMENT GAUCHE : Classique
+                    left = rect.left;
+                }
+
+                // Sécurité ultime pour les petits écrans (ne pas sortir par la gauche)
+                left = Math.max(screenMargin, left);
+
+                this.popoverPosition = {
+                    top: rect.top - this.$refs.popover.offsetHeight - 10,
+                    left: left,
+                };
+
+                // Application directe pour la fluidité au scroll
+                this.$refs.popover.style.top = `${this.popoverPosition.top}px`;
+                this.$refs.popover.style.left = `${this.popoverPosition.left}px`;
             }
         },
         openLink() {
