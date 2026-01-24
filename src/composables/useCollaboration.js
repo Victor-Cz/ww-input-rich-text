@@ -253,14 +253,15 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 name: collabConfig.value.documentId, // Le provider ajoutera automatiquement /{name}
                 document: ydocInstance,
                 token: collabConfig.value.authToken || undefined,
-                // Passer les paramètres personnalisés via onAuthenticate
-                onAuthenticate: () => {
-                    return {
-                        token: collabConfig.value.authToken,
-                        saveMode: collabConfig.value.saveMode,
-                        userName: collabConfig.value.userName,
-                    };
+                // Ajoute ?saveMode=...&userName=... à l'URL WebSocket
+                parameters: {
+                    saveMode: collabConfig.value.saveMode,
+                    userName: collabConfig.value.userName,
                 },
+                // Garde onAuthenticate pour la logique de token
+                onAuthenticate: () => ({
+                    token: collabConfig.value.authToken,
+                }),
             };
 
             console.log('[Collaboration] Initializing connection with config:', {
