@@ -71,17 +71,24 @@ export default {
         if (this.editor) {
             this.editor.on('selectionUpdate', this.handleSelectionUpdate);
             this.editor.on('blur', this.handleBlur);
+
+            // RECALCULER AU SCROLL :
+            // On écoute le scroll sur tout le document pour être sûr d'attraper
+            // le scroll du parent de l'éditeur dans WeWeb.
+            window.addEventListener('scroll', this.handleScroll, true);
+
+            // RECALCULER QUAND LE TEXTE BOUGE :
+            this.editor.on('transaction', this.handleTransaction);
         }
         document.addEventListener('mousedown', this.handleClickOutside);
-        this.editor.on('transaction', () => {
-            if (this.isVisible) this.updatePosition();
-        });
     },
     beforeUnmount() {
         if (this.editor) {
             this.editor.off('selectionUpdate', this.handleSelectionUpdate);
             this.editor.off('blur', this.handleBlur);
+            this.editor.off('transaction', this.handleTransaction);
         }
+        window.removeEventListener('scroll', this.handleScroll, true);
         document.removeEventListener('mousedown', this.handleClickOutside);
     },
     methods: {
