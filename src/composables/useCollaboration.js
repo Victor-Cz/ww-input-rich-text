@@ -73,7 +73,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             });
 
             setCollaborationStatus({
-                ...collaborationStatus.value,
+                ...collaborationStatus,
                 connected: true,
                 error: null,
             });
@@ -91,7 +91,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         // Événement de déconnexion
         provider.value.on('disconnect', ({ event }) => {
             setCollaborationStatus({
-                ...collaborationStatus.value,
+                ...collaborationStatus,
                 connected: false,
                 synced: false,
             });
@@ -114,7 +114,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             });
 
             setCollaborationStatus({
-                ...collaborationStatus.value,
+                ...collaborationStatus,
                 synced: true,
                 syncing: false,
             });
@@ -133,7 +133,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         provider.value.on('status', ({ status }) => {
             if (status === 'connecting' || status === 'syncing') {
                 setCollaborationStatus({
-                    ...collaborationStatus.value,
+                    ...collaborationStatus,
                     syncing: true,
                 });
 
@@ -166,7 +166,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             );
 
             setCollaborationStatus({
-                ...collaborationStatus.value,
+                ...collaborationStatus,
                 error: error.message,
             });
 
@@ -212,7 +212,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 console.log('[Collaboration] Awareness update - Users with colors:', users);
 
                 setCollaborationStatus({
-                    ...collaborationStatus.value,
+                    ...collaborationStatus,
                     users, // Ici, 'users' contient maintenant des objets {name, color}
                     userCount: users.length,
                 });
@@ -354,8 +354,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             connected: provider.value?.isConnected || false,
             synced: provider.value?.isSynced || false,
             documentId: collabConfig.value.documentId,
-            users: collaborationStatus.value.users || [],
-            userCount: collaborationStatus.value.userCount || 0,
+            users: collaborationStatus.users || [],
+            userCount: collaborationStatus.userCount || 0,
         };
     };
 
