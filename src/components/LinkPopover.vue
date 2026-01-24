@@ -1,6 +1,11 @@
 <template>
     <transition name="link-popover">
-        <div v-if="isVisible && linkUrl" class="link-popover" :style="popoverStyle" ref="popover">
+        <div
+            v-if="isVisible && linkUrl"
+            class="link-popover"
+            :style="popoverStyle"
+            ref="popover"
+        >
             <div class="link-popover__content">
                 <a
                     :href="linkUrl"
@@ -12,7 +17,12 @@
                     {{ truncatedUrl }}
                 </a>
                 <div class="link-popover__actions">
-                    <button type="button" class="link-popover__button" @click="editLink" title="Modifier le lien">
+                    <button
+                        type="button"
+                        class="link-popover__button"
+                        @click="editLink"
+                        title="Modifier le lien"
+                    >
                         <i class="fas fa-pen"></i>
                     </button>
                     <button
@@ -25,7 +35,9 @@
                     </button>
                 </div>
             </div>
-            <div class="link-popover__hint">{{ modifierKey }} + Clic pour ouvrir</div>
+            <div class="link-popover__hint">
+                {{ modifierKey }} + Clic pour ouvrir
+            </div>
         </div>
     </transition>
 </template>
@@ -115,19 +127,14 @@ export default {
             const { view } = this.editor;
             const { from } = view.state.selection;
 
-            // 1. On récupère la position précise du curseur (ou du début du lien)
+            // Obtenir les coordonnées du curseur
             const coords = view.coordsAtPos(from);
+            const editorRect = view.dom.getBoundingClientRect();
 
-            // 2. On récupère le conteneur de l'éditeur (celui qui est en 'position: relative')
-            const editorElement = view.dom.parentElement;
-            const containerRect = editorElement.getBoundingClientRect();
-
-            // 3. Calcul de la position relative au conteneur
-            // On utilise coords.bottom pour être SOUS le texte
-            // On ajoute window.scrollY pour compenser si l'éditeur a scrollé
+            // Positionner le popover sous le lien
             this.popoverPosition = {
-                top: coords.bottom - containerRect.top + editorElement.scrollTop,
-                left: coords.left - containerRect.left + editorElement.scrollLeft,
+                top: coords.bottom - editorRect.top + 8,
+                left: coords.left - editorRect.left,
             };
         },
         openLink() {
@@ -147,12 +154,22 @@ export default {
             }
 
             // Mettre à jour le lien
-            this.editor.chain().focus().extendMarkRange('link').setLink({ href: newUrl }).run();
+            this.editor
+                .chain()
+                .focus()
+                .extendMarkRange('link')
+                .setLink({ href: newUrl })
+                .run();
 
             this.linkUrl = newUrl;
         },
         removeLink() {
-            this.editor.chain().focus().extendMarkRange('link').unsetLink().run();
+            this.editor
+                .chain()
+                .focus()
+                .extendMarkRange('link')
+                .unsetLink()
+                .run();
 
             this.isVisible = false;
             this.linkUrl = null;
