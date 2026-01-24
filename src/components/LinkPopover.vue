@@ -1,11 +1,6 @@
 <template>
     <transition name="link-popover">
-        <div
-            v-if="isVisible && linkUrl"
-            class="link-popover"
-            :style="popoverStyle"
-            ref="popover"
-        >
+        <div v-if="isVisible && linkUrl" class="link-popover" :style="popoverStyle" ref="popover">
             <div class="link-popover__content">
                 <a
                     :href="linkUrl"
@@ -17,12 +12,7 @@
                     {{ truncatedUrl }}
                 </a>
                 <div class="link-popover__actions">
-                    <button
-                        type="button"
-                        class="link-popover__button"
-                        @click="editLink"
-                        title="Modifier le lien"
-                    >
+                    <button type="button" class="link-popover__button" @click="editLink" title="Modifier le lien">
                         <i class="fas fa-pen"></i>
                     </button>
                     <button
@@ -35,9 +25,7 @@
                     </button>
                 </div>
             </div>
-            <div class="link-popover__hint">
-                {{ modifierKey }} + Clic pour ouvrir
-            </div>
+            <div class="link-popover__hint">{{ modifierKey }} + Clic pour ouvrir</div>
         </div>
     </transition>
 </template>
@@ -85,6 +73,9 @@ export default {
             this.editor.on('blur', this.handleBlur);
         }
         document.addEventListener('mousedown', this.handleClickOutside);
+        this.editor.on('transaction', () => {
+            if (this.isVisible) this.updatePosition();
+        });
     },
     beforeUnmount() {
         if (this.editor) {
@@ -95,12 +86,17 @@ export default {
     },
     methods: {
         handleSelectionUpdate() {
-            // Vérifier si le curseur est sur un lien
             if (this.editor.isActive('link')) {
                 const { href } = this.editor.getAttributes('link');
                 this.linkUrl = href;
-                this.updatePosition();
+
+                // 1. On l'affiche d'abord (invisible mais présent dans le DOM)
                 this.isVisible = true;
+
+                // 2. On attend le prochain "tick" pour calculer la position avec les dimensions réelles
+                this.$nextTick(() => {
+                    this.updatePosition();
+                });
             } else {
                 this.isVisible = false;
                 this.linkUrl = null;
@@ -127,15 +123,33 @@ export default {
             const { view } = this.editor;
             const { from } = view.state.selection;
 
-            // Obtenir les coordonnées du curseur
-            const coords = view.coordsAtPos(from);
-            const editorRect = view.dom.getBoundingClientRect();
+            const pos = view.domAtPos(from);
+            const linkElement = pos.node.nodeType === 1 ? pos.node.closest('a') : pos.node.parentElement.closest('a');
 
-            // Positionner le popover sous le lien
-            this.popoverPosition = {
-                top: coords.bottom - editorRect.top + 8,
-                left: coords.left - editorRect.left,
-            };
+            if (linkElement && this.$refs.popover) {
+                const rect = linkElement.getBoundingClientRect();
+                const popoverWidth = this.$refs.popover.offsetWidth;
+                const screenMargin = 20; // Sécurité pour ne pas coller au bord de l'écran
+
+                // Position de base : aligné sur le bord gauche du lien
+                let left = rect.left;
+
+                // SÉCURITÉ DROITE : Si le popover dépasse de l'écran
+                if (left + popoverWidth > window.innerWidth - screenMargin) {
+                    left = window.innerWidth - popoverWidth - screenMargin;
+                }
+
+                // SÉCURITÉ GAUCHE : Si le lien est tellement à gauche que le popover sortirait (écran très petit)
+                if (left < screenMargin) {
+                    left = screenMargin;
+                }
+
+                this.popoverPosition = {
+                    // On le place 10px au-dessus du lien
+                    top: rect.top - this.$refs.popover.offsetHeight - 10,
+                    left: left,
+                };
+            }
         },
         openLink() {
             if (this.linkUrl) {
@@ -154,22 +168,12 @@ export default {
             }
 
             // Mettre à jour le lien
-            this.editor
-                .chain()
-                .focus()
-                .extendMarkRange('link')
-                .setLink({ href: newUrl })
-                .run();
+            this.editor.chain().focus().extendMarkRange('link').setLink({ href: newUrl }).run();
 
             this.linkUrl = newUrl;
         },
         removeLink() {
-            this.editor
-                .chain()
-                .focus()
-                .extendMarkRange('link')
-                .unsetLink()
-                .run();
+            this.editor.chain().focus().extendMarkRange('link').unsetLink().run();
 
             this.isVisible = false;
             this.linkUrl = null;
@@ -191,7 +195,7 @@ export default {
 }
 
 .link-popover {
-    position: absolute;
+    position: fixed;
     z-index: 1000;
     background: white;
     border: 1px solid #e0e0e0;
@@ -200,6 +204,8 @@ export default {
     padding: 8px 12px;
     min-width: 200px;
     max-width: 400px;
+    transform: none;
+    max-width: 90vw;
 }
 
 .link-popover__content {
