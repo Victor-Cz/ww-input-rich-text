@@ -197,6 +197,12 @@
 
                 <editor-content class="ww-rich-text__input" :editor="richEditor" :style="richStyles" />
 
+                <!-- Link Popover pour afficher/modifier les liens -->
+                <link-popover
+                    v-if="richEditor"
+                    :editor="richEditor"
+                />
+
                 <!-- Utilisation du composant AiMenu personnalisé -->
                 <ai-menu ref="aiMenu" :rich-editor="richEditor" :is-read-only="content.parameterAiMenuReadOnly ?? true"
                     :parameter-ai-menu-primary-color="content.parameterAiMenuPrimaryColor ?? '#007bff'"
@@ -236,10 +242,10 @@ import { Markdown } from 'tiptap-markdown';
 import TableIcon from './icons/table-icon.vue';
 
 import AiMenu from './components/AiMenu.vue';
+import LinkPopover from './components/LinkPopover.vue';
 import { SelectionHighlighter } from './extensions/SelectionHighlighter.js';
 import { TextSuggestion } from './extensions/TextSuggestion.js';
 import { TextStrike } from './extensions/TextStrike.js';
-import { SafeLinks } from './extensions/SafeLinks.js';
 
 function extractMentions(acc, currentNode) {
     if (currentNode.type === 'mention') {
@@ -267,6 +273,7 @@ export default {
         EditorContent,
         TableIcon,
         AiMenu,
+        LinkPopover,
     },
     props: {
         content: { type: Object, required: true },
@@ -757,7 +764,6 @@ export default {
                 // Vérifier les imports d'extensions
                 console.log('[Editor] Checking extension imports:', {
                     StarterKit: !!StarterKit,
-                    SafeLinks: !!SafeLinks,
                     Link: !!Link,
                     TextStyle: !!TextStyle,
                     Color: !!Color,
@@ -780,7 +786,6 @@ export default {
                 // Identifier quelle extension est undefined
                 const undefinedExtensions = [];
                 if (!StarterKit) undefinedExtensions.push('StarterKit');
-                if (!SafeLinks) undefinedExtensions.push('SafeLinks');
                 if (!Link) undefinedExtensions.push('Link');
                 if (!TextStyle) undefinedExtensions.push('TextStyle');
                 if (!Color) undefinedExtensions.push('Color');
@@ -811,18 +816,11 @@ export default {
                     StarterKit.configure({
                         history: this.isCollaborating ? false : true,
                     }),
-                    SafeLinks.configure({
-                        enabled: this.content.a?.enableSafeLinks !== false,
-                        tooltipText: this.content.a?.tooltipText || '{keyboard} + Clic',
-                        tooltipColor: this.content.a?.tooltipColor || '#ffffff',
-                        tooltipBackgroundColor: this.content.a?.tooltipBackgroundColor || '#393d45',
-                        tooltipFontSize: this.content.a?.tooltipFontSize || '12px',
-                    }),
                     Link.configure({
                         HTMLAttributes: {
                             rel: 'noopener noreferrer',
                         },
-                        openOnClick: !this.content.a?.enableSafeLinks,
+                        openOnClick: false, // On gère l'ouverture manuellement avec Cmd/Ctrl+clic
                     }),
                     TextStyle,
                     Color,
@@ -994,6 +992,14 @@ export default {
                                     event: { mention: { id: node.attrs.id, label: node.attrs.label } },
                                 });
                             }
+                        },
+                        handleClick: (_view, _pos, event) => {
+                            const link = event.target?.closest('a');
+                            if (link && (event.metaKey || event.ctrlKey)) {
+                                window.open(link.href, '_blank', 'noopener,noreferrer');
+                                return true;
+                            }
+                            return false;
                         },
                     },
                 });
