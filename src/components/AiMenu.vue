@@ -613,7 +613,7 @@ export default {
                 // On place le menu 10px sous le bas de la sélection/du bloc
                 menuEl.style.position = 'fixed';
                 menuEl.style.top = `${rect.bottom + 10}px`;
-                menuEl.style.left = `${rect.left}px`;
+                menuEl.style.left = `8px`;
 
                 // Sécurité : éviter que le menu ne sorte de l'écran à droite
                 const menuWidth = menuEl.offsetWidth;
