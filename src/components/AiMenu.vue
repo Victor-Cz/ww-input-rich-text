@@ -657,6 +657,7 @@ export default {
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     min-width: 300px;
+    right: 36px;
     z-index: 1000;
 }
 
@@ -779,7 +780,7 @@ export default {
 
 .ai-input {
     flex: 1;
-    padding: 12px 12px 48px 12px;
+    padding: 12px 12px 12px 12px;
     border-radius: 12px;
     font-size: 14px;
     color: #495057;
