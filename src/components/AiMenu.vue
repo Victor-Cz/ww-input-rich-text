@@ -579,48 +579,31 @@ export default {
             const { state } = view;
             const { from, to } = state.selection;
 
-            let rect;
             const editorRect = view.dom.getBoundingClientRect();
+            let selectionBottom;
 
             if (from === to) {
-                // CAS 1 : Pas de sélection (curseur simple)
-                // On cible le bloc parent (paragraphe, titre, etc.)
-                let node = view.nodeDOM(from);
-                if (!node) {
-                    const pos = view.domAtPos(from);
-                    node = pos.node.parentElement;
-                }
-                rect = node.getBoundingClientRect();
+                // Curseur simple
+                let node = view.nodeDOM(from) || view.domAtPos(from).node.parentElement;
+                selectionBottom = node.getBoundingClientRect().bottom;
             } else {
-                // CAS 2 : Sélection de texte
-                // On récupère le rectangle exact de la zone surlignée
-                // coordsAtPos donne la position précise, mais pour une sélection
-                // on préfère le rectangle global de la sélection :
-                const start = view.coordsAtPos(from);
-                const end = view.coordsAtPos(to);
-
-                // On crée un rectangle virtuel qui englobe la sélection
-                rect = {
-                    left: Math.min(start.left, end.left),
-                    bottom: Math.max(start.bottom, end.bottom),
-                    top: Math.min(start.top, end.top),
-                    width: Math.abs(end.left - start.left),
-                };
+                // Sélection de texte
+                selectionBottom = view.coordsAtPos(to).bottom;
             }
 
-            // Appliquer la position au menu
             const menuEl = this.$el;
-            if (menuEl && rect) {
-                // On place le menu 10px sous le bas de la sélection/du bloc
+            if (menuEl) {
                 menuEl.style.position = 'fixed';
-                menuEl.style.top = `${rect.bottom + 10}px`;
+
+                // 1. Le TOP suit toujours la ligne actuelle
+                menuEl.style.top = `${selectionBottom + 10}px`;
+
+                // 2. Le LEFT est calé sur l'éditeur, PEU IMPORTE la sélection
                 menuEl.style.left = `${editorRect.left}px`;
 
-                // Sécurité : éviter que le menu ne sorte de l'écran à droite
-                const menuWidth = menuEl.offsetWidth;
-                if (rect.left + menuWidth > window.innerWidth) {
-                    menuEl.style.left = `${window.innerWidth - menuWidth - 20}px`;
-                }
+                // 3. On verrouille la largeur pour qu'elle soit identique à l'éditeur
+                // Comme ça, le bord droit du menu sera aligné avec le bord droit de l'éditeur
+                menuEl.style.width = `${editorRect.width}px`;
             }
         },
     },
