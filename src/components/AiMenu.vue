@@ -1,34 +1,71 @@
 <template>
     <transition name="ai-menu" appear>
-        <div class="bubble-menu" v-show="isMenuVisible" :class="{ 'is-focused': isFocused, 'force-display': forceDisplay }">
+        <div
+            class="bubble-menu"
+            v-show="isMenuVisible"
+            :class="{ 'is-focused': isFocused, 'force-display': forceDisplay }"
+        >
             <!-- Input pour les prompts AI -->
-            <div class="ai-input-container" v-if="!isLoading && !showSuccessCheck && Object.keys(modificationTypes).length > 0">
+            <div
+                class="ai-input-container"
+                v-if="!isLoading && !showSuccessCheck && Object.keys(modificationTypes).length > 0"
+            >
                 <div class="ai-input-wrapper">
-                    <textarea v-model="aiPrompt" :placeholder="getPromptPlaceholder" class="ai-input"
-                        @keyup.enter="submitPrompt" @focus="onFocus" @blur="onBlur" rows="3"
-                        :title="placeholders.promptInputTooltip"></textarea>
+                    <textarea
+                        v-model="aiPrompt"
+                        :placeholder="getPromptPlaceholder"
+                        class="ai-input"
+                        @keyup.enter="submitPrompt"
+                        @focus="onFocus"
+                        @blur="onBlur"
+                        rows="3"
+                        :title="placeholders.promptInputTooltip"
+                    ></textarea>
                     <div class="modification-type-dropdown">
                         <div class="dropdown-header" @click="toggleDropdown">
-                            <div :class="getSelectedTypeIcon() ? ['type-icon', getSelectedTypeIcon()] : 'type-icon icon-cog'" aria-hidden="true"></div>
+                            <div
+                                :class="
+                                    getSelectedTypeIcon() ? ['type-icon', getSelectedTypeIcon()] : 'type-icon icon-cog'
+                                "
+                                aria-hidden="true"
+                            ></div>
                             <span>{{ getSelectedTypeLabel() }}</span>
-                            <div class="icon-chevron-down" :class="{ 'rotated': isDropdownOpen }" aria-hidden="true"></div>
+                            <div
+                                class="icon-chevron-down"
+                                :class="{ rotated: isDropdownOpen }"
+                                aria-hidden="true"
+                            ></div>
                         </div>
                         <div class="dropdown-options" v-show="isDropdownOpen">
-                            <div v-for="(type, key) in modificationTypes" :key="key" class="dropdown-option"
-                                @click="selectModificationType(key)">
+                            <div
+                                v-for="(type, key) in modificationTypes"
+                                :key="key"
+                                class="dropdown-option"
+                                @click="selectModificationType(key)"
+                            >
                                 <div v-if="type.icon" :class="['type-icon', type.icon]" aria-hidden="true"></div>
                                 <span>{{ type.label }}</span>
                             </div>
                         </div>
                     </div>
                     <div class="ai-action-buttons">
-                        <button @click="rejectProposal" class="ai-reject-button" :title="placeholders.cancelButtonTooltip"
-                            :disabled="!aiResponse" v-if="aiResponse">
+                        <button
+                            @click="rejectProposal"
+                            class="ai-reject-button"
+                            :title="placeholders.cancelButtonTooltip"
+                            :disabled="!aiResponse"
+                            v-if="aiResponse"
+                        >
                             <div class="icon-x" aria-hidden="true"></div>
                             <span class="button-label">{{ placeholders.cancelButton }}</span>
                         </button>
-                        <button @click="validateProposal" class="ai-validate-button"
-                            :title="placeholders.submitButtonTooltip" :disabled="!aiResponse" v-if="aiResponse">
+                        <button
+                            @click="validateProposal"
+                            class="ai-validate-button"
+                            :title="placeholders.submitButtonTooltip"
+                            :disabled="!aiResponse"
+                            v-if="aiResponse"
+                        >
                             <div class="icon-check" aria-hidden="true"></div>
                             <span class="button-label">{{ placeholders.submitButton }}</span>
                         </button>
@@ -42,8 +79,9 @@
             <!-- Message quand aucun type n'est configuré -->
             <div class="ai-no-types-message" v-if="Object.keys(modificationTypes).length === 0">
                 <div class="no-types-icon">⚠️</div>
-                <div class="no-types-text">No modification types configured. Please configure at least one type in the
-                    settings.</div>
+                <div class="no-types-text">
+                    No modification types configured. Please configure at least one type in the settings.
+                </div>
             </div>
 
             <!-- État de chargement -->
@@ -90,7 +128,7 @@ export default {
                 promptInputTooltip: 'Enter your instructions for the AI',
                 submitButtonTooltip: 'Apply the AI modification',
                 cancelButtonTooltip: 'Cancel the current operation',
-                chooseTypePlaceholder: 'Select a type'
+                chooseTypePlaceholder: 'Select a type',
             }),
         },
         // Nouvelle propriété pour forcer l'affichage dans l'éditeur
@@ -106,7 +144,7 @@ export default {
         // Computed property pour contrôler la visibilité du menu
         isMenuVisible() {
             // Détecter si on est dans l'éditeur WeWeb
-            const isInEditor = typeof window.wwLib !== "undefined";
+            const isInEditor = typeof window.wwLib !== 'undefined';
 
             // Si forceDisplay est activé ET qu'on est dans l'éditeur, le menu est toujours visible
             if (this.forceDisplay && isInEditor) {
@@ -127,7 +165,7 @@ export default {
                             action: type.action || 'replace',
                             requireInput: type.requireInput !== undefined ? type.requireInput : true,
                             promptPlaceholder: type.promptPlaceholder || '', // Ajouter le placeholder personnalisé
-                            icon: type.icon // Ajouter l'icône personnalisée
+                            icon: type.icon, // Ajouter l'icône personnalisée
                         };
                     }
                 });
@@ -179,10 +217,12 @@ export default {
     mounted() {
         // Écouter les clics en dehors du menu pour le masquer
         document.addEventListener('mousedown', this.onClickOutside);
+        window.addEventListener('scroll', this.updateMenuPosition, true);
     },
     beforeUnmount() {
         // Nettoyer les écouteurs
         document.removeEventListener('mousedown', this.onClickOutside);
+        window.removeEventListener('scroll', this.updateMenuPosition, true);
 
         this.storedSelection = null;
         this.storedSelectionRange = null;
@@ -194,6 +234,7 @@ export default {
         toggleDropdown() {
             this.isDropdownOpen = !this.isDropdownOpen;
         },
+
         submitPrompt() {
             // Vérifier qu'un type est sélectionné avant de permettre la soumission
             if (!this.selectedModificationType) {
@@ -212,7 +253,6 @@ export default {
             const finalPrompt = this.buildFinalPrompt();
             const action = this.modificationTypes[this.selectedModificationType].action;
 
-
             // Émettre l'événement vers le composant parent
             this.$emit('ai-prompt', {
                 prompt: finalPrompt,
@@ -220,11 +260,12 @@ export default {
                 action: action,
                 selectedText: this.storedSelection,
                 htmlValue: this.richEditor.getHTML(),
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             });
 
             this.aiPrompt = '';
         },
+
         setResponse(response) {
             // Utiliser TextSuggestion pour afficher la proposition dans l'éditeur
             this.displaySuggestion(response);
@@ -252,7 +293,9 @@ export default {
 
             const action = this.modificationTypes[this.selectedModificationType]?.action;
             if (action === 'replace' && this.storedSelectionRange) {
-                this.richEditor.commands.setStrikeRanges([{ from: this.storedSelectionRange.from, to: this.storedSelectionRange.to }]);
+                this.richEditor.commands.setStrikeRanges([
+                    { from: this.storedSelectionRange.from, to: this.storedSelectionRange.to },
+                ]);
             } else if (action === 'replace-all') {
                 this.richEditor.commands.setStrikeRanges([{ from: 0, to: this.getDocumentEnd() }]);
             }
@@ -292,9 +335,11 @@ export default {
             // Appliquer la proposition à l'éditeur puis fermer le menu
             this.applyResponse(this.aiResponse);
         },
+
         rejectProposal() {
             this.closeMenu();
         },
+
         hideMenu() {
             if (this.hasStarted) {
                 return;
@@ -302,6 +347,7 @@ export default {
 
             this.closeMenu();
         },
+
         closeMenu() {
             this.isVisible = false;
             this.isFocused = false;
@@ -320,6 +366,7 @@ export default {
             this.richEditor.commands.clearSuggestion();
             this.richEditor.commands.clearStrike();
         },
+
         applyResponse(response) {
             const action = this.modificationTypes[this.selectedModificationType].action;
 
@@ -328,13 +375,27 @@ export default {
             const formattedResponse = this.formatSuggestionText(response, position);
 
             switch (action) {
-                case 'replace': this.replaceSelection(formattedResponse); break;
-                case 'insert-before': this.insertBeforeSelection(formattedResponse); break;
-                case 'insert-after': this.insertAfterSelection(formattedResponse); break;
-                case 'replace-all': this.replaceAllText(formattedResponse); break;
-                case 'append': this.appendToEnd(formattedResponse); break;
-                case 'prepend': this.prependToBeginning(formattedResponse); break;
-                default: console.warn('Action non reconnue:', action); this.replaceSelection(formattedResponse);
+                case 'replace':
+                    this.replaceSelection(formattedResponse);
+                    break;
+                case 'insert-before':
+                    this.insertBeforeSelection(formattedResponse);
+                    break;
+                case 'insert-after':
+                    this.insertAfterSelection(formattedResponse);
+                    break;
+                case 'replace-all':
+                    this.replaceAllText(formattedResponse);
+                    break;
+                case 'append':
+                    this.appendToEnd(formattedResponse);
+                    break;
+                case 'prepend':
+                    this.prependToBeginning(formattedResponse);
+                    break;
+                default:
+                    console.warn('Action non reconnue:', action);
+                    this.replaceSelection(formattedResponse);
             }
 
             // Émettre l'événement ai-suggestion-applied avec les détails de l'application
@@ -347,28 +408,35 @@ export default {
                 selectionRange: this.storedSelectionRange,
                 htmlValue: this.richEditor.getHTML(),
                 timestamp: new Date().toISOString(),
-                position: position
+                position: position,
             });
 
             this.showSuccessCheck = true;
-            setTimeout(() => { this.showSuccessCheck = false; this.closeMenu(); }, 1500);
+            setTimeout(() => {
+                this.showSuccessCheck = false;
+                this.closeMenu();
+            }, 1500);
         },
+
         openWithType(typeKey) {
-            // Permettre l'ouverture avec ou sans type spécifique
             this.selectedModificationType = typeKey || null;
             this.isVisible = true;
             this.isFocused = true;
 
-            // Enregistrer la sélection initiale au montage
             const { from, to } = this.richEditor.state.selection;
 
-            // Stocker le texte sélectionné et le surligner une seule fois
             if (from !== to) {
                 this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
                 this.storedSelectionRange = { from, to };
                 this.richEditor.commands.highlightRange(from, to);
             }
+
+            // Calculer la position après le rendu du DOM
+            this.$nextTick(() => {
+                this.updateMenuPosition();
+            });
         },
+
         selectModificationType(typeKey) {
             this.selectedModificationType = typeKey;
             this.isDropdownOpen = false; // Fermer la dropdown après sélection
@@ -383,6 +451,7 @@ export default {
                 }
             });
         },
+
         buildFinalPrompt() {
             // Si aucun type n'est sélectionné ou si le type n'existe pas, retourner seulement le prompt utilisateur
             if (!this.selectedModificationType || !this.modificationTypes[this.selectedModificationType]) {
@@ -504,6 +573,40 @@ export default {
             }
             return null;
         },
+
+        updateMenuPosition() {
+            const { view } = this.richEditor;
+            const { state } = view;
+            const { from } = state.selection;
+
+            // 1. Trouver l'élément DOM au niveau de la sélection
+            // On cherche le noeud de type 'Block' le plus proche
+            let node = view.nodeDOM(from);
+
+            // Si la sélection est à l'intérieur d'un texte, node sera null,
+            // on remonte au parent direct
+            if (!node) {
+                const pos = view.domAtPos(from);
+                node = pos.node.parentElement;
+            }
+
+            // 2. Récupérer les coordonnées du bloc
+            const rect = node.getBoundingClientRect();
+
+            // 3. Appliquer la position au menu
+            // On place le menu sous le bord bas du bloc sélectionné
+            const menuEl = this.$el;
+            if (menuEl) {
+                menuEl.style.top = `${rect.bottom + 10}px`; // 10px d'écart
+                menuEl.style.left = `${rect.left}px`;
+
+                // Optionnel : s'assurer que le menu ne sort pas de l'écran à droite
+                const menuRect = menuEl.getBoundingClientRect();
+                if (rect.left + menuRect.width > window.innerWidth) {
+                    menuEl.style.left = `${window.innerWidth - menuRect.width - 20}px`;
+                }
+            }
+        },
     },
 };
 </script>
@@ -532,9 +635,8 @@ export default {
 }
 
 .bubble-menu {
-    position: relative;
-    margin-top: 8px;
-    margin-bottom: 32px;
+    position: fixed;
+    margin-top: 0px;
     background: white;
     border: 1px solid var(--primary-color);
     border-radius: 12px;
@@ -565,7 +667,9 @@ export default {
     color: #495057;
     background: #f8f9fa;
     cursor: pointer;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition:
+        border-color 0.2s,
+        box-shadow 0.2s;
     width: fit-content;
 }
 
@@ -608,7 +712,9 @@ export default {
     background: white;
     text-align: left;
     cursor: pointer;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition:
+        border-color 0.2s,
+        box-shadow 0.2s;
     display: flex;
     flex-direction: row;
     gap: 6px;
