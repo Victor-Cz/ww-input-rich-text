@@ -643,6 +643,7 @@ export default {
     min-width: 300px;
     right: 36px;
     z-index: 1000;
+    height: 100px;
 }
 
 .bubble-menu.is-focused {
