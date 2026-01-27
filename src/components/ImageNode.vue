@@ -74,24 +74,13 @@ export default {
 <style scoped>
 .image-node-wrapper {
     display: inline-block;
-    line-height: 0;
 }
 
 .image-layout {
     display: inline-block;
-    max-width: 100%;
-    /* Isolate from editor styles */
-    all: revert;
-}
-
-/* Re-apply necessary display styles after revert */
-.image-layout {
-    display: inline-block;
-    max-width: 100%;
 }
 
 .fallback-image {
-    max-width: var(--img-max-width, 100%);
-    max-height: var(--img-max-height, auto);
+    display: inline-block;
 }
 </style>
