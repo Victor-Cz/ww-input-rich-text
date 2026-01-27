@@ -85,10 +85,14 @@ export default {
     display: inline-block;
 }
 
-/* Ensure ProseMirror doesn't override WeWeb text styles */
+/* Reset ProseMirror styles for WeWeb elements inside image layout */
+.ProseMirror .image-layout .ww-element {
+    all: unset;
+    display: revert;
+}
+
 .ProseMirror .image-layout .ww-text {
-    font-size: inherit !important;
-    color: inherit !important;
-    line-height: inherit !important;
+    all: unset;
+    display: revert;
 }
 </style>
