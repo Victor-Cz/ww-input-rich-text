@@ -1363,7 +1363,36 @@ export default {
                 console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');
                 return;
             }
+
+            // Update the mapping
             this.updateImageEntry(imageId, url, alt, title);
+
+            // Update the image node in the TipTap document
+            if (this.richEditor) {
+                const { state, view } = this.richEditor;
+                const { tr } = state;
+                let updated = false;
+
+                // Traverse the document to find the image with matching data-image-id
+                state.doc.descendants((node, pos) => {
+                    if (node.type.name === 'image' && node.attrs['data-image-id'] === imageId) {
+                        // Update the image attributes
+                        tr.setNodeMarkup(pos, null, {
+                            ...node.attrs,
+                            src: url,
+                            alt: alt || node.attrs.alt,
+                            title: title || node.attrs.title,
+                        });
+                        updated = true;
+                        return false; // Stop traversing
+                    }
+                });
+
+                // Apply the transaction if we found and updated the image
+                if (updated) {
+                    view.dispatch(tr);
+                }
+            }
         },
 
         getImageById(imageId) {
