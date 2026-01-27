@@ -373,7 +373,6 @@ export default {
         // Fournir les dépendances pour ImageNode.vue
         provide('useImageLayout', computed(() => props.content.useImageLayout || false));
         provide('imageLayoutElement', computed(() => props.content.imageLayoutElement));
-        provide('getImageData', imageManager.getImageData);
 
         // Fournir les dépendances pour LinkPopover.vue
         provide('useLinkLayoutPopover', computed(() => props.content.useLinkLayoutPopover || false));

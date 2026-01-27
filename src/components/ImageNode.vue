@@ -37,28 +37,19 @@ export default {
             from: 'imageLayoutElement',
             default: null,
         },
-        getImageData: {
-            from: 'getImageData',
-            default: () => () => null,
-        },
     },
     computed: {
         imageId() {
             return this.node.attrs['data-image-id'] || null;
         },
-        imageData() {
-            if (!this.imageId || !this.getImageData) return null;
-            return this.getImageData(this.imageId);
-        },
         imageContextData() {
-            // Prepare image data for wwLocalContext
+            // Read all data directly from node attributes (HTML)
             // This makes the image data available via context.image in the template
             return {
                 imageId: this.imageId,
-                url: this.imageData?.url || this.node.attrs.src,
-                alt: this.imageData?.alt || this.node.attrs.alt || '',
-                title: this.imageData?.title || this.node.attrs.title || '',
-                ...this.imageData, // Include any additional metadata
+                url: this.node.attrs.src || '',
+                alt: this.node.attrs.alt || '',
+                title: this.node.attrs.title || '',
             };
         },
         // Unwrap the injected computed for imageLayoutElement
