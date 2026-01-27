@@ -1464,7 +1464,7 @@ export default {
             hidden: true,
             defaultValue: null,
             navigator: {
-                group: 'LinkPopover',
+                group: 'Link',
                 hidden: content => !content.useLinkLayoutPopover,
             },
         },
