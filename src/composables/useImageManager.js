@@ -9,6 +9,15 @@ export function useImageManager(props, emit) {
     // Reactive reference to the image mapping from content
     const imageMapping = computed(() => props.content.imageMapping || {});
 
+    // Watch imageMapping changes for debugging
+    watch(imageMapping, (newValue, oldValue) => {
+        console.log('[useImageManager] imageMapping changed:', {
+            old: oldValue,
+            new: newValue,
+            keys: Object.keys(newValue || {}),
+        });
+    }, { deep: true });
+
     /**
      * Generate a unique ID for an image
      * Format: img_timestamp_random
@@ -26,11 +35,24 @@ export function useImageManager(props, emit) {
      * @param {boolean} isUpdate - Whether this is an update (true) or new entry (false)
      */
     const setImageData = (id, imageData, isUpdate = false) => {
+        console.log('[useImageManager] setImageData called:', {
+            id,
+            imageData,
+            isUpdate,
+            currentMapping: { ...imageMapping.value },
+        });
+
         const newMapping = { ...imageMapping.value, [id]: imageData };
+
+        console.log('[useImageManager] New mapping to emit:', newMapping);
+        console.log('[useImageManager] Emitting update:content:effect...');
+
         emit('update:content:effect', { imageMapping: newMapping });
 
         // Emit appropriate event
         const eventName = isUpdate ? 'image:updated' : 'image:added';
+        console.log('[useImageManager] Emitting event:', eventName);
+
         emit('trigger-event', {
             name: eventName,
             event: {
@@ -40,6 +62,8 @@ export function useImageManager(props, emit) {
                 title: imageData.title || '',
             },
         });
+
+        console.log('[useImageManager] setImageData completed');
     };
 
     /**
@@ -96,7 +120,17 @@ export function useImageManager(props, emit) {
      * @param {string} title - Title text
      */
     const updateImageEntry = (id, url, alt = '', title = '') => {
+        console.log('[useImageManager] updateImageEntry called:', {
+            id,
+            url,
+            alt,
+            title,
+            currentMapping: { ...imageMapping.value },
+        });
+
         const existingData = getImageData(id);
+        console.log('[useImageManager] Existing data:', existingData);
+
         const imageData = {
             ...existingData,
             url,
@@ -105,7 +139,12 @@ export function useImageManager(props, emit) {
             updatedAt: new Date().toISOString(),
         };
 
+        console.log('[useImageManager] New image data:', imageData);
+        console.log('[useImageManager] Calling setImageData...');
+
         setImageData(id, imageData, true); // true = isUpdate
+
+        console.log('[useImageManager] After setImageData, mapping:', { ...imageMapping.value });
     };
 
     /**
