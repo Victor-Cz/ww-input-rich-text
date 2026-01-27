@@ -1363,23 +1363,7 @@ export default {
                 console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');
                 return;
             }
-
-            console.log('[updateImageById] Before update:', {
-                imageId,
-                url,
-                currentMapping: { ...this.imageMapping },
-                currentImageData: this.getImageData(imageId),
-            });
-
             this.updateImageEntry(imageId, url, alt, title);
-
-            // Log immédiatement après l'appel (mais l'émission est asynchrone)
-            console.log('[updateImageById] After updateImageEntry call:', {
-                imageId,
-                newUrl: url,
-                mappingAfterCall: { ...this.imageMapping },
-                imageDataAfterCall: this.getImageData(imageId),
-            });
         },
 
         getImageById(imageId) {
