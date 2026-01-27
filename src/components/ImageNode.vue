@@ -2,8 +2,8 @@
     <node-view-wrapper class="image-node-wrapper">
         <!-- Render wwLayout template when useImageLayout is enabled and ID exists -->
         <div v-if="useImageLayout && imageId && imageData && hasImageLayout" class="image-layout">
-            <wwLocalContext elementKey="image" :data="imageContextData">
-                <wwLayout path="imageLayoutElement.content" class="image-template">
+            <wwLocalContext elementKey="image" :data="localContextData">
+                <wwLayout path="templateContent" class="image-template">
                     <template #default="{ item }">
                         <wwLayoutItem>
                             <wwObject v-bind="item" :data-image-id="imageId" />
@@ -57,7 +57,7 @@ export default {
             return this.getImageData(this.imageId);
         },
         imageContextData() {
-            // Prepare data for wwLocalContext
+            // Prepare image data for wwLocalContext
             // This makes the image data available via context.image in the template
             return {
                 imageId: this.imageId,
@@ -65,6 +65,14 @@ export default {
                 alt: this.imageData?.alt || this.node.attrs.alt || '',
                 title: this.imageData?.title || this.node.attrs.title || '',
                 ...this.imageData, // Include any additional metadata
+            };
+        },
+        localContextData() {
+            // Combine image data with template content for wwLocalContext
+            // This makes both accessible in the context
+            return {
+                ...this.imageContextData,
+                templateContent: this.imageLayoutElement?.content || [],
             };
         },
         hasImageLayout() {
