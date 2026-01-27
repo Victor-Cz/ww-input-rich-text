@@ -1,15 +1,9 @@
 <template>
     <node-view-wrapper class="image-node-wrapper">
         <!-- Render wwLayout template when useImageLayout is enabled and ID exists -->
-        <div v-if="useImageLayout && imageId && imageData && hasImageLayout" class="image-layout">
-            <wwLocalContext elementKey="image" :data="localContextData">
-                <wwLayout path="templateContent" class="image-template">
-                    <template #default="{ item }">
-                        <wwLayoutItem>
-                            <wwObject v-bind="item" :data-image-id="imageId" />
-                        </wwLayoutItem>
-                    </template>
-                </wwLayout>
+        <div v-if="useImageLayout && imageId && imageData && layoutElement" class="image-layout">
+            <wwLocalContext elementKey="image" :data="imageContextData">
+                <wwObject v-bind="layoutElement" :data-image-id="imageId" />
             </wwLocalContext>
         </div>
 
@@ -67,19 +61,11 @@ export default {
                 ...this.imageData, // Include any additional metadata
             };
         },
-        localContextData() {
-            // Combine image data with template content for wwLocalContext
-            // This makes both accessible in the context
-            return {
-                ...this.imageContextData,
-                templateContent: this.imageLayoutElement?.content || [],
-            };
-        },
-        hasImageLayout() {
-            // Check if imageLayoutElement has children to render
-            return this.imageLayoutElement &&
-                   this.imageLayoutElement.content &&
-                   this.imageLayoutElement.content.length > 0;
+        // Unwrap the injected computed for imageLayoutElement
+        layoutElement() {
+            // If imageLayoutElement is a computed ref, unwrap it
+            const element = this.imageLayoutElement;
+            return typeof element === 'function' ? element() : element;
         },
     },
 };
