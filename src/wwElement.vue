@@ -906,7 +906,11 @@ export default {
                     Markdown.configure({ breaks: true }),
                     // Use CustomImage if useImageLayout is enabled, otherwise standard Image
                     this.content.useImageLayout
-                        ? CustomImage.configure({ ...this.editorConfig.image })
+                        ? CustomImage.configure({
+                              ...this.editorConfig.image,
+                              createImageEntry: this.createImageEntry,
+                              useImageLayout: true,
+                          })
                         : Image.configure({ ...this.editorConfig.image }),
                     SelectionHighlighter.configure({
                         defaultColor: 'var(--primary-color-33)',

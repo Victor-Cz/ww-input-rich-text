@@ -3,14 +3,24 @@
  * Extends the base Image extension to support:
  * - Hybrid approach: data-image-id attribute + fallback src
  * - Integration with image mapping system
+ * - Auto-generation of IDs for images without IDs when useImageLayout is enabled
  */
 
 import Image from '@tiptap/extension-image';
 import { VueNodeViewRenderer } from '@tiptap/vue-3';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
 import ImageNode from '../components/ImageNode.vue';
 
 export const CustomImage = Image.extend({
     name: 'customImage',
+
+    addOptions() {
+        return {
+            ...this.parent?.(),
+            createImageEntry: null, // Function to create image entry with ID
+            useImageLayout: false, // Whether to use image layout system
+        };
+    },
 
     addNodeView() {
         return VueNodeViewRenderer(ImageNode);
@@ -57,5 +67,53 @@ export const CustomImage = Image.extend({
                 });
             },
         };
+    },
+
+    addProseMirrorPlugins() {
+        const extension = this;
+
+        return [
+            new Plugin({
+                key: new PluginKey('autoImageId'),
+                appendTransaction(transactions, _oldState, newState) {
+                    // Only process if useImageLayout is enabled
+                    if (!extension.options.useImageLayout || !extension.options.createImageEntry) {
+                        return null;
+                    }
+
+                    // Check if any transaction added or modified nodes
+                    const hasChanges = transactions.some(tr => tr.docChanged);
+                    if (!hasChanges) {
+                        return null;
+                    }
+
+                    const tr = newState.tr;
+                    let modified = false;
+
+                    // Traverse all nodes in the document
+                    newState.doc.descendants((node, pos) => {
+                        // Check if it's an image node without an ID
+                        if ((node.type.name === 'image' || node.type.name === 'customImage') && !node.attrs['data-image-id']) {
+                            // Generate ID and create mapping entry
+                            const imageEntry = extension.options.createImageEntry(
+                                node.attrs.src || '',
+                                node.attrs.alt || '',
+                                node.attrs.title || ''
+                            );
+
+                            // Update the node with the new ID
+                            tr.setNodeMarkup(pos, null, {
+                                ...node.attrs,
+                                'data-image-id': imageEntry.id,
+                            });
+
+                            modified = true;
+                        }
+                    });
+
+                    return modified ? tr : null;
+                },
+            }),
+        ];
     },
 });
