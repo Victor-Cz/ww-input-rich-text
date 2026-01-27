@@ -1837,6 +1837,12 @@ export default {
         height: 1.2em;
         width: 0;
         z-index: 99;
+        transform: translateY(3px);
+    }
+
+    /* Décalage du caret quand il est sur une image */
+    .image-node-wrapper .collaboration-cursor__caret {
+        margin-left: 48px;
     }
 
     .collaboration-cursor__label {
