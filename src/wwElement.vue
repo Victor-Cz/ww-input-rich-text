@@ -1839,11 +1839,7 @@ export default {
         z-index: 99;
         transform: translateY(3px);
     }
-
-    /* Décalage du caret quand il est sur une image */
-    .image-node-wrapper .collaboration-cursor__caret {
-        margin-left: 48px;
-    }
+    
 
     .collaboration-cursor__label {
         position: absolute;

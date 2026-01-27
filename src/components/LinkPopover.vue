@@ -10,6 +10,7 @@
 
             <!-- Fallback to default popover -->
             <template v-else>
+                <div class="link-popover__fallback">
                 <div class="link-popover__content">
                     <a
                         :href="linkUrl"
@@ -35,6 +36,7 @@
                     </div>
                 </div>
                 <div class="link-popover__hint">{{ modifierKey }} + Clic pour ouvrir</div>
+                </div>
             </template>
         </div>
     </transition>
@@ -294,6 +296,10 @@ export default {
 
 .link-popover {
     position: fixed;
+    transform: none;
+}
+
+.link-popover__fallback {
     background: white;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
@@ -301,7 +307,6 @@ export default {
     padding: 8px 12px;
     min-width: 200px;
     max-width: 400px;
-    transform: none;
     max-width: 90vw;
 }
 
