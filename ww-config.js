@@ -61,7 +61,10 @@ export default {
             'debounce',
             'debounceDelay',
             'autofocus',
-            ['useTemplates', 'useImageLayout', 'useLinkLayoutPopover'],
+            'useImageTemplates',
+            ['useImageLayout', 'imagePlaceholderUrl'],
+            'useLinkTemplates',
+            ['useLinkLayoutPopover', 'forceLinkPopoverDisplay'],
             [
                 'enableMention',
                 'mentionChar',
@@ -758,11 +761,11 @@ export default {
             type: 'OnOff',
             defaultValue: false,
         },
-        useTemplates: {
+        useImageTemplates: {
             section: 'settings',
             type: 'Title',
             label: {
-                en: 'Template layouts',
+                en: 'Image templates',
             },
             editorOnly: true,
         },
@@ -778,6 +781,26 @@ export default {
                 en: 'Enable to use a custom wwLayout template for images with ID-based mapping. When enabled, images will be stored with unique IDs and rendered using the configured template.',
             },
         },
+        imagePlaceholderUrl: {
+            section: 'settings',
+            label: {
+                en: 'Image placeholder URL',
+            },
+            type: 'Text',
+            bindable: true,
+            defaultValue: '',
+            description: {
+                en: 'URL of the placeholder image to use when inserting empty images. Leave empty to use default SVG placeholder.',
+            },
+        },
+        useLinkTemplates: {
+            section: 'settings',
+            type: 'Title',
+            label: {
+                en: 'Link templates',
+            },
+            editorOnly: true,
+        },
         useLinkLayoutPopover: {
             section: 'settings',
             label: {
@@ -788,6 +811,18 @@ export default {
             bindable: true,
             description: {
                 en: 'Enable to use a custom wwLayout template for the link popover. When enabled, the link popover will be rendered using the configured template instead of the default popover.',
+            },
+        },
+        forceLinkPopoverDisplay: {
+            section: 'settings',
+            label: {
+                en: 'Force link popover display',
+            },
+            type: 'OnOff',
+            defaultValue: false,
+            bindable: true,
+            description: {
+                en: 'Force the link popover to always be displayed, even when editing. Useful for custom link templates.',
             },
         },
         editable: {
@@ -1430,6 +1465,7 @@ export default {
                     style: {
                         default: {
                             width: '100%',
+                            height: '100%',
                         },
                     },
                 },

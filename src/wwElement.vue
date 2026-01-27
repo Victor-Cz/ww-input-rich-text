@@ -370,6 +370,7 @@ export default {
         // Fournir les dépendances pour LinkPopover.vue
         provide('useLinkLayoutPopover', computed(() => props.content.useLinkLayoutPopover || false));
         provide('linkPopoverLayoutElement', computed(() => props.content.linkPopoverLayoutElement));
+        provide('forceLinkPopoverDisplay', computed(() => props.content.forceLinkPopoverDisplay || false));
         provide('triggerLinkEvent', (eventName, eventData) => {
             emit('trigger-event', { name: eventName, event: eventData });
         });
@@ -462,6 +463,7 @@ export default {
                             style: {
                                 default: {
                                     width: '100%',
+                                    height: '100%',
                                 },
                             },
                         },
@@ -483,6 +485,7 @@ export default {
                             style: {
                                 default: {
                                     width: '100%',
+                                    height: '100%',
                                 },
                             },
                         },
@@ -1322,8 +1325,9 @@ export default {
                 return null;
             }
 
-            // Use a placeholder URL or empty data URL for empty image
-            const url = placeholderUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect width="200" height="200" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999" font-family="sans-serif" font-size="14"%3EImage%3C/text%3E%3C/svg%3E';
+            // Use placeholder URL from argument, config, or default SVG
+            const defaultSvg = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect width="200" height="200" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999" font-family="sans-serif" font-size="14"%3EImage%3C/text%3E%3C/svg%3E';
+            const url = placeholderUrl || this.content.imagePlaceholderUrl || defaultSvg;
 
             // Create image entry with placeholder
             const imageEntry = this.createImageEntry(url, '', '');

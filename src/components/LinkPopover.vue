@@ -62,6 +62,10 @@ export default {
             from: 'linkPopoverLayoutElement',
             default: null,
         },
+        forceLinkPopoverDisplay: {
+            from: 'forceLinkPopoverDisplay',
+            default: false,
+        },
         triggerLinkEvent: {
             from: 'triggerLinkEvent',
             default: () => () => {},
@@ -156,6 +160,13 @@ export default {
             }
         },
         handleBlur() {
+            /* wwEditor:start */
+            // Si forceLinkPopoverDisplay est activé, ne pas cacher le popover
+            if (this.forceLinkPopoverDisplay) {
+                return;
+            }
+            /* wwEditor:end */
+
             // Petit délai pour permettre les clics sur le popover
             setTimeout(() => {
                 if (!this.$refs.popover?.contains(document.activeElement)) {
@@ -164,6 +175,13 @@ export default {
             }, 150);
         },
         handleClickOutside(event) {
+            /* wwEditor:start */
+            // Si forceLinkPopoverDisplay est activé, ne pas cacher le popover
+            if (this.forceLinkPopoverDisplay) {
+                return;
+            }
+            /* wwEditor:end */
+
             if (this.$refs.popover && !this.$refs.popover.contains(event.target)) {
                 // Vérifier si le clic est dans l'éditeur sur un lien
                 const clickedLink = event.target.closest('a');
