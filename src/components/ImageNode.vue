@@ -85,6 +85,20 @@ export default {
     max-width: 100%;
 }
 
+/* Reset text styles inside the image layout to allow WeWeb styling */
+.image-layout :deep(*) {
+    /* Reset font styles inherited from the editor */
+    font-family: inherit !important;
+    font-size: inherit !important;
+    font-weight: inherit !important;
+    line-height: inherit !important;
+    color: inherit !important;
+    text-align: inherit !important;
+    /* Reset margins/paddings that might be inherited */
+    margin: revert !important;
+    padding: revert !important;
+}
+
 .fallback-image {
     max-width: var(--img-max-width, 100%);
     max-height: var(--img-max-height, auto);
