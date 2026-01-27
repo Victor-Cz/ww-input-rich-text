@@ -1,31 +1,41 @@
 <template>
     <transition name="link-popover">
         <div v-if="isVisible && linkUrl" class="link-popover" :style="popoverStyle" ref="popover">
-            <div class="link-popover__content">
-                <a
-                    :href="linkUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="link-popover__url"
-                    @click.prevent="openLink"
-                >
-                    {{ truncatedUrl }}
-                </a>
-                <div class="link-popover__actions">
-                    <button type="button" class="link-popover__button" @click="editLink" title="Modifier le lien">
-                        <i class="fas fa-pen"></i>
-                    </button>
-                    <button
-                        type="button"
-                        class="link-popover__button link-popover__button--danger"
-                        @click="removeLink"
-                        title="Supprimer le lien"
-                    >
-                        <i class="fas fa-unlink"></i>
-                    </button>
-                </div>
+            <!-- Render wwLayout template when useLinkLayoutPopover is enabled -->
+            <div v-if="useLinkLayoutPopover && layoutElement" class="link-popover-layout" contenteditable="false">
+                <wwLocalContext elementKey="link" :data="linkContextData">
+                    <wwObject v-bind="layoutElement" />
+                </wwLocalContext>
             </div>
-            <div class="link-popover__hint">{{ modifierKey }} + Clic pour ouvrir</div>
+
+            <!-- Fallback to default popover -->
+            <template v-else>
+                <div class="link-popover__content">
+                    <a
+                        :href="linkUrl"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="link-popover__url"
+                        @click.prevent="openLink"
+                    >
+                        {{ truncatedUrl }}
+                    </a>
+                    <div class="link-popover__actions">
+                        <button type="button" class="link-popover__button" @click="editLink" title="Modifier le lien">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button
+                            type="button"
+                            class="link-popover__button link-popover__button--danger"
+                            @click="removeLink"
+                            title="Supprimer le lien"
+                        >
+                            <i class="fas fa-unlink"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="link-popover__hint">{{ modifierKey }} + Clic pour ouvrir</div>
+            </template>
         </div>
     </transition>
 </template>
@@ -43,6 +53,20 @@ export default {
             default: 40,
         },
     },
+    inject: {
+        useLinkLayoutPopover: {
+            from: 'useLinkLayoutPopover',
+            default: false,
+        },
+        linkPopoverLayoutElement: {
+            from: 'linkPopoverLayoutElement',
+            default: null,
+        },
+        triggerLinkEvent: {
+            from: 'triggerLinkEvent',
+            default: () => () => {},
+        },
+    },
     data() {
         return {
             isVisible: false,
@@ -52,6 +76,20 @@ export default {
         };
     },
     computed: {
+        linkContextData() {
+            // Prepare link data for wwLocalContext
+            // This makes the link data available via context.link in the template
+            return {
+                url: this.linkUrl || '',
+                truncatedUrl: this.truncatedUrl,
+                modifierKey: this.modifierKey,
+            };
+        },
+        layoutElement() {
+            // If linkPopoverLayoutElement is a computed ref, unwrap it
+            const element = this.linkPopoverLayoutElement;
+            return typeof element === 'function' ? element() : element;
+        },
         truncatedUrl() {
             if (!this.linkUrl) return '';
             if (this.linkUrl.length <= this.maxUrlLength) return this.linkUrl;
@@ -173,10 +211,18 @@ export default {
         openLink() {
             if (this.linkUrl) {
                 window.open(this.linkUrl, '_blank', 'noopener,noreferrer');
+
+                // Emit event
+                this.triggerLinkEvent('link:opened', {
+                    url: this.linkUrl,
+                });
             }
         },
-        editLink() {
-            const newUrl = window.prompt('Modifier le lien:', this.linkUrl);
+        editLink(newUrl = null) {
+            // If no URL provided, prompt for it
+            if (newUrl === null) {
+                newUrl = window.prompt('Modifier le lien:', this.linkUrl);
+            }
 
             if (newUrl === null) return; // Annulé
 
@@ -186,16 +232,31 @@ export default {
                 return;
             }
 
+            const oldUrl = this.linkUrl;
+
             // Mettre à jour le lien
             this.editor.chain().focus().extendMarkRange('link').setLink({ href: newUrl }).run();
 
             this.linkUrl = newUrl;
+
+            // Emit event
+            this.triggerLinkEvent('link:edited', {
+                oldUrl,
+                newUrl,
+            });
         },
         removeLink() {
+            const removedUrl = this.linkUrl;
+
             this.editor.chain().focus().extendMarkRange('link').unsetLink().run();
 
             this.isVisible = false;
             this.linkUrl = null;
+
+            // Emit event
+            this.triggerLinkEvent('link:removed', {
+                url: removedUrl,
+            });
         },
     },
 };

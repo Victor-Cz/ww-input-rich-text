@@ -22,7 +22,7 @@ export default {
             en: 'Rich text',
         },
         navigator: {
-            groups: ['Menu', 'Image'],
+            groups: ['Menu', 'Image', 'Link'],
         },
         customStylePropertiesOrder: [
             'customMenu',
@@ -61,9 +61,9 @@ export default {
             'debounce',
             'debounceDelay',
             'autofocus',
-            'useImageLayout',
-            'enableMention',
+            ['useTemplates', 'useImageLayout', 'useLinkLayoutPopover'],
             [
+                'enableMention',
                 'mentionChar',
                 'mentionAllowSpaces',
                 'mentionListLength',
@@ -218,6 +218,29 @@ export default {
             label: { en: 'On image removed' },
             event: {
                 imageId: '',
+            },
+        },
+        // Link Popover events
+        {
+            name: 'link:opened',
+            label: { en: 'On link opened' },
+            event: {
+                url: '',
+            },
+        },
+        {
+            name: 'link:edited',
+            label: { en: 'On link edited' },
+            event: {
+                oldUrl: '',
+                newUrl: '',
+            },
+        },
+        {
+            name: 'link:removed',
+            label: { en: 'On link removed' },
+            event: {
+                url: '',
             },
         },
     ],
@@ -471,6 +494,30 @@ export default {
             action: 'getAllImagesMapping',
             returnType: 'Object',
         },
+        // Link Popover actions
+        {
+            label: 'Open Current Link',
+            action: 'openCurrentLink',
+        },
+        {
+            label: 'Edit Current Link',
+            action: 'editCurrentLink',
+            args: [
+                {
+                    name: 'New URL',
+                    type: 'Text',
+                },
+            ],
+        },
+        {
+            label: 'Remove Current Link',
+            action: 'removeCurrentLink',
+        },
+        {
+            label: 'Get Current Link URL',
+            action: 'getCurrentLinkUrl',
+            returnType: 'String',
+        },
     ],
     properties: {
         readonly: {
@@ -711,6 +758,14 @@ export default {
             type: 'OnOff',
             defaultValue: false,
         },
+        useTemplates: {
+            section: 'settings',
+            type: 'Title',
+            label: {
+                en: 'Template layouts',
+            },
+            editorOnly: true,
+        },
         useImageLayout: {
             section: 'settings',
             label: {
@@ -721,6 +776,18 @@ export default {
             bindable: true,
             description: {
                 en: 'Enable to use a custom wwLayout template for images with ID-based mapping. When enabled, images will be stored with unique IDs and rendered using the configured template.',
+            },
+        },
+        useLinkLayoutPopover: {
+            section: 'settings',
+            label: {
+                en: 'Use link layout popover',
+            },
+            type: 'OnOff',
+            defaultValue: false,
+            bindable: true,
+            description: {
+                en: 'Enable to use a custom wwLayout template for the link popover. When enabled, the link popover will be rendered using the configured template instead of the default popover.',
             },
         },
         editable: {
@@ -1376,6 +1443,25 @@ export default {
             hidden: true,
             defaultValue: {},
             bindable: true,
+        },
+        linkPopoverLayoutElement: {
+            hidden: true,
+            defaultValue: {
+                isWwObject: true,
+                type: 'ww-flexbox',
+                state: {
+                    name: 'Link popover template',
+                    style: {
+                        default: {
+                            width: '100%',
+                        },
+                    },
+                },
+            },
+            navigator: {
+                group: 'LinkPopover',
+                hidden: content => !content.useLinkLayoutPopover,
+            },
         },
         table: {
             type: 'Object',

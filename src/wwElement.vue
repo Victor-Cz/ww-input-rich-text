@@ -201,6 +201,7 @@
                 <link-popover
                     v-if="richEditor"
                     :editor="richEditor"
+                    ref="linkPopover"
                 />
 
                 <!-- Utilisation du composant AiMenu personnalisé -->
@@ -366,6 +367,13 @@ export default {
         provide('imageLayoutElement', computed(() => props.content.imageLayoutElement));
         provide('getImageData', imageManager.getImageData);
 
+        // Fournir les dépendances pour LinkPopover.vue
+        provide('useLinkLayoutPopover', computed(() => props.content.useLinkLayoutPopover || false));
+        provide('linkPopoverLayoutElement', computed(() => props.content.linkPopoverLayoutElement));
+        provide('triggerLinkEvent', (eventName, eventData) => {
+            emit('trigger-event', { name: eventName, event: eventData });
+        });
+
         return {
             variableValue,
             setValue,
@@ -460,6 +468,27 @@ export default {
                     });
                     this.$emit('update:content:effect', {
                         imageLayoutElement: element,
+                    });
+                }
+            },
+            immediate: true,
+        },
+        // Auto-create linkPopoverLayoutElement when useLinkLayoutPopover is enabled
+        'content.useLinkLayoutPopover': {
+            async handler(value) {
+                if (value && !this.content.linkPopoverLayoutElement) {
+                    const element = await this.createElement('ww-flexbox', {
+                        _state: {
+                            name: 'Link popover template',
+                            style: {
+                                default: {
+                                    width: '100%',
+                                },
+                            },
+                        },
+                    });
+                    this.$emit('update:content:effect', {
+                        linkPopoverLayoutElement: element,
                     });
                 }
             },
@@ -1337,6 +1366,39 @@ export default {
                 return {};
             }
             return this.imageMapping;
+        },
+
+        // Link Popover actions
+        openCurrentLink() {
+            if (!this.$refs.linkPopover) {
+                console.warn('Link popover is not available.');
+                return;
+            }
+            this.$refs.linkPopover.openLink();
+        },
+
+        editCurrentLink(newUrl) {
+            if (!this.$refs.linkPopover) {
+                console.warn('Link popover is not available.');
+                return;
+            }
+            this.$refs.linkPopover.editLink(newUrl);
+        },
+
+        removeCurrentLink() {
+            if (!this.$refs.linkPopover) {
+                console.warn('Link popover is not available.');
+                return;
+            }
+            this.$refs.linkPopover.removeLink();
+        },
+
+        getCurrentLinkUrl() {
+            if (!this.$refs.linkPopover) {
+                console.warn('Link popover is not available.');
+                return null;
+            }
+            return this.$refs.linkPopover.linkUrl;
         },
     },
     mounted() {
