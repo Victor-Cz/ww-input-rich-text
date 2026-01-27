@@ -1,7 +1,7 @@
 <template>
     <node-view-wrapper class="image-node-wrapper">
         <!-- Render wwLayout template when useImageLayout is enabled -->
-        <div v-if="useImageLayout && layoutElement" class="image-layout">
+        <div v-if="useImageLayout && layoutElement" class="image-layout" contenteditable="false">
             <wwLocalContext elementKey="image" :data="imageContextData">
                 <wwObject v-bind="layoutElement" :data-image-id="imageId" />
             </wwLocalContext>
