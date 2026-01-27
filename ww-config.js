@@ -1455,11 +1455,6 @@ export default {
                 hidden: content => !content.useImageLayout,
             },
         },
-        imageMapping: {
-            hidden: true,
-            defaultValue: {},
-            bindable: true,
-        },
         linkPopoverLayoutElement: {
             hidden: true,
             defaultValue: null,

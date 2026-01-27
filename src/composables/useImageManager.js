@@ -1,221 +1,164 @@
 /**
- * Composable for managing image IDs and mapping in the rich text editor
- * Implements hybrid approach: stores both ID (data-image-id) and fallback URL (src)
- * Uses optimistic updates: local state updates immediately, then syncs with props
+ * Image management utilities for TipTap rich text editor
+ * Provides functions to manipulate images directly in the document
  */
 
-import { ref, watch } from 'vue';
+/**
+ * Generate a unique ID for an image
+ * Format: img_timestamp_random
+ */
+export function generateImageId() {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 9);
+    return `img_${timestamp}_${random}`;
+}
 
-export function useImageManager(props, emit) {
-    // Local reactive reference for optimistic updates
-    // This updates immediately, before props are propagated by WeWeb
-    const imageMapping = ref(props.content.imageMapping || {});
+/**
+ * Update an image by ID in the TipTap document
+ * @param {Editor} editor - TipTap editor instance
+ * @param {string} imageId - Image ID to update
+ * @param {string} url - New image URL
+ * @param {string} alt - Alt text
+ * @param {string} title - Title text
+ * @returns {boolean} True if image was found and updated
+ */
+export function updateImageById(editor, imageId, url, alt = '', title = '') {
+    if (!editor) return false;
 
-    // Sync with props when they change (from WeWeb)
-    watch(
-        () => props.content.imageMapping,
-        (newValue) => {
-            // Update local state when props change
-            imageMapping.value = newValue || {};
-        },
-        { deep: true }
-    );
+    const { state, view } = editor;
+    const { tr } = state;
+    let updated = false;
 
-    /**
-     * Generate a unique ID for an image
-     * Format: img_timestamp_random
-     */
-    const generateImageId = () => {
-        const timestamp = Date.now();
-        const random = Math.random().toString(36).substring(2, 9);
-        return `img_${timestamp}_${random}`;
-    };
-
-    /**
-     * Add or update an image in the mapping
-     * @param {string} id - Image ID
-     * @param {Object} imageData - Image data (url, alt, title, etc.)
-     * @param {boolean} isUpdate - Whether this is an update (true) or new entry (false)
-     */
-    const setImageData = (id, imageData, isUpdate = false) => {
-        const newMapping = { ...imageMapping.value, [id]: imageData };
-
-        // OPTIMISTIC UPDATE: Update local state immediately
-        imageMapping.value = newMapping;
-
-        // Emit to WeWeb (will update props asynchronously)
-        emit('update:content:effect', { imageMapping: newMapping });
-
-        // Emit appropriate event
-        const eventName = isUpdate ? 'image:updated' : 'image:added';
-        emit('trigger-event', {
-            name: eventName,
-            event: {
-                imageId: id,
-                url: imageData.url,
-                alt: imageData.alt || '',
-                title: imageData.title || '',
-            },
-        });
-    };
-
-    /**
-     * Get image data from the mapping
-     * @param {string} id - Image ID
-     * @returns {Object|null} Image data or null if not found
-     */
-    const getImageData = (id) => {
-        return imageMapping.value[id] || null;
-    };
-
-    /**
-     * Remove an image from the mapping
-     * @param {string} id - Image ID
-     */
-    const removeImageData = (id) => {
-        const newMapping = { ...imageMapping.value };
-        delete newMapping[id];
-
-        // OPTIMISTIC UPDATE: Update local state immediately
-        imageMapping.value = newMapping;
-
-        // Emit to WeWeb
-        emit('update:content:effect', { imageMapping: newMapping });
-
-        // Emit event
-        emit('trigger-event', {
-            name: 'image:removed',
-            event: { imageId: id },
-        });
-    };
-
-    /**
-     * Create a new image entry with ID
-     * @param {string} url - Image URL (fallback)
-     * @param {string} alt - Alt text
-     * @param {string} title - Title text
-     * @returns {Object} Image object with id and attributes
-     */
-    const createImageEntry = (url, alt = '', title = '') => {
-        const id = generateImageId();
-        const imageData = { url, alt, title, createdAt: new Date().toISOString() };
-
-        setImageData(id, imageData);
-
-        return {
-            id,
-            src: url, // Fallback URL
-            alt,
-            title,
-        };
-    };
-
-    /**
-     * Update an existing image entry
-     * @param {string} id - Image ID
-     * @param {string} url - New image URL
-     * @param {string} alt - Alt text
-     * @param {string} title - Title text
-     */
-    const updateImageEntry = (id, url, alt = '', title = '') => {
-        const existingData = getImageData(id);
-        const imageData = {
-            ...existingData,
-            url,
-            alt,
-            title,
-            updatedAt: new Date().toISOString(),
-        };
-
-        setImageData(id, imageData, true); // true = isUpdate
-    };
-
-    /**
-     * Extract image ID from HTML when pasting content with images
-     * This helps maintain IDs when copy-pasting content
-     * @param {string} html - HTML content
-     * @returns {Array} Array of { id, url, alt, title }
-     */
-    const extractImageIdsFromHtml = (html) => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const images = doc.querySelectorAll('img[data-image-id]');
-
-        return Array.from(images).map(img => ({
-            id: img.getAttribute('data-image-id'),
-            url: img.getAttribute('src') || '',
-            alt: img.getAttribute('alt') || '',
-            title: img.getAttribute('title') || '',
-        }));
-    };
-
-    /**
-     * Import images from HTML and create missing mappings
-     * @param {string} html - HTML content
-     */
-    const importImagesFromHtml = (html) => {
-        const extractedImages = extractImageIdsFromHtml(html);
-
-        extractedImages.forEach(({ id, url, alt, title }) => {
-            // Only create mapping if it doesn't exist
-            if (!getImageData(id)) {
-                setImageData(id, {
-                    url,
-                    alt,
-                    title,
-                    importedAt: new Date().toISOString(),
-                });
-            }
-        });
-    };
-
-    /**
-     * Clean up orphaned image entries (IDs that are no longer in the document)
-     * @param {Object} editorContent - TipTap editor JSON content
-     */
-    const cleanupOrphanedImages = (editorContent) => {
-        if (!editorContent || !editorContent.content) return;
-
-        // Collect all image IDs currently in the document
-        const activeIds = new Set();
-
-        const traverse = (node) => {
-            if (node.type === 'image' && node.attrs && node.attrs['data-image-id']) {
-                activeIds.add(node.attrs['data-image-id']);
-            }
-            if (node.content) {
-                node.content.forEach(traverse);
-            }
-        };
-
-        editorContent.content.forEach(traverse);
-
-        // Remove mappings for IDs not in the document
-        const currentIds = Object.keys(imageMapping.value);
-        const orphanedIds = currentIds.filter(id => !activeIds.has(id));
-
-        if (orphanedIds.length > 0) {
-            const newMapping = { ...imageMapping.value };
-            orphanedIds.forEach(id => delete newMapping[id]);
-
-            // OPTIMISTIC UPDATE: Update local state immediately
-            imageMapping.value = newMapping;
-
-            // Emit to WeWeb
-            emit('update:content:effect', { imageMapping: newMapping });
+    // Traverse the document to find the image with matching data-image-id
+    state.doc.descendants((node, pos) => {
+        if ((node.type.name === 'image' || node.type.name === 'customImage') &&
+            node.attrs['data-image-id'] === imageId) {
+            // Update the image attributes
+            tr.setNodeMarkup(pos, null, {
+                ...node.attrs,
+                src: url,
+                alt: alt || node.attrs.alt,
+                title: title || node.attrs.title,
+            });
+            updated = true;
+            return false; // Stop traversing
         }
-    };
+    });
 
-    return {
-        imageMapping,
-        generateImageId,
-        setImageData,
-        getImageData,
-        removeImageData,
-        createImageEntry,
-        updateImageEntry,
-        extractImageIdsFromHtml,
-        importImagesFromHtml,
-        cleanupOrphanedImages,
-    };
+    // Apply the transaction if we found and updated the image
+    if (updated) {
+        view.dispatch(tr);
+    }
+
+    return updated;
+}
+
+/**
+ * Get image data by ID from the TipTap document
+ * @param {Editor} editor - TipTap editor instance
+ * @param {string} imageId - Image ID to find
+ * @returns {Object|null} Image data or null if not found
+ */
+export function getImageById(editor, imageId) {
+    if (!editor) return null;
+
+    let imageData = null;
+
+    editor.state.doc.descendants((node) => {
+        if ((node.type.name === 'image' || node.type.name === 'customImage') &&
+            node.attrs['data-image-id'] === imageId) {
+            imageData = {
+                imageId: node.attrs['data-image-id'],
+                url: node.attrs.src || '',
+                alt: node.attrs.alt || '',
+                title: node.attrs.title || '',
+            };
+            return false; // Stop traversing
+        }
+    });
+
+    return imageData;
+}
+
+/**
+ * Remove image by ID (clear its URL) in the TipTap document
+ * @param {Editor} editor - TipTap editor instance
+ * @param {string} imageId - Image ID to remove
+ * @returns {boolean} True if image was found and cleared
+ */
+export function removeImageById(editor, imageId) {
+    if (!editor) return false;
+
+    const { state, view } = editor;
+    const { tr } = state;
+    let updated = false;
+
+    // Traverse the document to find the image with matching data-image-id
+    state.doc.descendants((node, pos) => {
+        if ((node.type.name === 'image' || node.type.name === 'customImage') &&
+            node.attrs['data-image-id'] === imageId) {
+            // Clear the src attribute
+            tr.setNodeMarkup(pos, null, {
+                ...node.attrs,
+                src: '',
+            });
+            updated = true;
+            return false; // Stop traversing
+        }
+    });
+
+    // Apply the transaction if we found and updated the image
+    if (updated) {
+        view.dispatch(tr);
+    }
+
+    return updated;
+}
+
+/**
+ * Get all images from the TipTap document
+ * @param {Editor} editor - TipTap editor instance
+ * @returns {Object} Object mapping image IDs to image data
+ */
+export function getAllImages(editor) {
+    if (!editor) return {};
+
+    const images = {};
+
+    editor.state.doc.descendants((node) => {
+        if ((node.type.name === 'image' || node.type.name === 'customImage') &&
+            node.attrs['data-image-id']) {
+            const imageId = node.attrs['data-image-id'];
+            images[imageId] = {
+                imageId,
+                url: node.attrs.src || '',
+                alt: node.attrs.alt || '',
+                title: node.attrs.title || '',
+            };
+        }
+    });
+
+    return images;
+}
+
+/**
+ * Insert an empty image placeholder into the editor
+ * @param {Editor} editor - TipTap editor instance
+ * @returns {string|null} The generated image ID or null if failed
+ */
+export function insertEmptyImage(editor) {
+    if (!editor) return null;
+
+    // Generate a unique ID
+    const imageId = generateImageId();
+
+    // Insert into editor with empty URL
+    editor.commands.setImageWithId({
+        src: '',
+        dataImageId: imageId,
+        alt: '',
+        title: '',
+    });
+
+    return imageId;
 }

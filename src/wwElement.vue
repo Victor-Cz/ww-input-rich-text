@@ -239,7 +239,7 @@ import TableCell from '@tiptap/extension-table-cell';
 import { computed, inject, provide } from 'vue';
 import suggestion from './suggestion.js';
 import { useCollaboration } from './composables/useCollaboration.js';
-import { useImageManager } from './composables/useImageManager.js';
+import * as ImageManager from './composables/useImageManager.js';
 import { Markdown } from 'tiptap-markdown';
 import TableIcon from './icons/table-icon.vue';
 
@@ -337,13 +337,6 @@ export default {
             readonly: true,
         });
 
-        const { value: imageMappingState, setValue: setImageMappingState } = wwLib.wwVariable.useComponentVariable({
-            uid: props.uid,
-            name: 'imageMapping',
-            type: 'object',
-            defaultValue: {},
-            readonly: true,
-        });
 
         /* wwEditor:start */
         const { createElement } = wwLib.useCreateElement();
@@ -366,9 +359,6 @@ export default {
         // Initialiser la collaboration
         const contentRef = computed(() => props.content);
         const collaboration = useCollaboration(props, contentRef, emit, setCollaborationStatus);
-
-        // Initialiser le gestionnaire d'images
-        const imageManager = useImageManager(props, emit);
 
         // Fournir les dépendances pour ImageNode.vue
         provide('useImageLayout', computed(() => props.content.useImageLayout || false));
@@ -393,16 +383,12 @@ export default {
             setPendingChangesCount,
             collaborationStatus,
             setCollaborationStatus,
-            imageMappingState,
-            setImageMappingState,
             randomUid,
             /* wwEditor:start */
             createElement,
             /* wwEditor:end */
             // Collaboration
             ...collaboration,
-            // Image manager
-            ...imageManager,
         };
     },
     data: () => ({
@@ -525,14 +511,6 @@ export default {
             immediate: true,
             handler(value) {
                 this.setStates(value);
-            },
-        },
-        // Watcher pour le mapping d'images
-        imageMapping: {
-            deep: true,
-            immediate: true,
-            handler(value) {
-                this.setImageMappingState(value);
             },
         },
         // Watchers de collaboration
@@ -928,7 +906,7 @@ export default {
                     this.content.useImageLayout
                         ? CustomImage.configure({
                               ...this.editorConfig.image,
-                              createImageEntry: this.createImageEntry,
+                              generateImageId: ImageManager.generateImageId,
                               useImageLayout: true,
                           })
                         : Image.configure({ ...this.editorConfig.image }),
@@ -1153,12 +1131,12 @@ export default {
             if (this.content.useImageLayout) {
                 if (this.content.customMenu) {
                     // Custom menu provides the src, alt, title
-                    const imageEntry = this.createImageEntry(src, alt, title);
+                    const imageId = ImageManager.generateImageId();
                     this.richEditor.commands.setImageWithId({
-                        src: imageEntry.src,
-                        dataImageId: imageEntry.id,
-                        alt: imageEntry.alt,
-                        title: imageEntry.title,
+                        src: src,
+                        dataImageId: imageId,
+                        alt: alt,
+                        title: title,
                     });
                 } else {
                     // Prompt for URL (editor mode)
@@ -1172,12 +1150,12 @@ export default {
 
                     if (!url) return;
 
-                    const imageEntry = this.createImageEntry(url, alt, title);
+                    const imageId = ImageManager.generateImageId();
                     this.richEditor.commands.setImageWithId({
-                        src: imageEntry.src,
-                        dataImageId: imageEntry.id,
-                        alt: imageEntry.alt,
-                        title: imageEntry.title,
+                        src: url,
+                        dataImageId: imageId,
+                        alt: alt,
+                        title: title,
                     });
                 }
             } else {
@@ -1341,20 +1319,7 @@ export default {
                 console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');
                 return null;
             }
-
-            // Create image entry with empty URL
-            const imageEntry = this.createImageEntry('', '', '');
-
-            // Insert into editor
-            this.richEditor.commands.setImageWithId({
-                src: imageEntry.src,
-                dataImageId: imageEntry.id,
-                alt: imageEntry.alt,
-                title: imageEntry.title,
-            });
-
-            // Return the ID so the user can update it later
-            return imageEntry.id;
+            return ImageManager.insertEmptyImage(this.richEditor);
         },
 
         updateImageById(imageId, url, alt = '', title = '') {
@@ -1362,38 +1327,7 @@ export default {
                 console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');
                 return;
             }
-
-            // Update the mapping
-            this.updateImageEntry(imageId, url, alt, title);
-
-            // Update the image node in the TipTap document
-            if (this.richEditor) {
-                const { state, view } = this.richEditor;
-                const { tr } = state;
-                let updated = false;
-
-                // Traverse the document to find the image with matching data-image-id
-                state.doc.descendants((node, pos) => {
-                    // Check for both 'image' and 'customImage' node types
-                    if ((node.type.name === 'image' || node.type.name === 'customImage') &&
-                        node.attrs['data-image-id'] === imageId) {
-                        // Update the image attributes
-                        tr.setNodeMarkup(pos, null, {
-                            ...node.attrs,
-                            src: url,
-                            alt: alt || node.attrs.alt,
-                            title: title || node.attrs.title,
-                        });
-                        updated = true;
-                        return false; // Stop traversing
-                    }
-                });
-
-                // Apply the transaction if we found and updated the image
-                if (updated) {
-                    view.dispatch(tr);
-                }
-            }
+            ImageManager.updateImageById(this.richEditor, imageId, url, alt, title);
         },
 
         getImageById(imageId) {
@@ -1401,7 +1335,7 @@ export default {
                 console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');
                 return null;
             }
-            return this.getImageData(imageId);
+            return ImageManager.getImageById(this.richEditor, imageId);
         },
 
         removeImageById(imageId) {
@@ -1409,7 +1343,7 @@ export default {
                 console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');
                 return;
             }
-            this.removeImageData(imageId);
+            ImageManager.removeImageById(this.richEditor, imageId);
         },
 
         getAllImagesMapping() {
@@ -1417,7 +1351,7 @@ export default {
                 console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');
                 return {};
             }
-            return this.imageMapping;
+            return ImageManager.getAllImages(this.richEditor);
         },
 
         // Link Popover actions

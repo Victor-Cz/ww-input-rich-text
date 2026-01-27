@@ -17,7 +17,7 @@ export const CustomImage = Image.extend({
     addOptions() {
         return {
             ...this.parent?.(),
-            createImageEntry: null, // Function to create image entry with ID
+            generateImageId: null, // Function to generate unique image ID
             useImageLayout: false, // Whether to use image layout system
         };
     },
@@ -77,7 +77,7 @@ export const CustomImage = Image.extend({
                 key: new PluginKey('autoImageId'),
                 appendTransaction(transactions, _oldState, newState) {
                     // Only process if useImageLayout is enabled
-                    if (!extension.options.useImageLayout || !extension.options.createImageEntry) {
+                    if (!extension.options.useImageLayout || !extension.options.generateImageId) {
                         return null;
                     }
 
@@ -94,17 +94,13 @@ export const CustomImage = Image.extend({
                     newState.doc.descendants((node, pos) => {
                         // Check if it's an image node without an ID
                         if ((node.type.name === 'image' || node.type.name === 'customImage') && !node.attrs['data-image-id']) {
-                            // Generate ID and create mapping entry
-                            const imageEntry = extension.options.createImageEntry(
-                                node.attrs.src || '',
-                                node.attrs.alt || '',
-                                node.attrs.title || ''
-                            );
+                            // Generate unique ID
+                            const imageId = extension.options.generateImageId();
 
                             // Update the node with the new ID
                             tr.setNodeMarkup(pos, null, {
                                 ...node.attrs,
-                                'data-image-id': imageEntry.id,
+                                'data-image-id': imageId,
                             });
 
                             modified = true;
