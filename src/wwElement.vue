@@ -1319,18 +1319,14 @@ export default {
         },
 
         // Image Layout actions
-        insertEmptyImage(placeholderUrl = '') {
+        insertEmptyImage() {
             if (!this.content.useImageLayout) {
                 console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');
                 return null;
             }
 
-            // Use placeholder URL from argument, config, or default SVG
-            const defaultSvg = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect width="200" height="200" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999" font-family="sans-serif" font-size="14"%3EImage%3C/text%3E%3C/svg%3E';
-            const url = placeholderUrl || this.content.imagePlaceholderUrl || defaultSvg;
-
-            // Create image entry with placeholder
-            const imageEntry = this.createImageEntry(url, '', '');
+            // Create image entry with empty URL
+            const imageEntry = this.createImageEntry('', '', '');
 
             // Insert into editor
             this.richEditor.commands.setImageWithId({

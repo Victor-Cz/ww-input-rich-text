@@ -61,10 +61,8 @@ export default {
             'debounce',
             'debounceDelay',
             'autofocus',
-            'useImageTemplates',
-            ['useImageLayout', 'imagePlaceholderUrl'],
-            'useLinkTemplates',
-            ['useLinkLayoutPopover', 'forceLinkPopoverDisplay'],
+            ['useImageTemplates', 'useImageLayout'],
+            ['useLinkTemplates', 'useLinkLayoutPopover', 'forceLinkPopoverDisplay'],
             [
                 'enableMention',
                 'mentionChar',
@@ -441,12 +439,6 @@ export default {
         {
             label: 'Insert Empty Image',
             action: 'insertEmptyImage',
-            args: [
-                {
-                    name: 'Placeholder URL (optional)',
-                    type: 'Text',
-                },
-            ],
             returnType: 'String', // Returns the generated image ID
         },
         {
@@ -779,18 +771,6 @@ export default {
             bindable: true,
             description: {
                 en: 'Enable to use a custom wwLayout template for images with ID-based mapping. When enabled, images will be stored with unique IDs and rendered using the configured template.',
-            },
-        },
-        imagePlaceholderUrl: {
-            section: 'settings',
-            label: {
-                en: 'Image placeholder URL',
-            },
-            type: 'Text',
-            bindable: true,
-            defaultValue: '',
-            description: {
-                en: 'URL of the placeholder image to use when inserting empty images. Leave empty to use default SVG placeholder.',
             },
         },
         useLinkTemplates: {
