@@ -71,8 +71,7 @@ export default {
 };
 </script>
 
-<style>
-/* Remove scoped to allow WeWeb styles to properly apply */
+<style scoped>
 .image-node-wrapper {
     display: inline-block;
 }
@@ -83,16 +82,5 @@ export default {
 
 .fallback-image {
     display: inline-block;
-}
-
-/* Reset ProseMirror styles for WeWeb elements inside image layout */
-.ProseMirror .image-layout .ww-element {
-    all: unset;
-    display: revert;
-}
-
-.ProseMirror .image-layout .ww-text {
-    all: unset;
-    display: revert;
 }
 </style>
