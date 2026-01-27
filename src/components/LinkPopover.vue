@@ -199,13 +199,6 @@ export default {
 
             if (linkElement && this.$refs.popover) {
                 const rect = linkElement.getBoundingClientRect();
-
-                // Cacher le popover si le lien n'est plus visible dans le viewport
-                if (rect.top < 0 || rect.bottom > window.innerHeight || rect.left < 0 || rect.right > window.innerWidth) {
-                    this.isVisible = false;
-                    return;
-                }
-
                 const popoverWidth = this.$refs.popover.offsetWidth;
                 const screenMargin = 20;
 
@@ -301,7 +294,6 @@ export default {
 
 .link-popover {
     position: fixed;
-    z-index: 100;
     background: white;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
