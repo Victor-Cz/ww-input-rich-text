@@ -1,7 +1,10 @@
 <template>
     <node-view-wrapper class="image-node-wrapper">
-        <!-- Render wwLayout template when useImageLayout is enabled and ID exists -->
-        <div v-if="useImageLayout && imageId && imageData && layoutElement" class="image-layout">
+        <!-- Debug info (remove after testing) -->
+        <!-- {{ `useImageLayout: ${useImageLayout}, imageId: ${imageId}, hasData: ${!!imageData}, hasLayout: ${!!layoutElement}` }} -->
+
+        <!-- Render wwLayout template when useImageLayout is enabled -->
+        <div v-if="useImageLayout && layoutElement" class="image-layout">
             <wwLocalContext elementKey="image" :data="imageContextData">
                 <wwObject v-bind="layoutElement" :data-image-id="imageId" />
             </wwLocalContext>
