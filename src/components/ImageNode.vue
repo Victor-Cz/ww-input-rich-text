@@ -1,8 +1,5 @@
 <template>
     <node-view-wrapper class="image-node-wrapper">
-        <!-- Debug info (remove after testing) -->
-        <!-- {{ `useImageLayout: ${useImageLayout}, imageId: ${imageId}, hasData: ${!!imageData}, hasLayout: ${!!layoutElement}` }} -->
-
         <!-- Render wwLayout template when useImageLayout is enabled -->
         <div v-if="useImageLayout && layoutElement" class="image-layout">
             <wwLocalContext elementKey="image" :data="imageContextData">
@@ -83,20 +80,6 @@ export default {
 .image-layout {
     display: inline-block;
     max-width: 100%;
-}
-
-/* Reset text styles inside the image layout to allow WeWeb styling */
-.image-layout :deep(*) {
-    /* Reset font styles inherited from the editor */
-    font-family: inherit !important;
-    font-size: inherit !important;
-    font-weight: inherit !important;
-    line-height: inherit !important;
-    color: inherit !important;
-    text-align: inherit !important;
-    /* Reset margins/paddings that might be inherited */
-    margin: revert !important;
-    padding: revert !important;
 }
 
 .fallback-image {
