@@ -1830,15 +1830,13 @@ export default {
 
     /* Styles des curseurs de collaboration */
     .collaboration-cursor__caret {
-        position: relative;
-        margin-left: -1px;
-        margin-right: -1px;
+        position: absolute;
         border-left: 2px solid;
         border-right: none;
-        word-break: normal;
         pointer-events: none;
         height: 1.2em;
-        display: inline-block;
+        width: 0;
+        z-index: 99;
     }
 
     .collaboration-cursor__label {
