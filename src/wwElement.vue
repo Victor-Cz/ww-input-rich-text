@@ -1283,6 +1283,30 @@ export default {
         },
 
         // Image Layout actions
+        insertEmptyImage(placeholderUrl = '') {
+            if (!this.content.useImageLayout) {
+                console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');
+                return null;
+            }
+
+            // Use a placeholder URL or empty data URL for empty image
+            const url = placeholderUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect width="200" height="200" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999" font-family="sans-serif" font-size="14"%3EImage%3C/text%3E%3C/svg%3E';
+
+            // Create image entry with placeholder
+            const imageEntry = this.createImageEntry(url, '', '');
+
+            // Insert into editor
+            this.richEditor.commands.setImageWithId({
+                src: imageEntry.src,
+                dataImageId: imageEntry.id,
+                alt: imageEntry.alt,
+                title: imageEntry.title,
+            });
+
+            // Return the ID so the user can update it later
+            return imageEntry.id;
+        },
+
         updateImageById(imageId, url, alt = '', title = '') {
             if (!this.content.useImageLayout) {
                 console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');

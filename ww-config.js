@@ -413,6 +413,17 @@ export default {
         },
         // Image Layout actions
         {
+            label: 'Insert Empty Image',
+            action: 'insertEmptyImage',
+            args: [
+                {
+                    name: 'Placeholder URL (optional)',
+                    type: 'Text',
+                },
+            ],
+            returnType: 'String', // Returns the generated image ID
+        },
+        {
             label: 'Update Image by ID',
             action: 'updateImageById',
             args: [
