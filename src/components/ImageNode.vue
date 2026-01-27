@@ -73,11 +73,11 @@ export default {
 
 <style scoped>
 .image-node-wrapper {
-    display: inline-block;
+    display: block;
 }
 
 .image-layout {
-    display: inline-block;
+    display: block;
 }
 
 .fallback-image {
