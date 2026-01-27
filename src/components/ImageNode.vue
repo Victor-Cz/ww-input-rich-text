@@ -80,6 +80,14 @@ export default {
 .image-layout {
     display: inline-block;
     max-width: 100%;
+    /* Isolate from editor styles */
+    all: revert;
+}
+
+/* Re-apply necessary display styles after revert */
+.image-layout {
+    display: inline-block;
+    max-width: 100%;
 }
 
 .fallback-image {
