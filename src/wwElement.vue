@@ -1374,7 +1374,9 @@ export default {
 
                 // Traverse the document to find the image with matching data-image-id
                 state.doc.descendants((node, pos) => {
-                    if (node.type.name === 'image' && node.attrs['data-image-id'] === imageId) {
+                    // Check for both 'image' and 'customImage' node types
+                    if ((node.type.name === 'image' || node.type.name === 'customImage') &&
+                        node.attrs['data-image-id'] === imageId) {
                         // Update the image attributes
                         tr.setNodeMarkup(pos, null, {
                             ...node.attrs,
