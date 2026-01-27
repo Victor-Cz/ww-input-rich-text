@@ -1,22 +1,29 @@
 /**
  * Composable for managing image IDs and mapping in the rich text editor
  * Implements hybrid approach: stores both ID (data-image-id) and fallback URL (src)
+ * Uses optimistic updates: local state updates immediately, then syncs with props
  */
 
-import { computed, watch } from 'vue';
+import { ref, watch } from 'vue';
 
 export function useImageManager(props, emit) {
-    // Reactive reference to the image mapping from content
-    const imageMapping = computed(() => props.content.imageMapping || {});
+    // Local reactive reference for optimistic updates
+    // This updates immediately, before props are propagated by WeWeb
+    const imageMapping = ref(props.content.imageMapping || {});
 
-    // Watch imageMapping changes for debugging
-    watch(imageMapping, (newValue, oldValue) => {
-        console.log('[useImageManager] imageMapping changed:', {
-            old: oldValue,
-            new: newValue,
-            keys: Object.keys(newValue || {}),
-        });
-    }, { deep: true });
+    // Sync with props when they change (from WeWeb)
+    watch(
+        () => props.content.imageMapping,
+        (newValue) => {
+            console.log('[useImageManager] Props imageMapping changed from WeWeb:', {
+                new: newValue,
+                keys: Object.keys(newValue || {}),
+            });
+            // Update local state when props change
+            imageMapping.value = newValue || {};
+        },
+        { deep: true }
+    );
 
     /**
      * Generate a unique ID for an image
@@ -45,8 +52,13 @@ export function useImageManager(props, emit) {
         const newMapping = { ...imageMapping.value, [id]: imageData };
 
         console.log('[useImageManager] New mapping to emit:', newMapping);
-        console.log('[useImageManager] Emitting update:content:effect...');
 
+        // OPTIMISTIC UPDATE: Update local state immediately
+        imageMapping.value = newMapping;
+        console.log('[useImageManager] Local mapping updated optimistically:', { ...imageMapping.value });
+
+        // Emit to WeWeb (will update props asynchronously)
+        console.log('[useImageManager] Emitting update:content:effect...');
         emit('update:content:effect', { imageMapping: newMapping });
 
         // Emit appropriate event
@@ -82,6 +94,12 @@ export function useImageManager(props, emit) {
     const removeImageData = (id) => {
         const newMapping = { ...imageMapping.value };
         delete newMapping[id];
+
+        // OPTIMISTIC UPDATE: Update local state immediately
+        imageMapping.value = newMapping;
+        console.log('[useImageManager] Image removed locally:', id);
+
+        // Emit to WeWeb
         emit('update:content:effect', { imageMapping: newMapping });
 
         // Emit event
@@ -214,6 +232,12 @@ export function useImageManager(props, emit) {
         if (orphanedIds.length > 0) {
             const newMapping = { ...imageMapping.value };
             orphanedIds.forEach(id => delete newMapping[id]);
+
+            // OPTIMISTIC UPDATE: Update local state immediately
+            imageMapping.value = newMapping;
+            console.log('[useImageManager] Orphaned images cleaned up:', orphanedIds);
+
+            // Emit to WeWeb
             emit('update:content:effect', { imageMapping: newMapping });
         }
     };
