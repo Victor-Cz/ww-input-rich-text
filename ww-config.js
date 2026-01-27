@@ -22,7 +22,7 @@ export default {
             en: 'Rich text',
         },
         navigator: {
-            groups: ['Menu'],
+            groups: ['Menu', 'Image'],
         },
         customStylePropertiesOrder: [
             'customMenu',
@@ -61,6 +61,7 @@ export default {
             'debounce',
             'debounceDelay',
             'autofocus',
+            'useImageLayout',
             'enableMention',
             [
                 'mentionChar',
@@ -189,6 +190,34 @@ export default {
                 users: [],
                 count: 0,
                 timestamp: '',
+            },
+        },
+        // Image Layout events
+        {
+            name: 'image:added',
+            label: { en: 'On image added' },
+            event: {
+                imageId: '',
+                url: '',
+                alt: '',
+                title: '',
+            },
+        },
+        {
+            name: 'image:updated',
+            label: { en: 'On image updated' },
+            event: {
+                imageId: '',
+                url: '',
+                alt: '',
+                title: '',
+            },
+        },
+        {
+            name: 'image:removed',
+            label: { en: 'On image removed' },
+            event: {
+                imageId: '',
             },
         },
     ],
@@ -381,6 +410,55 @@ export default {
         {
             label: { en: 'Collab: Save document', fr: 'Collab: Sauvegarder le document' },
             action: 'saveDocument',
+        },
+        // Image Layout actions
+        {
+            label: 'Update Image by ID',
+            action: 'updateImageById',
+            args: [
+                {
+                    name: 'Image ID',
+                    type: 'Text',
+                },
+                {
+                    name: 'New URL',
+                    type: 'Text',
+                },
+                {
+                    name: 'Alt text',
+                    type: 'Text',
+                },
+                {
+                    name: 'Title',
+                    type: 'Text',
+                },
+            ],
+        },
+        {
+            label: 'Get Image Data by ID',
+            action: 'getImageById',
+            args: [
+                {
+                    name: 'Image ID',
+                    type: 'Text',
+                },
+            ],
+            returnType: 'Object',
+        },
+        {
+            label: 'Remove Image by ID',
+            action: 'removeImageById',
+            args: [
+                {
+                    name: 'Image ID',
+                    type: 'Text',
+                },
+            ],
+        },
+        {
+            label: 'Get All Images Mapping',
+            action: 'getAllImagesMapping',
+            returnType: 'Object',
         },
     ],
     properties: {
@@ -621,6 +699,18 @@ export default {
             },
             type: 'OnOff',
             defaultValue: false,
+        },
+        useImageLayout: {
+            section: 'settings',
+            label: {
+                en: 'Use image layout system',
+            },
+            type: 'OnOff',
+            defaultValue: false,
+            bindable: true,
+            description: {
+                en: 'Enable to use a custom wwLayout template for images with ID-based mapping. When enabled, images will be stored with unique IDs and rendered using the configured template.',
+            },
         },
         editable: {
             section: 'settings',
@@ -1251,6 +1341,30 @@ export default {
                 group: 'Menu',
                 hidden: content => !content.customMenu,
             },
+        },
+        imageLayoutElement: {
+            hidden: true,
+            defaultValue: {
+                isWwObject: true,
+                type: 'ww-flexbox',
+                state: {
+                    name: 'Image template',
+                    style: {
+                        default: {
+                            width: '100%',
+                        },
+                    },
+                },
+            },
+            navigator: {
+                group: 'Image',
+                hidden: content => !content.useImageLayout,
+            },
+        },
+        imageMapping: {
+            hidden: true,
+            defaultValue: {},
+            bindable: true,
         },
         table: {
             type: 'Object',

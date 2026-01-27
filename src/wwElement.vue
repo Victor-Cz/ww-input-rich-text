@@ -235,9 +235,10 @@ import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
 
 
-import { computed, inject } from 'vue';
+import { computed, inject, provide } from 'vue';
 import suggestion from './suggestion.js';
 import { useCollaboration } from './composables/useCollaboration.js';
+import { useImageManager } from './composables/useImageManager.js';
 import { Markdown } from 'tiptap-markdown';
 import TableIcon from './icons/table-icon.vue';
 
@@ -246,6 +247,7 @@ import LinkPopover from './components/LinkPopover.vue';
 import { SelectionHighlighter } from './extensions/SelectionHighlighter.js';
 import { TextSuggestion } from './extensions/TextSuggestion.js';
 import { TextStrike } from './extensions/TextStrike.js';
+import { CustomImage } from './extensions/CustomImage.js';
 
 function extractMentions(acc, currentNode) {
     if (currentNode.type === 'mention') {
@@ -356,6 +358,14 @@ export default {
         const contentRef = computed(() => props.content);
         const collaboration = useCollaboration(props, contentRef, emit, setCollaborationStatus);
 
+        // Initialiser le gestionnaire d'images
+        const imageManager = useImageManager(props, emit);
+
+        // Fournir les dépendances pour ImageNode.vue
+        provide('useImageLayout', computed(() => props.content.useImageLayout || false));
+        provide('imageLayoutElement', computed(() => props.content.imageLayoutElement));
+        provide('getImageData', imageManager.getImageData);
+
         return {
             variableValue,
             setValue,
@@ -373,6 +383,8 @@ export default {
             /* wwEditor:end */
             // Collaboration
             ...collaboration,
+            // Image manager
+            ...imageManager,
         };
     },
     data: () => ({
@@ -427,6 +439,27 @@ export default {
                     });
                     this.$emit('update:content:effect', {
                         customMenuElement: element,
+                    });
+                }
+            },
+            immediate: true,
+        },
+        // Auto-create imageLayoutElement when useImageLayout is enabled
+        'content.useImageLayout': {
+            async handler(value) {
+                if (value && !this.content.imageLayoutElement) {
+                    const element = await this.createElement('ww-flexbox', {
+                        _state: {
+                            name: 'Image template',
+                            style: {
+                                default: {
+                                    width: '100%',
+                                },
+                            },
+                        },
+                    });
+                    this.$emit('update:content:effect', {
+                        imageLayoutElement: element,
                     });
                 }
             },
@@ -842,7 +875,10 @@ export default {
                         placeholder: this.editorConfig.placeholder,
                     }),
                     Markdown.configure({ breaks: true }),
-                    Image.configure({ ...this.editorConfig.image }),
+                    // Use CustomImage if useImageLayout is enabled, otherwise standard Image
+                    this.content.useImageLayout
+                        ? CustomImage.configure({ ...this.editorConfig.image })
+                        : Image.configure({ ...this.editorConfig.image }),
                     SelectionHighlighter.configure({
                         defaultColor: 'var(--primary-color-33)',
                     }),
@@ -1060,18 +1096,53 @@ export default {
             this.richEditor.chain().focus().extendMarkRange('link').setLink({ href: selectedUrl }).run();
         },
         setImage(src, alt = '', title = '') {
-            if (this.content.customMenu) this.richEditor.commands.setImage({ src, alt, title });
-            else {
-                let url;
-                /* wwEditor:start */
-                url = wwLib.getEditorWindow().prompt('Image URL');
-                /* wwEditor:end */
-                /* wwFront:start */
-                url = wwLib.getFrontWindow().prompt('Image URL');
-                /* wwFront:end */
+            // If using image layout system with IDs
+            if (this.content.useImageLayout) {
+                if (this.content.customMenu) {
+                    // Custom menu provides the src, alt, title
+                    const imageEntry = this.createImageEntry(src, alt, title);
+                    this.richEditor.commands.setImageWithId({
+                        src: imageEntry.src,
+                        dataImageId: imageEntry.id,
+                        alt: imageEntry.alt,
+                        title: imageEntry.title,
+                    });
+                } else {
+                    // Prompt for URL (editor mode)
+                    let url;
+                    /* wwEditor:start */
+                    url = wwLib.getEditorWindow().prompt('Image URL');
+                    /* wwEditor:end */
+                    /* wwFront:start */
+                    url = wwLib.getFrontWindow().prompt('Image URL');
+                    /* wwFront:end */
 
-                if (!url) return;
-                this.richEditor.chain().focus().setImage({ src: url }).run();
+                    if (!url) return;
+
+                    const imageEntry = this.createImageEntry(url, alt, title);
+                    this.richEditor.commands.setImageWithId({
+                        src: imageEntry.src,
+                        dataImageId: imageEntry.id,
+                        alt: imageEntry.alt,
+                        title: imageEntry.title,
+                    });
+                }
+            } else {
+                // Standard behavior (no ID system)
+                if (this.content.customMenu) {
+                    this.richEditor.commands.setImage({ src, alt, title });
+                } else {
+                    let url;
+                    /* wwEditor:start */
+                    url = wwLib.getEditorWindow().prompt('Image URL');
+                    /* wwEditor:end */
+                    /* wwFront:start */
+                    url = wwLib.getFrontWindow().prompt('Image URL');
+                    /* wwFront:end */
+
+                    if (!url) return;
+                    this.richEditor.chain().focus().setImage({ src: url }).run();
+                }
             }
         },
         focusEditor() {
@@ -1209,6 +1280,39 @@ export default {
 
         saveDocument() {
             this.sendSaveSignal(true);
+        },
+
+        // Image Layout actions
+        updateImageById(imageId, url, alt = '', title = '') {
+            if (!this.content.useImageLayout) {
+                console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');
+                return;
+            }
+            this.updateImageEntry(imageId, url, alt, title);
+        },
+
+        getImageById(imageId) {
+            if (!this.content.useImageLayout) {
+                console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');
+                return null;
+            }
+            return this.getImageData(imageId);
+        },
+
+        removeImageById(imageId) {
+            if (!this.content.useImageLayout) {
+                console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');
+                return;
+            }
+            this.removeImageData(imageId);
+        },
+
+        getAllImagesMapping() {
+            if (!this.content.useImageLayout) {
+                console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');
+                return {};
+            }
+            return this.imageMapping;
         },
     },
     mounted() {
