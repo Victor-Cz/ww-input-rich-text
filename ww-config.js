@@ -1446,18 +1446,7 @@ export default {
         },
         linkPopoverLayoutElement: {
             hidden: true,
-            defaultValue: {
-                isWwObject: true,
-                type: 'ww-flexbox',
-                state: {
-                    name: 'Link popover template',
-                    style: {
-                        default: {
-                            width: '100%',
-                        },
-                    },
-                },
-            },
+            defaultValue: null,
             navigator: {
                 group: 'LinkPopover',
                 hidden: content => !content.useLinkLayoutPopover,
