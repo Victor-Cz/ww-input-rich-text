@@ -1386,6 +1386,14 @@ export default {
             }
             return this.$refs.linkPopover.linkUrl;
         },
+
+        closeCurrentLinkPopover() {
+            if (!this.$refs.linkPopover) {
+                console.warn('Link popover is not available.');
+                return;
+            }
+            this.$refs.linkPopover.closePopover();
+        },
     },
     mounted() {
         console.log('[Editor] Component mounted, checking collaboration config:', {

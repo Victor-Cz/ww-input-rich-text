@@ -265,6 +265,10 @@ export default {
                 newUrl,
             });
         },
+        closePopover() {
+            this.isVisible = false;
+            this.linkUrl = null;
+        },
         removeLink() {
             const removedUrl = this.linkUrl;
 

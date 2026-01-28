@@ -513,6 +513,10 @@ export default {
             action: 'getCurrentLinkUrl',
             returnType: 'String',
         },
+        {
+            label: 'Close Current Link Popover',
+            action: 'closeCurrentLinkPopover',
+        },
     ],
     properties: {
         readonly: {
