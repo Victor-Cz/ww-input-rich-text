@@ -1103,13 +1103,18 @@ export default {
             this.setMentions(this.richEditor.getJSON().content.reduce(extractMentions, []));
         },
         setLink(url) {
+            console.log('[setLink] called with url:', url);
+            console.log('[setLink] isActive link:', this.richEditor.isActive('link'));
+
             if (this.richEditor.isActive('link')) {
+                console.log('[setLink] Removing existing link');
                 this.richEditor.chain().focus().unsetLink().run();
                 return;
             }
 
             // Si l'URL est fournie directement (depuis un menu personnalisé par exemple)
             if (url !== undefined) {
+                console.log('[setLink] URL provided directly');
                 // cancelled
                 if (url === null) {
                     return;
@@ -1126,13 +1131,18 @@ export default {
                 return;
             }
 
+            console.log('[setLink] useLinkLayoutPopover:', this.content.useLinkLayoutPopover);
+            console.log('[setLink] linkPopover ref:', this.$refs.linkPopover);
+
             // Si useLinkLayoutPopover est activé, afficher le popover
             if (this.content.useLinkLayoutPopover && this.$refs.linkPopover) {
+                console.log('[setLink] Calling showForNewLink()');
                 this.$refs.linkPopover.showForNewLink();
                 return;
             }
 
             // Sinon, utiliser la popup native
+            console.log('[setLink] Showing native prompt');
             const previousUrl = this.richEditor.getAttributes('link').href;
             const selectedUrl = window.prompt('URL', previousUrl);
 
