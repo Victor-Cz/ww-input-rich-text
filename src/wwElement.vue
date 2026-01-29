@@ -1549,7 +1549,6 @@ export default {
         padding-bottom: var(--editor-padding-bottom, 12px);
         padding-left: var(--editor-padding-left, 12px);
         overflow: auto;
-        padding: 8px;
         box-sizing: border-box;
         font-size: var(--p-fontSize);
         font-family: var(--p-fontFamily);
