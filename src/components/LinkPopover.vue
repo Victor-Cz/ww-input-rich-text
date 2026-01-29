@@ -302,13 +302,21 @@ export default {
             });
         },
         showForNewLink() {
+            console.log('[LinkPopover] showForNewLink called');
+            console.log('[LinkPopover] useLinkLayoutPopover:', this.useLinkLayoutPopover);
+            console.log('[LinkPopover] layoutElement:', this.layoutElement);
+
             // Afficher le popover pour créer un nouveau lien
             const previousUrl = this.editor.getAttributes('link').href;
             this.linkUrl = previousUrl || '';
             this.isVisible = true;
 
+            console.log('[LinkPopover] linkUrl:', this.linkUrl);
+            console.log('[LinkPopover] isVisible:', this.isVisible);
+
             // Attendre que le popover soit rendu puis le positionner et focus l'input
             this.$nextTick(() => {
+                console.log('[LinkPopover] $nextTick - popover ref:', this.$refs.popover);
                 this.updatePositionForSelection();
 
                 // Focus l'input si on est en mode fallback (pas de template personnalisé)
