@@ -1108,8 +1108,33 @@ export default {
                 return;
             }
 
+            // Si l'URL est fournie directement (depuis un menu personnalisé par exemple)
+            if (url !== undefined) {
+                // cancelled
+                if (url === null) {
+                    return;
+                }
+
+                // empty
+                if (url === '') {
+                    this.richEditor.chain().focus().extendMarkRange('link').unsetLink().run();
+                    return;
+                }
+
+                // update link
+                this.richEditor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+                return;
+            }
+
+            // Si useLinkLayoutPopover est activé, afficher le popover
+            if (this.content.useLinkLayoutPopover && this.$refs.linkPopover) {
+                this.$refs.linkPopover.showForNewLink();
+                return;
+            }
+
+            // Sinon, utiliser la popup native
             const previousUrl = this.richEditor.getAttributes('link').href;
-            const selectedUrl = url ?? window.prompt('URL', previousUrl);
+            const selectedUrl = window.prompt('URL', previousUrl);
 
             // cancelled
             if (selectedUrl === null) {
@@ -1119,7 +1144,6 @@ export default {
             // empty
             if (selectedUrl === '') {
                 this.richEditor.chain().focus().extendMarkRange('link').unsetLink().run();
-
                 return;
             }
 

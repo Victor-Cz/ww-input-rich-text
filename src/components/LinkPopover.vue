@@ -1,6 +1,6 @@
 <template>
     <transition name="link-popover">
-        <div v-if="isVisible && linkUrl" class="link-popover" :style="popoverStyle" ref="popover">
+        <div v-if="isVisible" class="link-popover" :style="popoverStyle" ref="popover">
             <!-- Render wwLayout template when useLinkLayoutPopover is enabled -->
             <div v-if="useLinkLayoutPopover && layoutElement" class="link-popover-layout" contenteditable="false">
                 <wwLocalContext elementKey="link" :data="linkContextData">
@@ -11,31 +11,45 @@
             <!-- Fallback to default popover -->
             <template v-else>
                 <div class="link-popover__fallback">
-                <div class="link-popover__content">
-                    <a
-                        :href="linkUrl"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="link-popover__url"
-                        @click.prevent="openLink"
-                    >
-                        {{ truncatedUrl }}
-                    </a>
-                    <div class="link-popover__actions">
-                        <button type="button" class="link-popover__button" @click="editLink" title="Modifier le lien">
-                            <i class="fas fa-pen"></i>
-                        </button>
-                        <button
-                            type="button"
-                            class="link-popover__button link-popover__button--danger"
-                            @click="removeLink"
-                            title="Supprimer le lien"
-                        >
-                            <i class="fas fa-unlink"></i>
-                        </button>
-                    </div>
+                <!-- Mode création de lien (pas d'URL) -->
+                <div v-if="!linkUrl" class="link-popover__create">
+                    <input
+                        ref="urlInput"
+                        type="text"
+                        class="link-popover__input"
+                        placeholder="Entrez l'URL..."
+                        @keydown.enter="handleCreateLink"
+                        @keydown.esc="closePopover"
+                    />
                 </div>
-                <div class="link-popover__hint">{{ modifierKey }} + Clic pour ouvrir</div>
+                <!-- Mode affichage de lien (URL existante) -->
+                <template v-else>
+                    <div class="link-popover__content">
+                        <a
+                            :href="linkUrl"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="link-popover__url"
+                            @click.prevent="openLink"
+                        >
+                            {{ truncatedUrl }}
+                        </a>
+                        <div class="link-popover__actions">
+                            <button type="button" class="link-popover__button" @click="editLink" title="Modifier le lien">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <button
+                                type="button"
+                                class="link-popover__button link-popover__button--danger"
+                                @click="removeLink"
+                                title="Supprimer le lien"
+                            >
+                                <i class="fas fa-unlink"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="link-popover__hint">{{ modifierKey }} + Clic pour ouvrir</div>
+                </template>
                 </div>
             </template>
         </div>
@@ -89,6 +103,11 @@ export default {
                 url: this.linkUrl || '',
                 truncatedUrl: this.truncatedUrl,
                 modifierKey: this.modifierKey,
+                // Expose actions for custom template
+                openLink: this.openLink,
+                editLink: this.editLink,
+                removeLink: this.removeLink,
+                closePopover: this.closePopover,
             };
         },
         layoutElement() {
@@ -282,6 +301,84 @@ export default {
                 url: removedUrl,
             });
         },
+        showForNewLink() {
+            // Afficher le popover pour créer un nouveau lien
+            const previousUrl = this.editor.getAttributes('link').href;
+            this.linkUrl = previousUrl || '';
+            this.isVisible = true;
+
+            // Attendre que le popover soit rendu puis le positionner et focus l'input
+            this.$nextTick(() => {
+                this.updatePositionForSelection();
+
+                // Focus l'input si on est en mode fallback (pas de template personnalisé)
+                if (!this.useLinkLayoutPopover && this.$refs.urlInput) {
+                    this.$refs.urlInput.focus();
+                }
+            });
+        },
+        handleCreateLink(event) {
+            // Créer un lien depuis l'input du fallback
+            const url = event.target.value.trim();
+
+            if (!url) {
+                this.closePopover();
+                return;
+            }
+
+            // Créer le lien
+            this.editor.chain().focus().setLink({ href: url }).run();
+
+            this.linkUrl = url;
+
+            // Emit event
+            this.triggerLinkEvent('link:created', {
+                url: url,
+            });
+
+            // Fermer le popover après création
+            this.closePopover();
+        },
+        updatePositionForSelection() {
+            // Positionner le popover au niveau du curseur ou de la sélection
+            const { view } = this.editor;
+            const { from, to } = view.state.selection;
+
+            if (!this.$refs.popover) return;
+
+            // Obtenir les coordonnées de la sélection
+            const start = view.coordsAtPos(from);
+            const end = view.coordsAtPos(to);
+
+            const popoverWidth = this.$refs.popover.offsetWidth;
+            const popoverHeight = this.$refs.popover.offsetHeight;
+            const screenMargin = 20;
+
+            // Calculer la position centrale de la sélection
+            const selectionCenterX = (start.left + end.right) / 2;
+
+            let left = selectionCenterX - popoverWidth / 2;
+            let top = start.top - popoverHeight - 10;
+
+            // Ajuster si on dépasse à droite
+            if (left + popoverWidth > window.innerWidth - screenMargin) {
+                left = window.innerWidth - popoverWidth - screenMargin;
+            }
+
+            // Ajuster si on dépasse à gauche
+            left = Math.max(screenMargin, left);
+
+            // Ajuster si on dépasse en haut
+            if (top < screenMargin) {
+                top = end.bottom + 10;
+            }
+
+            this.popoverPosition = { top, left };
+
+            // Application directe
+            this.$refs.popover.style.top = `${top}px`;
+            this.$refs.popover.style.left = `${left}px`;
+        },
     },
 };
 </script>
@@ -368,5 +465,25 @@ export default {
     margin-top: 6px;
     font-size: 11px;
     color: #999;
+}
+
+.link-popover__create {
+    display: flex;
+    flex-direction: column;
+}
+
+.link-popover__input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s ease;
+    min-width: 250px;
+}
+
+.link-popover__input:focus {
+    border-color: var(--a-color, #007bff);
 }
 </style>
