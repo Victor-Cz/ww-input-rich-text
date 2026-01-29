@@ -1113,19 +1113,9 @@ export default {
             }
 
             // Si l'URL est fournie directement (depuis un menu personnalisé par exemple)
-            if (url !== undefined) {
+            // url doit être une string non vide (pas undefined, null, ou '')
+            if (url !== undefined && url !== null && url !== '') {
                 console.log('[setLink] URL provided directly');
-                // cancelled
-                if (url === null) {
-                    return;
-                }
-
-                // empty
-                if (url === '') {
-                    this.richEditor.chain().focus().extendMarkRange('link').unsetLink().run();
-                    return;
-                }
-
                 // update link
                 this.richEditor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
                 return;
