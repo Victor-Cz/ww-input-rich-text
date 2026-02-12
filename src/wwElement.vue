@@ -1041,6 +1041,7 @@ export default {
                         this.setPendingChangesCount(0);
                     },
                     onUpdate: ({ transaction }) => {
+                        if (this.isDestroying) return;
                         // Intercepter les transactions pour enregistrer les steps
                         if (transaction.docChanged) {
                             transaction.steps.forEach(step => {
@@ -1085,6 +1086,7 @@ export default {
             this.loading = false;
         },
         handleOnUpdate() {
+            if (this.isDestroying) return;
             let htmlValue = this.getContent();
             if (this.variableValue === htmlValue) return;
             this.setValue(htmlValue);
@@ -1094,6 +1096,7 @@ export default {
                     clearTimeout(this.debounce);
                 }
                 this.debounce = setTimeout(() => {
+                    if (this.isDestroying) return;
                     this.$emit('trigger-event', { name: 'change', event: { value: this.variableValue } });
                     this.isDebouncing = false;
                 }, this.delay);
@@ -1437,6 +1440,14 @@ export default {
         }
     },
     beforeUnmount() {
+        this.isDestroying = true;
+
+        // Nettoyer le debounce en cours
+        if (this.debounce) {
+            clearTimeout(this.debounce);
+            this.debounce = null;
+        }
+
         // Nettoyer la collaboration
         this.destroyCollaboration();
 
