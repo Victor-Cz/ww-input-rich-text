@@ -236,7 +236,7 @@ import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
 
 
-import { computed, inject, provide } from 'vue';
+import { computed, inject, provide, onBeforeUnmount } from 'vue';
 import suggestion from './suggestion.js';
 import { useCollaboration } from './composables/useCollaboration.js';
 import * as ImageManager from './composables/useImageManager.js';
@@ -290,14 +290,14 @@ export default {
     },
     emits: ['trigger-event', 'update:content:effect', 'update:sidepanel-content'],
     setup(props, { emit }) {
-        const { value: variableValue, setValue } = wwLib.wwVariable.useComponentVariable({
+        const { value: variableValue, setValue: _setValue } = wwLib.wwVariable.useComponentVariable({
             uid: props.uid,
             name: 'value',
             type: 'string',
             defaultValue: computed(() => String(props.content.initialValue || '')),
         });
 
-        const { value: variableMentions, setValue: setMentions } = wwLib.wwVariable.useComponentVariable({
+        const { value: variableMentions, setValue: _setMentions } = wwLib.wwVariable.useComponentVariable({
             uid: props.uid,
             name: 'mentions',
             type: 'array',
@@ -305,7 +305,7 @@ export default {
             readonly: true,
         });
 
-        const { value: states, setValue: setStates } = wwLib.wwVariable.useComponentVariable({
+        const { value: states, setValue: _setStates } = wwLib.wwVariable.useComponentVariable({
             uid: props.uid,
             name: 'states',
             type: 'object',
@@ -313,7 +313,7 @@ export default {
             readonly: true,
         });
 
-        const { value: pendingChangesCount, setValue: setPendingChangesCount } = wwLib.wwVariable.useComponentVariable({
+        const { value: pendingChangesCount, setValue: _setPendingChangesCount } = wwLib.wwVariable.useComponentVariable({
             uid: props.uid,
             name: 'pendingChangesCount',
             type: 'number',
@@ -321,7 +321,7 @@ export default {
             readonly: true,
         });
 
-        const { value: collaborationStatus, setValue: setCollaborationStatus } = wwLib.wwVariable.useComponentVariable({
+        const { value: collaborationStatus, setValue: _setCollaborationStatus } = wwLib.wwVariable.useComponentVariable({
             uid: props.uid,
             name: 'collaborationStatus',
             type: 'object',
@@ -336,6 +336,15 @@ export default {
             })),
             readonly: true,
         });
+
+        // Wrap setters to silently ignore calls after variable cleanup
+        let _isDestroyed = false;
+        onBeforeUnmount(() => { _isDestroyed = true; });
+        const setValue = (...args) => { if (!_isDestroyed) _setValue(...args); };
+        const setMentions = (...args) => { if (!_isDestroyed) _setMentions(...args); };
+        const setStates = (...args) => { if (!_isDestroyed) _setStates(...args); };
+        const setPendingChangesCount = (...args) => { if (!_isDestroyed) _setPendingChangesCount(...args); };
+        const setCollaborationStatus = (...args) => { if (!_isDestroyed) _setCollaborationStatus(...args); };
 
 
         /* wwEditor:start */
