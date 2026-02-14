@@ -53,6 +53,7 @@ export default {
             ['fieldName', 'customValidation', 'validation'],
             'readonly',
             'editable',
+            'enableSpellcheck',
             'hideMenu',
             'wrapMenu',
             'initialValue',
@@ -813,6 +814,16 @@ export default {
             section: 'settings',
             label: {
                 en: 'Editable',
+            },
+            type: 'OnOff',
+            defaultValue: true,
+            bindable: true,
+        },
+        enableSpellcheck: {
+            section: 'settings',
+            label: {
+                en: 'Enable spellcheck',
+                fr: 'Activer la correction orthographique',
             },
             type: 'OnOff',
             defaultValue: true,

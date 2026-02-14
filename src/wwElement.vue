@@ -1062,6 +1062,9 @@ export default {
                         this.handleOnUpdate();
                     },
                     editorProps: {
+                        attributes: {
+                            spellcheck: this.content.enableSpellcheck ?? true ? 'true' : 'false',
+                        },
                         handleClickOn: (_view, _pos, node) => {
                             if (node.type.name === 'mention') {
                                 this.$emit('trigger-event', {
