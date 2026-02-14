@@ -560,6 +560,12 @@ export default {
                 this.loadEditor();
             }
         },
+        'content.enableSpellcheck'(newValue) {
+            // Mettre à jour l'attribut spellcheck en temps réel
+            if (this.richEditor && this.richEditor.view && this.richEditor.view.dom) {
+                this.richEditor.view.dom.setAttribute('spellcheck', (newValue ?? true) ? 'true' : 'false');
+            }
+        },
     },
     computed: {
         isEditing() {
