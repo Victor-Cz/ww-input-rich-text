@@ -1063,7 +1063,7 @@ export default {
                     },
                     editorProps: {
                         attributes: {
-                            spellcheck: this.content.enableSpellcheck ?? true ? 'true' : 'false',
+                            spellcheck: (this.content.enableSpellcheck ?? true) ? 'true' : 'false',
                         },
                         handleClickOn: (_view, _pos, node) => {
                             if (node.type.name === 'mention') {
