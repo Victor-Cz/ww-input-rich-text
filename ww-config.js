@@ -486,6 +486,11 @@ export default {
                     type: 'Text',
                     optional: true,
                 },
+                {
+                    name: 'Refresh',
+                    type: 'OnOff',
+                    optional: true,
+                },
             ],
             returnType: 'String', // Returns the generated image ID
         },
@@ -516,6 +521,11 @@ export default {
                 {
                     name: 'Position',
                     type: 'Text',
+                },
+                {
+                    name: 'Refresh',
+                    type: 'OnOff',
+                    optional: true,
                 },
             ],
         },

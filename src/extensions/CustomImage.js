@@ -33,12 +33,14 @@ export const CustomImage = Image.extend({
                 tag: 'img[src]',
                 getAttrs: element => {
                     // Parse image directly
+                    const refresh = element.getAttribute('data-refresh');
                     return {
                         src: element.getAttribute('src'),
                         alt: element.getAttribute('alt'),
                         title: element.getAttribute('title'),
                         'data-image-id': element.getAttribute('data-image-id'),
                         'data-position': element.getAttribute('data-position'),
+                        'data-refresh': refresh === 'true' || refresh === '1' || refresh === '',
                         caption: null,
                     };
                 },
@@ -51,12 +53,14 @@ export const CustomImage = Image.extend({
 
                     if (!img) return false; // Not a valid figure with image
 
+                    const refresh = img.getAttribute('data-refresh');
                     return {
                         src: img.getAttribute('src'),
                         alt: img.getAttribute('alt'),
                         title: img.getAttribute('title'),
                         'data-image-id': img.getAttribute('data-image-id'),
                         'data-position': img.getAttribute('data-position'),
+                        'data-refresh': refresh === 'true' || refresh === '1' || refresh === '',
                         caption: figcaption ? figcaption.textContent : null,
                     };
                 },
@@ -115,6 +119,21 @@ export const CustomImage = Image.extend({
                     };
                 },
             },
+            'data-refresh': {
+                default: false,
+                parseHTML: element => {
+                    const value = element.getAttribute('data-refresh');
+                    return value === 'true' || value === '1' || value === '';
+                },
+                renderHTML: attributes => {
+                    if (!attributes['data-refresh']) {
+                        return {};
+                    }
+                    return {
+                        'data-refresh': attributes['data-refresh'],
+                    };
+                },
+            },
             caption: {
                 default: null,
                 parseHTML: element => {
@@ -145,6 +164,7 @@ export const CustomImage = Image.extend({
              * @param {string} options.alt - Alt text
              * @param {string} options.title - Title text
              * @param {string} options.dataPosition - Image position (e.g., 'featured')
+             * @param {boolean} options.dataRefresh - Whether to refresh the image
              * @param {string} options.caption - Figure caption text
              */
             setImageWithId: options => ({ commands }) => {
@@ -154,6 +174,7 @@ export const CustomImage = Image.extend({
                         src: options.src,
                         'data-image-id': options.dataImageId || null,
                         'data-position': options.dataPosition || null,
+                        'data-refresh': options.dataRefresh || false,
                         alt: options.alt || '',
                         title: options.title || '',
                         caption: options.caption || null,

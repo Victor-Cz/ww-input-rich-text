@@ -1351,20 +1351,20 @@ export default {
         },
 
         // Image Layout actions
-        insertEmptyImage() {
+        insertEmptyImage(caption = null, position = null, refresh = false) {
             if (!this.content.useImageLayout) {
                 console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');
                 return null;
             }
-            return ImageManager.insertEmptyImage(this.richEditor);
+            return ImageManager.insertEmptyImage(this.richEditor, caption, position, refresh);
         },
 
-        updateImageById(imageId, url, alt = '', title = '') {
+        updateImageById(imageId, url, alt = '', title = '', caption = null, position = null, refresh = null) {
             if (!this.content.useImageLayout) {
                 console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');
                 return;
             }
-            ImageManager.updateImageById(this.richEditor, imageId, url, alt, title);
+            ImageManager.updateImageById(this.richEditor, imageId, url, alt, title, caption, position, refresh);
         },
 
         getImageById(imageId) {

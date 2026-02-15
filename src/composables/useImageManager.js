@@ -22,9 +22,10 @@ export function generateImageId() {
  * @param {string} title - Title text
  * @param {string} caption - Figure caption text
  * @param {string} position - Image position (data-position attribute)
+ * @param {boolean} refresh - Refresh flag (data-refresh attribute)
  * @returns {boolean} True if image was found and updated
  */
-export function updateImageById(editor, imageId, url, alt = '', title = '', caption = null, position = null) {
+export function updateImageById(editor, imageId, url, alt = '', title = '', caption = null, position = null, refresh = null) {
     if (!editor) return false;
 
     const { state, view } = editor;
@@ -43,6 +44,7 @@ export function updateImageById(editor, imageId, url, alt = '', title = '', capt
                 title: title || node.attrs.title,
                 caption: caption !== null ? caption : node.attrs.caption,
                 'data-position': position !== null ? position : node.attrs['data-position'],
+                'data-refresh': refresh !== null ? refresh : node.attrs['data-refresh'],
             });
             updated = true;
             return false; // Stop traversing
@@ -78,6 +80,7 @@ export function getImageById(editor, imageId) {
                 title: node.attrs.title || '',
                 caption: node.attrs.caption || null,
                 position: node.attrs['data-position'] || null,
+                refresh: node.attrs['data-refresh'] || false,
             };
             return false; // Stop traversing
         }
@@ -142,6 +145,7 @@ export function getAllImages(editor) {
                 title: node.attrs.title || '',
                 caption: node.attrs.caption || null,
                 position: node.attrs['data-position'] || null,
+                refresh: node.attrs['data-refresh'] || false,
             };
         }
     });
@@ -154,9 +158,10 @@ export function getAllImages(editor) {
  * @param {Editor} editor - TipTap editor instance
  * @param {string} caption - Optional caption text
  * @param {string} position - Optional position (data-position attribute)
+ * @param {boolean} refresh - Optional refresh flag (data-refresh attribute)
  * @returns {string|null} The generated image ID or null if failed
  */
-export function insertEmptyImage(editor, caption = null, position = null) {
+export function insertEmptyImage(editor, caption = null, position = null, refresh = false) {
     if (!editor) return null;
 
     // Generate a unique ID
@@ -170,6 +175,7 @@ export function insertEmptyImage(editor, caption = null, position = null) {
         title: '',
         caption: caption || null,
         dataPosition: position || null,
+        dataRefresh: refresh || false,
     });
 
     return imageId;

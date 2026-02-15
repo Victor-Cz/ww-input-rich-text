@@ -15,6 +15,7 @@
                 :title="node.attrs.title"
                 :data-image-id="imageId"
                 :data-position="node.attrs['data-position']"
+                :data-refresh="node.attrs['data-refresh']"
                 class="fallback-image"
             />
             <figcaption contenteditable="true" @blur="updateCaption">{{ node.attrs.caption }}</figcaption>
@@ -28,6 +29,7 @@
             :title="node.attrs.title"
             :data-image-id="imageId"
             :data-position="node.attrs['data-position']"
+            :data-refresh="node.attrs['data-refresh']"
             class="fallback-image"
         />
     </node-view-wrapper>
@@ -68,6 +70,7 @@ export default {
                 alt: this.node.attrs.alt || '',
                 title: this.node.attrs.title || '',
                 position: this.node.attrs['data-position'] || null,
+                refresh: this.node.attrs['data-refresh'] || false,
                 caption: this.node.attrs.caption || null,
             };
         },
