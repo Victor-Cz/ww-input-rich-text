@@ -1347,7 +1347,6 @@ export default {
         },
 
         saveDocument(saveId = null) {
-            console.log('[wwElement] saveDocument called with saveId:', saveId, 'type:', typeof saveId);
             this.sendSaveSignal(true, saveId);
         },
 
