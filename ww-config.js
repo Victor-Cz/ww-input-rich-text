@@ -464,6 +464,7 @@ export default {
                 {
                     name: 'Save ID',
                     type: 'Text',
+                    optional: true,
                     options: {
                         bindable: true,
                     },
