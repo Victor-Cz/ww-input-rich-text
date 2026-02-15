@@ -1346,8 +1346,8 @@ export default {
             this.setPendingChangesCount(0);
         },
 
-        saveDocument() {
-            this.sendSaveSignal(true);
+        saveDocument(saveId = null) {
+            this.sendSaveSignal(true, saveId);
         },
 
         // Image Layout actions

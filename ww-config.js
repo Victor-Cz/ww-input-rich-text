@@ -199,6 +199,7 @@ export default {
             label: { en: 'On document saving', fr: 'Document en cours de sauvegarde' },
             event: {
                 timestamp: '',
+                saveId: '',
             },
         },
         {
@@ -206,6 +207,7 @@ export default {
             label: { en: 'On document saved', fr: 'Document sauvegardé' },
             event: {
                 timestamp: '',
+                saveId: '',
             },
         },
         // Image Layout events
@@ -449,6 +451,13 @@ export default {
         {
             label: { en: 'Collab: Save document', fr: 'Collab: Sauvegarder le document' },
             action: 'saveDocument',
+            args: [
+                {
+                    name: 'Save ID',
+                    type: 'Text',
+                    optional: true,
+                },
+            ],
         },
         // Image Layout actions
         {

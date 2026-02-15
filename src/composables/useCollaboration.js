@@ -247,17 +247,26 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             try {
                 const data = JSON.parse(payload);
                 if (data.action === 'save-state') {
+                    // Le serveur DOIT renvoyer le saveId pour permettre le tracking
+                    const saveId = data.saveId || null;
+
                     if (data.state === 'saving') {
                         updateStatus({ saving: true, saved: false });
                         emit('trigger-event', {
                             name: 'collab:saving',
-                            event: { timestamp: new Date().toISOString() },
+                            event: {
+                                timestamp: new Date().toISOString(),
+                                saveId,
+                            },
                         });
                     } else if (data.state === 'saved') {
                         updateStatus({ saving: false, saved: true });
                         emit('trigger-event', {
                             name: 'collab:saved',
-                            event: { timestamp: new Date().toISOString() },
+                            event: {
+                                timestamp: new Date().toISOString(),
+                                saveId,
+                            },
                         });
                     } else if (data.state === 'error') {
                         updateStatus({ saving: false, saved: false, error: data.message });
@@ -267,6 +276,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                                 error: 'save-error',
                                 message: data.message,
                                 timestamp: new Date().toISOString(),
+                                saveId,
                             },
                         });
                     }
@@ -487,16 +497,18 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     };
 
     // Envoyer un signal de sauvegarde au serveur via stateless message
-    const sendSaveSignal = (force = false) => {
+    // IMPORTANT: Le serveur DOIT renvoyer le saveId dans sa réponse stateless
+    // pour permettre le tracking de sauvegardes multiples simultanées
+    const sendSaveSignal = (force = false, saveId = null) => {
         if (provider.value && provider.value.isConnected) {
             updateStatus({ saving: true, saved: false });
             provider.value.sendStateless(
                 JSON.stringify({
                     action: 'save-document',
-                    payload: { force },
+                    payload: { force, saveId },
                 })
             );
-            console.log('[Collaboration] Save signal sent to server', { force });
+            console.log('[Collaboration] Save signal sent to server', { force, saveId });
             return true;
         }
         console.warn('[Collaboration] Cannot send save signal: provider not connected');
