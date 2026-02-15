@@ -411,7 +411,7 @@ export default {
     watch: {
         'content.initialValue'(value) {
             if (value !== this.getContent()) {
-                this.richEditor.commands.setContent(value, false, { addToHistory: false });
+                this.richEditor.chain().setContent(value).setMeta('addToHistory', false).run();
                 this.setValue(value);
             }
             this.$emit('trigger-event', { name: 'initValueChange', event: { value } });
@@ -423,7 +423,7 @@ export default {
             this.richEditor.setEditable(value);
         },
         variableValue(value, oldValue) {
-            if (value !== this.getContent()) this.richEditor.commands.setContent(value, false, { addToHistory: false });
+            if (value !== this.getContent()) this.richEditor.chain().setContent(value).setMeta('addToHistory', false).run();
             // If format changed
             if (value !== this.getContent()) this.setValue(this.getContent());
         },
@@ -1038,7 +1038,7 @@ export default {
 
                                 if (isYdocEmpty) {
                                     console.log('[Editor] Y.doc is empty after sync, injecting initialValue');
-                                    this.richEditor.commands.setContent(this.content.initialValue, false, { addToHistory: false });
+                                    this.richEditor.chain().setContent(this.content.initialValue).setMeta('addToHistory', false).run();
                                     initialContentInjected = true;
                                 } else {
                                     console.log('[Editor] Y.doc has content, skipping initialValue injection');
