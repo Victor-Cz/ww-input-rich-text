@@ -49,6 +49,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         userName: content.value.userName || 'Anonymous',
         autoConnect: content.value.autoConnect ?? true,
         saveMode: content.value.saveMode || 'manual',
+        saveDebounce: content.value.saveDebounce ?? 2000,
         maxConnectionAttempts: content.value.maxConnectionAttempts || 5,
     }));
 
@@ -300,9 +301,10 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 name: collabConfig.value.documentId, // Le provider ajoutera automatiquement /{name}
                 document: ydocInstance,
                 token: collabConfig.value.authToken || undefined,
-                // Ajoute ?saveMode=...&userName=... à l'URL WebSocket
+                // Ajoute ?saveMode=...&userName=...&saveDebounce=... à l'URL WebSocket
                 parameters: {
                     saveMode: collabConfig.value.saveMode,
+                    saveDebounce: collabConfig.value.saveDebounce,
                     userName: collabConfig.value.userName,
                 },
                 // Garde onAuthenticate pour la logique de token
@@ -317,6 +319,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 willConnectTo: `${cleanBaseUrl}/${providerConfig.name}`,
                 hasToken: !!providerConfig.token,
                 saveMode: collabConfig.value.saveMode,
+                saveDebounce: collabConfig.value.saveDebounce,
                 userName: collabConfig.value.userName,
             });
 

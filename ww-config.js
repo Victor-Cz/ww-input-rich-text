@@ -48,7 +48,7 @@ export default {
         ],
         customSettingsPropertiesOrder: [
             'enableCollaboration',
-            ['websocketUrl', 'documentId', 'authToken', 'userName', 'autoConnect', 'saveMode', 'maxConnectionAttempts'],
+            ['websocketUrl', 'documentId', 'authToken', 'userName', 'autoConnect', 'saveMode', 'saveDebounce', 'maxConnectionAttempts'],
             'formInfobox',
             ['fieldName', 'customValidation', 'validation'],
             'readonly',
@@ -2531,10 +2531,24 @@ export default {
                 options: [
                     { value: 'on-change', label: { en: 'On Change', fr: 'Sur changement' } },
                     { value: 'on-unload', label: { en: 'On Unload', fr: 'Sur déchargement' } },
+                    { value: 'auto-unload', label: { en: 'Auto + Unload', fr: 'Auto + Déchargement' } },
                     { value: 'manual', label: { en: 'Manual (trigger only)', fr: 'Manuel (trigger uniquement)' } },
                 ],
             },
             defaultValue: 'manual',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+        },
+        saveDebounce: {
+            section: 'settings',
+            label: { en: 'Save Debounce (ms)', fr: 'Délai de sauvegarde (ms)' },
+            type: 'Number',
+            options: {
+                min: 0,
+                max: 60000,
+                step: 100,
+            },
+            defaultValue: 2000,
             bindable: true,
             hidden: content => !content.enableCollaboration,
         },
