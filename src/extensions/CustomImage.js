@@ -4,6 +4,7 @@
  * - Hybrid approach: data-image-id attribute + fallback src
  * - Integration with image mapping system
  * - Auto-generation of IDs for images without IDs when useImageLayout is enabled
+ * - Figure/figcaption support for semantic image captions
  */
 
 import Image from '@tiptap/extension-image';
@@ -26,6 +27,67 @@ export const CustomImage = Image.extend({
         return VueNodeViewRenderer(ImageNode);
     },
 
+    parseHTML() {
+        return [
+            {
+                tag: 'img[src]',
+                getAttrs: element => {
+                    // Parse image directly
+                    return {
+                        src: element.getAttribute('src'),
+                        alt: element.getAttribute('alt'),
+                        title: element.getAttribute('title'),
+                        'data-image-id': element.getAttribute('data-image-id'),
+                        'data-position': element.getAttribute('data-position'),
+                        caption: null,
+                    };
+                },
+            },
+            {
+                tag: 'figure',
+                getAttrs: element => {
+                    const img = element.querySelector('img[src]');
+                    const figcaption = element.querySelector('figcaption');
+
+                    if (!img) return false; // Not a valid figure with image
+
+                    return {
+                        src: img.getAttribute('src'),
+                        alt: img.getAttribute('alt'),
+                        title: img.getAttribute('title'),
+                        'data-image-id': img.getAttribute('data-image-id'),
+                        'data-position': img.getAttribute('data-position'),
+                        caption: figcaption ? figcaption.textContent : null,
+                    };
+                },
+            },
+        ];
+    },
+
+    renderHTML({ HTMLAttributes }) {
+        const { caption, ...imgAttrs } = HTMLAttributes;
+
+        // Remove null/undefined attributes
+        Object.keys(imgAttrs).forEach(key => {
+            if (imgAttrs[key] === null || imgAttrs[key] === undefined) {
+                delete imgAttrs[key];
+            }
+        });
+
+        // If there's a caption, wrap in figure
+        if (caption) {
+            return [
+                'figure',
+                {},
+                ['img', imgAttrs],
+                ['figcaption', {}, caption],
+            ];
+        }
+
+        // Otherwise, just render the img
+        return ['img', imgAttrs];
+    },
+
     addAttributes() {
         return {
             ...this.parent?.(),
@@ -41,6 +103,34 @@ export const CustomImage = Image.extend({
                     };
                 },
             },
+            'data-position': {
+                default: null,
+                parseHTML: element => element.getAttribute('data-position'),
+                renderHTML: attributes => {
+                    if (!attributes['data-position']) {
+                        return {};
+                    }
+                    return {
+                        'data-position': attributes['data-position'],
+                    };
+                },
+            },
+            caption: {
+                default: null,
+                parseHTML: element => {
+                    // Check if the image is inside a <figure>
+                    const figure = element.closest('figure');
+                    if (figure) {
+                        const figcaption = figure.querySelector('figcaption');
+                        return figcaption ? figcaption.textContent : null;
+                    }
+                    return null;
+                },
+                renderHTML: attributes => {
+                    // Caption is rendered via the figure wrapper, not as an attribute
+                    return {};
+                },
+            },
         };
     },
 
@@ -54,6 +144,8 @@ export const CustomImage = Image.extend({
              * @param {string} options.dataImageId - Image ID
              * @param {string} options.alt - Alt text
              * @param {string} options.title - Title text
+             * @param {string} options.dataPosition - Image position (e.g., 'featured')
+             * @param {string} options.caption - Figure caption text
              */
             setImageWithId: options => ({ commands }) => {
                 return commands.insertContent({
@@ -61,8 +153,10 @@ export const CustomImage = Image.extend({
                     attrs: {
                         src: options.src,
                         'data-image-id': options.dataImageId || null,
+                        'data-position': options.dataPosition || null,
                         alt: options.alt || '',
                         title: options.title || '',
+                        caption: options.caption || null,
                     },
                 });
             },

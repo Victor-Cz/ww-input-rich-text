@@ -454,6 +454,18 @@ export default {
         {
             label: 'Insert Empty Image',
             action: 'insertEmptyImage',
+            args: [
+                {
+                    name: 'Caption',
+                    type: 'Text',
+                    optional: true,
+                },
+                {
+                    name: 'Position',
+                    type: 'Text',
+                    optional: true,
+                },
+            ],
             returnType: 'String', // Returns the generated image ID
         },
         {
@@ -474,6 +486,14 @@ export default {
                 },
                 {
                     name: 'Title',
+                    type: 'Text',
+                },
+                {
+                    name: 'Caption',
+                    type: 'Text',
+                },
+                {
+                    name: 'Position',
                     type: 'Text',
                 },
             ],

@@ -7,13 +7,27 @@
             </wwLocalContext>
         </div>
 
-        <!-- Fallback to standard image -->
+        <!-- Fallback: figure with caption if caption exists -->
+        <figure v-else-if="hasCaption" class="image-figure">
+            <img
+                :src="node.attrs.src"
+                :alt="node.attrs.alt"
+                :title="node.attrs.title"
+                :data-image-id="imageId"
+                :data-position="node.attrs['data-position']"
+                class="fallback-image"
+            />
+            <figcaption contenteditable="true" @blur="updateCaption">{{ node.attrs.caption }}</figcaption>
+        </figure>
+
+        <!-- Fallback: simple image without caption -->
         <img
             v-else
             :src="node.attrs.src"
             :alt="node.attrs.alt"
             :title="node.attrs.title"
             :data-image-id="imageId"
+            :data-position="node.attrs['data-position']"
             class="fallback-image"
         />
     </node-view-wrapper>
@@ -42,6 +56,9 @@ export default {
         imageId() {
             return this.node.attrs['data-image-id'] || null;
         },
+        hasCaption() {
+            return this.node.attrs.caption && this.node.attrs.caption.trim() !== '';
+        },
         imageContextData() {
             // Read all data directly from node attributes (HTML)
             // This makes the image data available via context.image in the template
@@ -50,6 +67,8 @@ export default {
                 url: this.node.attrs.src || '',
                 alt: this.node.attrs.alt || '',
                 title: this.node.attrs.title || '',
+                position: this.node.attrs['data-position'] || null,
+                caption: this.node.attrs.caption || null,
             };
         },
         // Unwrap the injected computed for imageLayoutElement
@@ -57,6 +76,14 @@ export default {
             // If imageLayoutElement is a computed ref, unwrap it
             const element = this.imageLayoutElement;
             return typeof element === 'function' ? element() : element;
+        },
+    },
+    methods: {
+        updateCaption(event) {
+            const newCaption = event.target.textContent;
+            this.updateAttributes({
+                caption: newCaption || null,
+            });
         },
     },
 };
@@ -69,6 +96,18 @@ export default {
 
 .image-layout {
     display: block;
+}
+
+.image-figure {
+    display: block;
+    margin: 1em 0;
+}
+
+.image-figure figcaption {
+    margin-top: 0.5em;
+    font-style: italic;
+    color: #666;
+    font-size: 0.9em;
 }
 
 .fallback-image {
