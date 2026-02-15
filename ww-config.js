@@ -48,7 +48,16 @@ export default {
         ],
         customSettingsPropertiesOrder: [
             'enableCollaboration',
-            ['websocketUrl', 'documentId', 'authToken', 'userName', 'autoConnect', 'saveMode', 'saveDebounce', 'maxConnectionAttempts'],
+            [
+                'websocketUrl',
+                'documentId',
+                'authToken',
+                'userName',
+                'autoConnect',
+                'saveMode',
+                'saveDebounce',
+                'maxConnectionAttempts',
+            ],
             'formInfobox',
             ['fieldName', 'customValidation', 'validation'],
             'readonly',
@@ -456,6 +465,9 @@ export default {
                     name: 'Save ID',
                     type: 'Text',
                     optional: true,
+                    options: {
+                        bindable: true,
+                    },
                 },
             ],
         },
