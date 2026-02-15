@@ -26,6 +26,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         connected: false,
         synced: false,
         syncing: false,
+        saving: false,
+        saved: false,
         error: null,
         connectionId: null,
         users: [],
@@ -238,6 +240,40 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 });
             });
         }
+
+        // Écouter les messages stateless du serveur (save-state)
+        provider.value.on('stateless', ({ payload }) => {
+            try {
+                const data = JSON.parse(payload);
+                if (data.action === 'save-state') {
+                    if (data.state === 'saving') {
+                        updateStatus({ saving: true, saved: false });
+                        emit('trigger-event', {
+                            name: 'collab:saving',
+                            event: { timestamp: new Date().toISOString() },
+                        });
+                    } else if (data.state === 'saved') {
+                        updateStatus({ saving: false, saved: true });
+                        emit('trigger-event', {
+                            name: 'collab:saved',
+                            event: { timestamp: new Date().toISOString() },
+                        });
+                    } else if (data.state === 'error') {
+                        updateStatus({ saving: false, saved: false, error: data.message });
+                        emit('trigger-event', {
+                            name: 'collab:error',
+                            event: {
+                                error: 'save-error',
+                                message: data.message,
+                                timestamp: new Date().toISOString(),
+                            },
+                        });
+                    }
+                }
+            } catch (e) {
+                console.warn('[Collaboration] Failed to parse stateless message:', e);
+            }
+        });
     };
 
     // Initialisation de la collaboration
@@ -324,6 +360,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             connected: false,
             synced: false,
             syncing: false,
+            saving: false,
+            saved: false,
             error: null,
             connectionId: null,
             users: [],
@@ -448,6 +486,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // Envoyer un signal de sauvegarde au serveur via stateless message
     const sendSaveSignal = (force = false) => {
         if (provider.value && provider.value.isConnected) {
+            updateStatus({ saving: true, saved: false });
             provider.value.sendStateless(
                 JSON.stringify({
                     action: 'save-document',

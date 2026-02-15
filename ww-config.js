@@ -194,6 +194,20 @@ export default {
                 timestamp: '',
             },
         },
+        {
+            name: 'collab:saving',
+            label: { en: 'On document saving', fr: 'Document en cours de sauvegarde' },
+            event: {
+                timestamp: '',
+            },
+        },
+        {
+            name: 'collab:saved',
+            label: { en: 'On document saved', fr: 'Document sauvegardé' },
+            event: {
+                timestamp: '',
+            },
+        },
         // Image Layout events
         {
             name: 'image:added',

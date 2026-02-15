@@ -329,6 +329,8 @@ export default {
                 connected: false,
                 synced: false,
                 syncing: false,
+                saving: false,
+                saved: false,
                 error: null,
                 connectionId: null,
                 users: [],
