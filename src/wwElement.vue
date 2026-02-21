@@ -410,7 +410,7 @@ export default {
 
     watch: {
         'content.initialValue'(value) {
-            if (value !== this.getContent()) {
+            if (!this.isCollaborating && value !== this.getContent()) {
                 this.richEditor.chain().setContent(value).setMeta('addToHistory', false).run();
                 this.setValue(value);
             }
