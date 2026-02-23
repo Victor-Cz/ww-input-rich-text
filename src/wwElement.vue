@@ -1020,37 +1020,6 @@ export default {
                     onCreate: () => {
                         console.log('[Editor] Editor created successfully');
 
-                        // Si collaboration active, attendre la synchronisation avant d'injecter l'initialValue
-                        if (this.isCollaborating && this.provider && this.content.initialValue) {
-                            // Flag pour éviter l'injection multiple
-                            let initialContentInjected = false;
-
-                            // Écouter l'événement 'synced' une seule fois
-                            const handleSynced = ({ state }) => {
-                                if (initialContentInjected) return;
-
-                                console.log('[Editor] Provider synced, state:', state);
-
-                                const xmlFragment = this.ydoc.getXmlFragment('default');
-                                const isYdocEmpty = xmlFragment.length === 0;
-
-                                console.log('[Editor] After sync - Y.doc empty:', isYdocEmpty, 'length:', xmlFragment.length);
-
-                                if (isYdocEmpty) {
-                                    console.log('[Editor] Y.doc is empty after sync, injecting initialValue');
-                                    this.richEditor.chain().setContent(this.content.initialValue).setMeta('addToHistory', false).run();
-                                    initialContentInjected = true;
-                                } else {
-                                    console.log('[Editor] Y.doc has content, skipping initialValue injection');
-                                }
-
-                                // Retirer l'écouteur après la première synchronisation
-                                this.provider.off('synced', handleSynced);
-                            };
-
-                            this.provider.on('synced', handleSynced);
-                        }
-
                         this.setValue(this.getContent());
                         this.setMentions(this.richEditor.getJSON().content.reduce(extractMentions, []));
                         // Initialiser l'accumulateur de diffs à vide lors de la création
