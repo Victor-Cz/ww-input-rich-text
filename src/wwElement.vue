@@ -835,28 +835,6 @@ export default {
     methods: {
         loadEditor() {
             if (this.loading) return;
-
-            // En mode collaboration, attendre que le provider soit synchronisé avec le serveur
-            // AVANT de créer l'éditeur. Raison : quand le Y.Doc est vide, y-prosemirror initialise
-            // automatiquement le Y.Doc avec un <paragraph/> vide (doc ProseMirror par défaut).
-            // Si Hocuspocus synchronise ensuite son contenu serveur, Y.js CRDT merge les deux
-            // → duplication de structure à chaque rechargement de page.
-            // En attendant le 'synced', le Y.Doc est déjà rempli → y-prosemirror lit depuis le Y.Doc
-            // et n'écrit rien.
-            if (this.shouldEnableCollaboration && this.provider && !this.provider.isSynced) {
-                if (this._pendingLoadEditorProvider !== this.provider) {
-                    this._pendingLoadEditorProvider = this.provider;
-                    this.provider.once('synced', () => {
-                        this._pendingLoadEditorProvider = null;
-                        if (!this.isDestroying) {
-                            this.loadEditor();
-                        }
-                    });
-                }
-                return;
-            }
-            this._pendingLoadEditorProvider = null;
-
             this.loading = true;
             if (this.richEditor) this.richEditor.destroy();
 
