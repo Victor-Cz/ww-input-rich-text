@@ -311,6 +311,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 name: collabConfig.value.documentId, // Le provider ajoutera automatiquement /{name}
                 document: ydocInstance,
                 token: collabConfig.value.authToken || undefined,
+                // Ping toutes les 30s pour éviter les coupures par proxies/firewalls
+                keepAlive: 30000,
                 // Ajoute ?saveMode=...&userName=...&saveDebounce=... à l'URL WebSocket
                 parameters: {
                     saveMode: collabConfig.value.saveMode,

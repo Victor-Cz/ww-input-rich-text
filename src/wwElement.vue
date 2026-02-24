@@ -423,6 +423,7 @@ export default {
             this.richEditor.setEditable(value);
         },
         variableValue(value, oldValue) {
+            if (this.shouldEnableCollaboration) return;
             if (value !== this.getContent()) this.richEditor.chain().setContent(value).setMeta('addToHistory', false).run();
             // If format changed
             if (value !== this.getContent()) this.setValue(this.getContent());
