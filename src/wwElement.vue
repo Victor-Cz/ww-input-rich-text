@@ -410,7 +410,7 @@ export default {
 
     watch: {
         'content.initialValue'(value) {
-            if (!this.isCollaborating && value !== this.getContent()) {
+            if (!this.shouldEnableCollaboration && value !== this.getContent()) {
                 this.richEditor.chain().setContent(value).setMeta('addToHistory', false).run();
                 this.setValue(value);
             }
@@ -980,9 +980,8 @@ export default {
                 }
 
                 // Déterminer le contenu initial
-                // En mode collaboration, on laisse Y.js gérer le contenu
-                // Le contenu initial sera injecté dans onCreate si le Y.doc est vide
-                const initialContent = this.isCollaborating ? undefined : String(this.content.initialValue || '');
+                // En mode collaboration, on laisse Y.js gérer le contenu (même si la connexion n'est pas encore établie)
+                const initialContent = this.shouldEnableCollaboration ? undefined : String(this.content.initialValue || '');
 
                 console.log('[Editor] Creating editor with:', {
                     isCollaborating: this.isCollaborating,
