@@ -6,17 +6,17 @@
         "serve": "weweb serve"
     },
     "devDependencies": {
-        "@vitejs/plugin-vue": "^5.2.4",
-        "@vue/eslint-config-prettier": "^6.0.0",
+        "@vitejs/plugin-vue": "5.2.4",
+        "@vue/eslint-config-prettier": "6.0.0",
         "@weweb/cli": "latest",
-        "eslint": "^7.7.0",
-        "eslint-plugin-prettier": "^3.1.4",
-        "eslint-plugin-vue": "^7.0.0-beta.4",
-        "prettier": "^2.1.2"
+        "eslint": "7.7.0",
+        "eslint-plugin-prettier": "3.1.4",
+        "eslint-plugin-vue": "7.0.0-beta.4",
+        "prettier": "2.1.2"
     },
     "dependencies": {
-        "@floating-ui/dom": "^1.7.3",
-        "@hocuspocus/provider": "^2.13.0",
+        "@floating-ui/dom": "1.7.3",
+        "@hocuspocus/provider": "2.13.0",
         "@tiptap/core": "2.11.3",
         "@tiptap/extension-collaboration": "2.11.3",
         "@tiptap/extension-collaboration-cursor": "2.11.3",
@@ -46,7 +46,7 @@
         "prosemirror-keymap": "1.2.0",
         "prosemirror-schema-list": "1.2.2",
         "tiptap-markdown": "0.8.10",
-        "y-prosemirror": "^1.2.12",
-        "yjs": "^13.6.18"
+        "y-prosemirror": "1.2.12",
+        "yjs": "13.6.18"
     }
 }
