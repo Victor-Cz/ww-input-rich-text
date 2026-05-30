@@ -11,6 +11,7 @@ import Image from '@tiptap/extension-image';
 import { VueNodeViewRenderer } from '@tiptap/vue-3';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import ImageNode from '../components/ImageNode.vue';
+import { sanitizeImageSrc } from '../utils/sanitizeUrl.js';
 
 export const CustomImage = Image.extend({
     name: 'customImage',
@@ -35,7 +36,9 @@ export const CustomImage = Image.extend({
                     // Parse image directly
                     const refresh = element.getAttribute('data-refresh');
                     return {
-                        src: element.getAttribute('src'),
+                        // Protection injection (XSS) : filtrer les sources dangereuses au parsing
+                        // (collage / setContent HTML externe).
+                        src: sanitizeImageSrc(element.getAttribute('src')),
                         alt: element.getAttribute('alt'),
                         title: element.getAttribute('title'),
                         'data-image-id': element.getAttribute('data-image-id'),
@@ -55,7 +58,8 @@ export const CustomImage = Image.extend({
 
                     const refresh = img.getAttribute('data-refresh');
                     return {
-                        src: img.getAttribute('src'),
+                        // Protection injection (XSS) : filtrer les sources dangereuses au parsing.
+                        src: sanitizeImageSrc(img.getAttribute('src')),
                         alt: img.getAttribute('alt'),
                         title: img.getAttribute('title'),
                         'data-image-id': img.getAttribute('data-image-id'),
@@ -171,7 +175,8 @@ export const CustomImage = Image.extend({
                 return commands.insertContent({
                     type: this.name,
                     attrs: {
-                        src: options.src,
+                        // Protection injection (XSS) : refuser les sources dangereuses.
+                        src: sanitizeImageSrc(options.src),
                         'data-image-id': options.dataImageId || null,
                         'data-position': options.dataPosition || null,
                         'data-refresh': options.dataRefresh || false,

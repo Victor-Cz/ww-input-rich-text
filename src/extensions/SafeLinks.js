@@ -1,5 +1,6 @@
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from 'prosemirror-state';
+import { safeOpenUrl } from '../utils/sanitizeUrl.js';
 
 const safeLinksKey = new PluginKey('safeLinks');
 
@@ -44,8 +45,9 @@ export const SafeLinks = Extension.create({
                                     console.log('SafeLinks: Ouverture du lien avec Cmd/Ctrl autorisée');
 
                                     // Ouvrir le lien dans un nouvel onglet
-                                    if (link && link.href) {
-                                        window.open(link.href, '_blank', 'noopener,noreferrer');
+                                    // Protection injection (XSS) : refuser les protocoles dangereux.
+                                    if (link) {
+                                        safeOpenUrl(link.getAttribute('href'));
                                     }
 
                                     return true; // Empêche le comportement par défaut mais on a géré l'ouverture

@@ -249,6 +249,7 @@ import { SelectionHighlighter } from './extensions/SelectionHighlighter.js';
 import { TextSuggestion } from './extensions/TextSuggestion.js';
 import { TextStrike } from './extensions/TextStrike.js';
 import { CustomImage } from './extensions/CustomImage.js';
+import { sanitizeLinkUrl, sanitizeImageSrc, safeOpenUrl, isDangerousUrl } from './utils/sanitizeUrl.js';
 
 function extractMentions(acc, currentNode) {
     if (currentNode.type === 'mention') {
@@ -899,6 +900,10 @@ export default {
                             rel: 'noopener noreferrer',
                         },
                         openOnClick: false, // On gère l'ouverture manuellement avec Cmd/Ctrl+clic
+                        // Protection injection (XSS) : ne jamais auto-linker ni accepter
+                        // une URL utilisant un protocole dangereux (javascript:, data:, ...).
+                        shouldAutoLink: url => !isDangerousUrl(url),
+                        isAllowedUri: (url, ctx) => ctx.defaultValidate(url) && !isDangerousUrl(url),
                     }),
                     TextStyle,
                     Color,
@@ -1053,7 +1058,8 @@ export default {
                         handleClick: (_view, _pos, event) => {
                             const link = event.target?.closest('a');
                             if (link && (event.metaKey || event.ctrlKey)) {
-                                window.open(link.href, '_blank', 'noopener,noreferrer');
+                                // Protection injection (XSS) : ne pas ouvrir un protocole dangereux.
+                                safeOpenUrl(link.getAttribute('href'));
                                 return true;
                             }
                             return false;
@@ -1103,8 +1109,11 @@ export default {
             // Si l'URL est fournie directement (depuis un menu personnalisé par exemple)
             // url doit être une string non vide (pas undefined, null, ou '')
             if (url !== undefined && url !== null && url !== '') {
+                // Protection injection (XSS) : refuser les protocoles dangereux.
+                const safeUrl = sanitizeLinkUrl(url);
+                if (!safeUrl) return;
                 // update link
-                this.richEditor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+                this.richEditor.chain().focus().extendMarkRange('link').setLink({ href: safeUrl }).run();
                 return;
             }
 
@@ -1129,17 +1138,24 @@ export default {
                 return;
             }
 
+            // Protection injection (XSS) : refuser les protocoles dangereux.
+            const safeUrl = sanitizeLinkUrl(selectedUrl);
+            if (!safeUrl) return;
+
             // update link
-            this.richEditor.chain().focus().extendMarkRange('link').setLink({ href: selectedUrl }).run();
+            this.richEditor.chain().focus().extendMarkRange('link').setLink({ href: safeUrl }).run();
         },
         setImage(src, alt = '', title = '') {
             // If using image layout system with IDs
             if (this.content.useImageLayout) {
                 if (this.content.customMenu) {
                     // Custom menu provides the src, alt, title
+                    // Protection injection (XSS) : refuser les sources dangereuses.
+                    const safeSrc = sanitizeImageSrc(src);
+                    if (!safeSrc) return;
                     const imageId = ImageManager.generateImageId();
                     this.richEditor.commands.setImageWithId({
-                        src: src,
+                        src: safeSrc,
                         dataImageId: imageId,
                         alt: alt,
                         title: title,
@@ -1154,11 +1170,12 @@ export default {
                     url = wwLib.getFrontWindow().prompt('Image URL');
                     /* wwFront:end */
 
-                    if (!url) return;
+                    const safeSrc = sanitizeImageSrc(url);
+                    if (!safeSrc) return;
 
                     const imageId = ImageManager.generateImageId();
                     this.richEditor.commands.setImageWithId({
-                        src: url,
+                        src: safeSrc,
                         dataImageId: imageId,
                         alt: alt,
                         title: title,
@@ -1167,7 +1184,10 @@ export default {
             } else {
                 // Standard behavior (no ID system)
                 if (this.content.customMenu) {
-                    this.richEditor.commands.setImage({ src, alt, title });
+                    // Protection injection (XSS) : refuser les sources dangereuses.
+                    const safeSrc = sanitizeImageSrc(src);
+                    if (!safeSrc) return;
+                    this.richEditor.commands.setImage({ src: safeSrc, alt, title });
                 } else {
                     let url;
                     /* wwEditor:start */
@@ -1177,8 +1197,9 @@ export default {
                     url = wwLib.getFrontWindow().prompt('Image URL');
                     /* wwFront:end */
 
-                    if (!url) return;
-                    this.richEditor.chain().focus().setImage({ src: url }).run();
+                    const safeSrc = sanitizeImageSrc(url);
+                    if (!safeSrc) return;
+                    this.richEditor.chain().focus().setImage({ src: safeSrc }).run();
                 }
             }
         },

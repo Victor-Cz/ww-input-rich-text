@@ -57,6 +57,8 @@
 </template>
 
 <script>
+import { sanitizeLinkUrl, safeOpenUrl } from '../utils/sanitizeUrl.js';
+
 export default {
     name: 'LinkPopover',
     props: {
@@ -166,7 +168,9 @@ export default {
         handleSelectionUpdate() {
             if (this.editor.isActive('link')) {
                 const { href } = this.editor.getAttributes('link');
-                this.linkUrl = href;
+                // Protection injection (XSS) : ne jamais exposer (binding :href / window.open)
+                // une URL au protocole dangereux stockée dans le document.
+                this.linkUrl = sanitizeLinkUrl(href);
 
                 // 1. On l'affiche d'abord (invisible mais présent dans le DOM)
                 this.isVisible = true;
@@ -248,9 +252,8 @@ export default {
             }
         },
         openLink() {
-            if (this.linkUrl) {
-                window.open(this.linkUrl, '_blank', 'noopener,noreferrer');
-
+            // Protection injection (XSS) : safeOpenUrl refuse les protocoles dangereux.
+            if (this.linkUrl && safeOpenUrl(this.linkUrl)) {
                 // Emit event
                 this.triggerLinkEvent('link:opened', {
                     url: this.linkUrl,
@@ -271,17 +274,21 @@ export default {
                 return;
             }
 
+            // Protection injection (XSS) : refuser les protocoles dangereux.
+            const safeUrl = sanitizeLinkUrl(newUrl);
+            if (!safeUrl) return;
+
             const oldUrl = this.linkUrl;
 
             // Mettre à jour le lien
-            this.editor.chain().focus().extendMarkRange('link').setLink({ href: newUrl }).run();
+            this.editor.chain().focus().extendMarkRange('link').setLink({ href: safeUrl }).run();
 
-            this.linkUrl = newUrl;
+            this.linkUrl = safeUrl;
 
             // Emit event
             this.triggerLinkEvent('link:edited', {
                 oldUrl,
-                newUrl,
+                newUrl: safeUrl,
             });
         },
         closePopover() {
@@ -304,7 +311,8 @@ export default {
         showForNewLink() {
             // Afficher le popover pour créer un nouveau lien
             const previousUrl = this.editor.getAttributes('link').href;
-            this.linkUrl = previousUrl || '';
+            // Protection injection (XSS) : ne pas pré-remplir avec une URL dangereuse.
+            this.linkUrl = sanitizeLinkUrl(previousUrl);
             this.isVisible = true;
 
             // Attendre que le popover soit rendu puis le positionner et focus l'input
@@ -326,14 +334,21 @@ export default {
                 return;
             }
 
-            // Créer le lien
-            this.editor.chain().focus().setLink({ href: url }).run();
+            // Protection injection (XSS) : refuser les protocoles dangereux.
+            const safeUrl = sanitizeLinkUrl(url);
+            if (!safeUrl) {
+                this.closePopover();
+                return;
+            }
 
-            this.linkUrl = url;
+            // Créer le lien
+            this.editor.chain().focus().setLink({ href: safeUrl }).run();
+
+            this.linkUrl = safeUrl;
 
             // Emit event
             this.triggerLinkEvent('link:created', {
-                url: url,
+                url: safeUrl,
             });
 
             // Fermer le popover après création
