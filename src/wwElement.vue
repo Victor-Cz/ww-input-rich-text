@@ -1872,14 +1872,15 @@ export default {
 
     /* Styles des curseurs de collaboration */
     .collaboration-cursor__caret {
-        position: absolute;
+        position: relative;
         border-left: 2px solid;
         border-right: none;
+        margin-left: -1px;
+        margin-right: -1px;
         pointer-events: none;
-        height: 1.2em;
+        word-break: normal;
         width: 0;
         z-index: 99;
-        transform: translateY(3px);
     }
     
 
