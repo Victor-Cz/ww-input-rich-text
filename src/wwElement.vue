@@ -365,6 +365,14 @@ export default {
             readonly: true,
         });
 
+        const { value: history, setValue: _setHistory } = wwLib.wwVariable.useComponentVariable({
+            uid: props.uid,
+            name: 'history',
+            type: 'object',
+            defaultValue: { canUndo: false, canRedo: false },
+            readonly: true,
+        });
+
         // Wrap setters to silently ignore calls after variable cleanup
         let _isDestroyed = false;
         onBeforeUnmount(() => { _isDestroyed = true; });
@@ -374,6 +382,7 @@ export default {
         const setPendingChangesCount = (...args) => { if (!_isDestroyed) _setPendingChangesCount(...args); };
         const setCollaborationStatus = (...args) => { if (!_isDestroyed) _setCollaborationStatus(...args); };
         const setSeo = (...args) => { if (!_isDestroyed) _setSeo(...args); };
+        const setHistory = (...args) => { if (!_isDestroyed) _setHistory(...args); };
 
 
         /* wwEditor:start */
@@ -423,6 +432,8 @@ export default {
             setCollaborationStatus,
             seo,
             setSeo,
+            history,
+            setHistory,
             randomUid,
             /* wwEditor:start */
             createElement,
@@ -554,6 +565,13 @@ export default {
                 this.setStates(value);
             },
         },
+        historyStates: {
+            deep: true,
+            immediate: true,
+            handler(value) {
+                this.setHistory(value);
+            },
+        },
         // Watchers de collaboration
         'collabConfig.documentId'(newId, oldId) {
             if (newId !== oldId && this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
@@ -649,6 +667,13 @@ export default {
                                 ? 'justify'
                                 : false,
                 table: this.richEditor.isActive('table'),
+            };
+        },
+        historyStates() {
+            if (!this.richEditor) return { canUndo: false, canRedo: false };
+            return {
+                canUndo: this.richEditor.can().undo(),
+                canRedo: this.richEditor.can().redo(),
             };
         },
         currentColor() {
