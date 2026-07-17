@@ -846,12 +846,12 @@ export default {
    indépendante empilée, façon suggestions de chat */
 .magic-dropdown {
     position: absolute;
-    bottom: calc(100% + 4px);
+    bottom: calc(100% +6px);
     left: 0;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: 6px;
     z-index: 1001;
 }
 
