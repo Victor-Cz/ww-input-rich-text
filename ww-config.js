@@ -824,6 +824,12 @@ export default {
             defaultValue: 'en',
             bindable: true,
             hidden: content => !content.enableSeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'string',
+                tooltip: 'Language of the SEO analysis: thresholds, default word lists, and the localized title, description and message of each check ("en" or "fr").',
+            },
+            /* wwEditor:end */
         },
         seoExpectH1: {
             section: 'settings',
