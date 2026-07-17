@@ -123,8 +123,8 @@ export default {
                 'parameterAiMenuPlaceholders',
                 'parameterAiMenuCustomTypes',
             ],
-            'enableSeoAnalysis',
             [
+                'enableSeoAnalysis',
                 'seoKeyword',
                 'seoKeywordSynonyms',
                 'seoSecondaryKeywords',
@@ -2390,6 +2390,7 @@ export default {
             },
             type: 'OnOff',
             defaultValue: false,
+            bindable: true,
         },
         parameterAiMenuVariant: {
             section: 'settings',
