@@ -5,7 +5,7 @@ import { metaChecks } from './checks/meta.js';
 import { secondaryChecks } from './checks/secondary.js';
 import { structureChecks } from './checks/structure.js';
 import { extractModel, findPhrasesInModel } from './extractors.js';
-import { getMessage } from './messages.js';
+import { getLabels, getMessage } from './i18n/index.js';
 import { aggregateScore, categoryScores, gradeFromScore } from './scoring.js';
 import { getWordLists } from './wordlists.js';
 
@@ -39,8 +39,11 @@ export function analyzeSeo(doc, rawOptions = {}) {
     const rangesMap = {};
     const exposedChecks = checks.map(check => {
         rangesMap[check.id] = check.ranges || [];
+        const labels = getLabels(check.id, options.lang);
         return {
             id: check.id,
+            title: labels.title,
+            description: labels.description,
             category: check.category,
             status: check.status,
             score: typeof check.score === 'number' ? Math.round((check.score / 9) * 100) : null,
