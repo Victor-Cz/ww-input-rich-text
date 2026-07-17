@@ -45,6 +45,11 @@
                         >
                             <div v-if="type.icon" :class="['magic-type-icon', getTypeIcon(type)]" aria-hidden="true"></div>
                             <span>{{ type.label }}</span>
+                            <div
+                                v-if="key === selectedModificationType"
+                                class="icon-check magic-option-check"
+                                aria-hidden="true"
+                            ></div>
                         </div>
                     </div>
                 </transition>
@@ -285,7 +290,8 @@ export default {
         },
 
         selectModificationType(typeKey) {
-            this.selectedModificationType = typeKey;
+            // Re-cliquer sur le type déjà sélectionné le désélectionne
+            this.selectedModificationType = this.selectedModificationType === typeKey ? null : typeKey;
             this.isDropdownOpen = false;
 
             this.$nextTick(() => {
@@ -780,8 +786,23 @@ export default {
 }
 
 .magic-dropdown-option.is-selected {
-    background: rgba(0, 0, 0, 0.04);
+    background: var(--primary-color-1A, rgba(0, 123, 255, 0.1));
+    color: var(--primary-color, #007bff);
     font-weight: 500;
+}
+
+.magic-dropdown-option.is-selected:hover {
+    background: var(--primary-color-33, rgba(0, 123, 255, 0.2));
+}
+
+.magic-dropdown-option.is-selected .magic-type-icon {
+    color: var(--primary-color, #007bff);
+}
+
+.magic-option-check {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: var(--primary-color, #007bff);
 }
 
 .magic-dropdown-option span {
