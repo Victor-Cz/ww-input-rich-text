@@ -846,7 +846,7 @@ export default {
    indépendante empilée, façon suggestions de chat */
 .magic-dropdown {
     position: absolute;
-    bottom: calc(100% +6px);
+    bottom: calc(100% + 6px);
     left: 0;
     display: flex;
     flex-direction: column;
