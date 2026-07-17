@@ -1,5 +1,5 @@
 <template>
-    <div class="magic-menu">
+    <div class="magic-menu" :style="menuStyleVars">
         <!-- Barre d'actions quand une proposition est en attente -->
         <transition name="magic-fade">
             <div class="magic-proposal-actions" v-if="aiResponse && !isLoading">
@@ -100,6 +100,11 @@ export default {
             type: String,
             default: '#007bff',
         },
+        // Couleur dédiée au bouton d'envoi, fallback sur la couleur primaire si vide
+        buttonColor: {
+            type: String,
+            default: '',
+        },
         customModificationTypes: {
             type: Array,
             default: () => [],
@@ -119,6 +124,17 @@ export default {
         },
     },
     computed: {
+        menuStyleVars() {
+            if (!this.buttonColor) {
+                return {};
+            }
+            // Décliner le hover en 80% d'opacité seulement pour un hex simple #RRGGBB
+            const isHex6 = /^#[0-9a-fA-F]{6}$/.test(this.buttonColor);
+            return {
+                '--magic-submit-color': this.buttonColor,
+                '--magic-submit-color-hover': isHex6 ? `${this.buttonColor}CC` : this.buttonColor,
+            };
+        },
         modificationTypes() {
             const customTypes = {};
             if (this.customModificationTypes && Array.isArray(this.customModificationTypes)) {
@@ -667,12 +683,12 @@ export default {
 }
 
 .magic-submit:not(:disabled) {
-    background: var(--primary-color, #007bff);
+    background: var(--magic-submit-color, var(--primary-color, #007bff));
     color: white;
 }
 
 .magic-submit:not(:disabled):hover {
-    background: var(--primary-color-hover, #007bff);
+    background: var(--magic-submit-color-hover, var(--primary-color-hover, #007bff));
     transform: scale(1.12);
 }
 

@@ -218,6 +218,7 @@
                 <!-- Variante Magic : input léger docké en bas de l'élément -->
                 <magic-menu ref="aiMenu" :rich-editor="richEditor" :is-read-only="content.parameterAiMenuReadOnly ?? true"
                     :parameter-ai-menu-primary-color="content.parameterAiMenuPrimaryColor ?? '#007bff'"
+                    :button-color="content.parameterMagicMenuButtonColor ?? ''"
                     :custom-modification-types="content.parameterAiMenuCustomTypes ?? []"
                     :placeholders="content.parameterAiMenuPlaceholders ?? {}"
                     @ai-prompt="handleAiPrompt"

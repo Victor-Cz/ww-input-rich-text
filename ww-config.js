@@ -115,6 +115,7 @@ export default {
                 'parameterAiMenuReadOnly',
                 'parameterAiMenuForceDisplay',
                 'parameterAiMenuPrimaryColor',
+                'parameterMagicMenuButtonColor',
                 'parameterAiMenuTitlePlaceholders',
                 'parameterAiMenuPlaceholders',
                 'parameterAiMenuCustomTypes',
@@ -2282,6 +2283,17 @@ export default {
             type: 'Color',
             defaultValue: '#007bff',
             bindable: true,
+        },
+        parameterMagicMenuButtonColor: {
+            section: 'settings',
+            hidden: content => !content.enableAiMenu || content.parameterAiMenuVariant !== 'magic',
+            label: {
+                en: 'Submit Button Color',
+            },
+            type: 'Color',
+            defaultValue: '',
+            bindable: true,
+            description: 'Color of the magic menu submit button. Falls back to the primary color when empty.',
         },
         parameterAiMenuCustomTypes: {
             section: 'settings',
