@@ -60,7 +60,7 @@
                 @keydown.enter.prevent="submitPrompt"
                 @keydown.esc.prevent="onEscape"
                 @focus="onInputFocus"
-                @blur="isFocused = false"
+                @blur="onInputBlur"
             />
 
             <div class="magic-spinner" v-if="isLoading" :title="placeholders.processing"></div>
@@ -173,17 +173,20 @@ export default {
             selectedModificationType: null,
             isDropdownOpen: false,
             showSuccessCheck: false,
+            lastMousedownInside: false,
         };
     },
     watch: {
         customModificationTypes: {
             immediate: true,
             handler() {
-                // Garder un type valide sélectionné : le menu est toujours visible,
-                // il doit être utilisable sans passer par la dropdown
-                const keys = Object.keys(this.modificationTypes);
-                if (!this.selectedModificationType || !keys.includes(this.selectedModificationType)) {
-                    this.selectedModificationType = keys[0] || null;
+                // Aucun type sélectionné par défaut : on garde l'état neutre (icône cog,
+                // placeholder global) et on désélectionne si le type n'existe plus
+                if (
+                    this.selectedModificationType &&
+                    !Object.keys(this.modificationTypes).includes(this.selectedModificationType)
+                ) {
+                    this.selectedModificationType = null;
                 }
             },
         },
@@ -206,6 +209,13 @@ export default {
         },
 
         onClickOutside(event) {
+            // Mémoriser si le mousedown a lieu dans le menu : le blur de l'input qui suit
+            // immédiatement (clic sur submit, dropdown...) ne doit pas relâcher la sélection
+            this.lastMousedownInside = !!(this.$el && this.$el.contains(event.target));
+            setTimeout(() => {
+                this.lastMousedownInside = false;
+            }, 0);
+
             if (this.isDropdownOpen && this.$el && !this.$el.contains(event.target)) {
                 this.isDropdownOpen = false;
             }
@@ -214,6 +224,24 @@ export default {
         onInputFocus() {
             this.isFocused = true;
             this.captureSelection();
+        },
+
+        onInputBlur(event) {
+            this.isFocused = false;
+
+            // Relâcher la sélection maintenue, sauf si le focus reste dans le menu
+            // ou qu'une requête/proposition est en cours
+            const related = event.relatedTarget;
+            const stayingInside = (related && this.$el.contains(related)) || this.lastMousedownInside;
+            if (!stayingInside && !this.isLoading && !this.aiResponse) {
+                this.releaseSelection();
+            }
+        },
+
+        releaseSelection() {
+            this.storedSelection = null;
+            this.storedSelectionRange = null;
+            this.richEditor.commands.clearHighlight();
         },
 
         onEscape(event) {
@@ -559,7 +587,7 @@ export default {
     gap: 6px;
     width: min(100%, 400px);
     margin: 0 auto;
-    padding: 3px 3px 3px 8px;
+    padding: 3px 3px 3px 6px;
     border-radius: 999px;
     background: rgba(229, 231, 235, 0.5);
     backdrop-filter: blur(14px) saturate(1.3);
@@ -717,7 +745,7 @@ export default {
     transform: rotate(0deg);
 }
 
-/* Dropdown ouverte vers le haut */
+/* Dropdown ouverte vers le haut, fond opaque pour rester lisible sur le texte */
 .magic-dropdown {
     position: absolute;
     bottom: calc(100% + 8px);
@@ -728,9 +756,7 @@ export default {
     min-width: 180px;
     padding: 4px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: #ffffff;
     border: 1px solid rgba(0, 0, 0, 0.05);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     z-index: 1001;
@@ -746,14 +772,11 @@ export default {
     font-size: 13px;
     color: #4b5563;
     cursor: pointer;
-    transition:
-        background 0.15s ease,
-        transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: background 0.15s ease;
 }
 
 .magic-dropdown-option:hover {
     background: rgba(0, 0, 0, 0.05);
-    transform: translateX(2px);
 }
 
 .magic-dropdown-option.is-selected {
