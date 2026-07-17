@@ -24,7 +24,26 @@
             </div>
         </transition>
 
-        <div class="magic-pill" :class="{ 'is-focused': isFocused, 'is-loading': isLoading }">
+        <!-- Wrapper : la dropdown doit être un frère de la pill, pas un enfant,
+             sinon le backdrop-filter de la pill isole le backdrop des bulles
+             et leur blur ne fonctionne pas -->
+        <div class="magic-pill-zone" :class="{ 'is-focused': isFocused }">
+            <transition name="magic-pop">
+                <div class="magic-dropdown" v-show="isDropdownOpen">
+                    <div
+                        v-for="(type, key, index) in modificationTypes"
+                        :key="key"
+                        class="magic-dropdown-option"
+                        :style="{ animationDelay: `${index * 40}ms` }"
+                        @click="selectModificationType(key)"
+                    >
+                        <div v-if="type.icon" :class="['magic-type-icon', getTypeIcon(type)]" aria-hidden="true"></div>
+                        <span>{{ type.label }}</span>
+                    </div>
+                </div>
+            </transition>
+
+            <div class="magic-pill" :class="{ 'is-focused': isFocused, 'is-loading': isLoading }">
             <!-- Sélecteur de type de modification -->
             <div class="magic-type" v-if="typeCount > 0">
                 <button type="button" class="magic-type-header" @click="toggleDropdown">
@@ -35,20 +54,6 @@
                     <span class="magic-type-label" v-if="showTypeLabel">{{ getSelectedTypeLabel() }}</span>
                     <div class="icon-chevron-down magic-chevron" :class="{ rotated: isDropdownOpen }" aria-hidden="true"></div>
                 </button>
-                <transition name="magic-pop">
-                    <div class="magic-dropdown" v-show="isDropdownOpen">
-                        <div
-                            v-for="(type, key, index) in modificationTypes"
-                            :key="key"
-                            class="magic-dropdown-option"
-                            :style="{ animationDelay: `${index * 40}ms` }"
-                            @click="selectModificationType(key)"
-                        >
-                            <div v-if="type.icon" :class="['magic-type-icon', getTypeIcon(type)]" aria-hidden="true"></div>
-                            <span>{{ type.label }}</span>
-                        </div>
-                    </div>
-                </transition>
             </div>
 
             <input
@@ -76,6 +81,7 @@
             >
                 <div class="icon-arrow-sm-right magic-arrow" aria-hidden="true"></div>
             </button>
+            </div>
         </div>
     </div>
 </template>
@@ -645,14 +651,25 @@ export default {
     transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Pill compacte : gris léger + blur, s'anime au hover et s'étend au focus */
-.magic-pill {
+/* Zone : porte la largeur, le centrage et l'expansion au focus. Sert aussi
+   d'ancre à la dropdown, qui doit rester hors de la pill (backdrop-filter) */
+.magic-pill-zone {
     position: relative;
+    width: min(100%, 400px);
+    margin: 0 auto;
+    transition: width 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.magic-pill-zone.is-focused {
+    width: min(100%, 520px);
+}
+
+/* Pill compacte : gris léger + blur, s'anime au hover */
+.magic-pill {
     display: flex;
     align-items: center;
     gap: 6px;
-    width: min(100%, 400px);
-    margin: 0 auto;
+    width: 100%;
     padding: 3px 3px 3px 6px;
     border-radius: 999px;
     background: rgba(229, 231, 235, 0.5);
@@ -660,8 +677,8 @@ export default {
     -webkit-backdrop-filter: blur(14px) saturate(1.3);
     border: 1px solid rgba(0, 0, 0, 0.04);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    box-sizing: border-box;
     transition:
-        width 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
         transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
         background 0.3s ease,
         border-color 0.3s ease,
@@ -675,7 +692,6 @@ export default {
 }
 
 .magic-pill.is-focused {
-    width: min(100%, 520px);
     background: rgba(250, 250, 250, 0.75);
     border-color: rgba(0, 0, 0, 0.07);
     transform: translateY(-2px);
