@@ -38,9 +38,10 @@
                 <transition name="magic-pop">
                     <div class="magic-dropdown" v-show="isDropdownOpen">
                         <div
-                            v-for="(type, key) in modificationTypes"
+                            v-for="(type, key, index) in modificationTypes"
                             :key="key"
                             class="magic-dropdown-option"
+                            :style="{ animationDelay: `${index * 40}ms` }"
                             @click="selectModificationType(key)"
                         >
                             <div v-if="type.icon" :class="['magic-type-icon', getTypeIcon(type)]" aria-hidden="true"></div>
@@ -802,20 +803,16 @@ export default {
     transform: rotate(0deg);
 }
 
-/* Dropdown ouverte vers le haut, fond opaque pour rester lisible sur le texte */
+/* Dropdown ouverte vers le haut : pas de conteneur, chaque option est une bulle
+   indépendante empilée, façon suggestions de chat */
 .magic-dropdown {
     position: absolute;
-    bottom: calc(100% + 8px);
+    bottom: calc(100% + 10px);
     left: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    min-width: 180px;
-    padding: 4px;
-    border-radius: 12px;
-    background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    align-items: flex-start;
+    gap: 8px;
     z-index: 1001;
 }
 
@@ -823,22 +820,49 @@ export default {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 6px;
-    padding: 6px 8px;
-    border-radius: 8px;
+    gap: 7px;
+    width: fit-content;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: rgba(122, 124, 130, 0.88);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     font-size: 13px;
-    color: #4b5563;
+    color: white;
     cursor: pointer;
-    transition: background 0.15s ease;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition:
+        background 0.2s ease,
+        transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: magic-bubble-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 .magic-dropdown-option:hover {
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(100, 102, 108, 0.92);
+    transform: scale(1.04);
+}
+
+.magic-dropdown-option:active {
+    transform: scale(0.97);
+}
+
+.magic-dropdown-option .magic-type-icon {
+    color: white;
 }
 
 .magic-dropdown-option span {
-    flex: 1;
     white-space: nowrap;
+}
+
+@keyframes magic-bubble-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.85);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 /* Chips accepter / refuser au-dessus de la pill (centrées comme elle) */
