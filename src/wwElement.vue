@@ -1,7 +1,5 @@
 <template>
-    <div class="ww-rich-text"
-        :class="{ '-readonly': isReadonly, editing: isEditing, 'has-magic-menu': content.enableAiMenu && isMagicMenu }"
-        data-capture :style="{
+    <div class="ww-rich-text" :class="{ '-readonly': isReadonly, editing: isEditing }" data-capture :style="{
         '--primary-color': content.parameterAiMenuPrimaryColor ?? '#007bff',
         '--primary-color-1A': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '1A', // 10%
         '--primary-color-33': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '33', // 20%
@@ -1495,11 +1493,6 @@ export default {
     flex-direction: column;
     min-height: 150px;
     position: relative;
-
-    /* Réserver de la place pour le magic menu docké en bas */
-    &.has-magic-menu .ww-rich-text__input {
-        padding-bottom: 56px;
-    }
 
     &.editing .ww-rich-text__input {
         position: relative;

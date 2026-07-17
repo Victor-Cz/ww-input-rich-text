@@ -25,8 +25,8 @@
         </transition>
 
         <div class="magic-pill" :class="{ 'is-focused': isFocused, 'is-loading': isLoading }">
-            <!-- Sélecteur de type (affiché seulement s'il y a plusieurs types) -->
-            <div class="magic-type" v-if="typeCount > 1">
+            <!-- Sélecteur de type de modification -->
+            <div class="magic-type" v-if="typeCount > 0">
                 <button type="button" class="magic-type-header" @click="toggleDropdown">
                     <div
                         :class="getSelectedTypeIcon() ? ['magic-type-icon', getSelectedTypeIcon()] : 'magic-type-icon icon-cog'"
@@ -34,18 +34,20 @@
                     ></div>
                     <div class="icon-chevron-down magic-chevron" :class="{ rotated: isDropdownOpen }" aria-hidden="true"></div>
                 </button>
-                <div class="magic-dropdown" v-show="isDropdownOpen">
-                    <div
-                        v-for="(type, key) in modificationTypes"
-                        :key="key"
-                        class="magic-dropdown-option"
-                        :class="{ 'is-selected': key === selectedModificationType }"
-                        @click="selectModificationType(key)"
-                    >
-                        <div v-if="type.icon" :class="['magic-type-icon', getTypeIcon(type)]" aria-hidden="true"></div>
-                        <span>{{ type.label }}</span>
+                <transition name="magic-pop">
+                    <div class="magic-dropdown" v-show="isDropdownOpen">
+                        <div
+                            v-for="(type, key) in modificationTypes"
+                            :key="key"
+                            class="magic-dropdown-option"
+                            :class="{ 'is-selected': key === selectedModificationType }"
+                            @click="selectModificationType(key)"
+                        >
+                            <div v-if="type.icon" :class="['magic-type-icon', getTypeIcon(type)]" aria-hidden="true"></div>
+                            <span>{{ type.label }}</span>
+                        </div>
                     </div>
-                </div>
+                </transition>
             </div>
 
             <input
@@ -524,7 +526,8 @@ export default {
 </script>
 
 <style scoped>
-/* Menu docké en bas de l'élément, toujours visible */
+/* Menu docké en bas de l'élément, toujours visible.
+   Le texte de l'éditeur passe derrière : la pill flotte au-dessus du contenu. */
 .magic-menu {
     position: absolute;
     bottom: 10px;
@@ -541,34 +544,54 @@ export default {
     pointer-events: auto;
 }
 
-/* Pill principale : gris très léger + blur */
+/* Easing "organique" avec léger rebond */
+.magic-pill,
+.magic-submit,
+.magic-type-header,
+.magic-chip {
+    transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Pill compacte : gris léger + blur, s'anime au hover et s'étend au focus */
 .magic-pill {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 4px 4px 12px;
+    width: min(100%, 400px);
+    margin: 0 auto;
+    padding: 3px 3px 3px 8px;
     border-radius: 999px;
-    background: rgba(244, 244, 245, 0.5);
-    backdrop-filter: blur(12px) saturate(1.4);
-    -webkit-backdrop-filter: blur(12px) saturate(1.4);
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    background: rgba(229, 231, 235, 0.5);
+    backdrop-filter: blur(14px) saturate(1.3);
+    -webkit-backdrop-filter: blur(14px) saturate(1.3);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     transition:
-        background 0.2s ease,
-        box-shadow 0.2s ease,
-        border-color 0.2s ease;
+        width 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+        transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+        background 0.3s ease,
+        border-color 0.3s ease,
+        box-shadow 0.3s ease;
+}
+
+.magic-pill:hover {
+    background: rgba(240, 241, 243, 0.65);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
 }
 
 .magic-pill.is-focused {
-    background: rgba(250, 250, 250, 0.7);
-    border-color: rgba(0, 0, 0, 0.08);
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+    width: min(100%, 520px);
+    background: rgba(250, 250, 250, 0.75);
+    border-color: rgba(0, 0, 0, 0.07);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.09);
 }
 
 .magic-input {
     flex: 1;
     min-width: 0;
-    height: 30px;
+    height: 26px;
     border: none;
     outline: none;
     background: transparent;
@@ -579,6 +602,11 @@ export default {
 
 .magic-input::placeholder {
     color: #9ca3af;
+    transition: color 0.3s ease;
+}
+
+.magic-pill:hover .magic-input::placeholder {
+    color: #6b7280;
 }
 
 .magic-input:disabled {
@@ -587,8 +615,8 @@ export default {
 
 /* Bouton d'envoi rond, gris quand inactif, couleur primaire quand actif */
 .magic-submit {
-    width: 30px;
-    height: 30px;
+    width: 26px;
+    height: 26px;
     flex-shrink: 0;
     border: none;
     border-radius: 50%;
@@ -599,8 +627,9 @@ export default {
     align-items: center;
     justify-content: center;
     transition:
-        background 0.2s ease,
-        color 0.2s ease;
+        transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+        background 0.25s ease,
+        color 0.25s ease;
 }
 
 .magic-submit:not(:disabled) {
@@ -610,18 +639,28 @@ export default {
 
 .magic-submit:not(:disabled):hover {
     background: var(--primary-color-hover, #007bff);
+    transform: scale(1.12);
+}
+
+.magic-submit:not(:disabled):active {
+    transform: scale(0.92);
 }
 
 .magic-submit:disabled {
     cursor: not-allowed;
 }
 
-/* Flèche orientée vers le haut */
+/* Flèche orientée vers le haut, petit nudge au hover de la pill */
 .magic-arrow {
     transform: rotate(-90deg);
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.magic-submit:not(:disabled):hover .magic-arrow {
+    transform: rotate(-90deg) translateX(1px);
 }
 
 /* Sélecteur de type compact */
@@ -634,17 +673,24 @@ export default {
     display: flex;
     align-items: center;
     gap: 2px;
-    padding: 4px 6px;
+    padding: 4px 5px;
     border: none;
     border-radius: 999px;
     background: rgba(0, 0, 0, 0.04);
     color: #6b7280;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition:
+        transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+        background 0.25s ease;
 }
 
 .magic-type-header:hover {
     background: rgba(0, 0, 0, 0.08);
+    transform: scale(1.08);
+}
+
+.magic-type-header:active {
+    transform: scale(0.94);
 }
 
 .magic-type-icon {
@@ -700,11 +746,14 @@ export default {
     font-size: 13px;
     color: #4b5563;
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition:
+        background 0.15s ease,
+        transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .magic-dropdown-option:hover {
     background: rgba(0, 0, 0, 0.05);
+    transform: translateX(2px);
 }
 
 .magic-dropdown-option.is-selected {
@@ -717,10 +766,10 @@ export default {
     white-space: nowrap;
 }
 
-/* Chips accepter / refuser au-dessus de la pill */
+/* Chips accepter / refuser au-dessus de la pill (centrées comme elle) */
 .magic-proposal-actions {
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
     gap: 6px;
 }
 
@@ -737,9 +786,19 @@ export default {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     transition:
+        transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
         background 0.2s ease,
         box-shadow 0.2s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.magic-chip:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.magic-chip:active {
+    transform: translateY(0) scale(0.97);
 }
 
 .magic-reject {
@@ -762,9 +821,9 @@ export default {
 
 /* Spinner de chargement */
 .magic-spinner {
-    width: 16px;
-    height: 16px;
-    margin: 7px;
+    width: 14px;
+    height: 14px;
+    margin: 6px;
     flex-shrink: 0;
     border: 2px solid rgba(0, 0, 0, 0.08);
     border-top: 2px solid var(--primary-color, #007bff);
@@ -803,12 +862,29 @@ export default {
 /* Transition d'apparition des chips */
 .magic-fade-enter-active,
 .magic-fade-leave-active {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .magic-fade-enter-from,
 .magic-fade-leave-to {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(6px) scale(0.96);
+}
+
+/* Transition d'ouverture de la dropdown, ancrée en bas à gauche */
+.magic-pop-enter-active {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: bottom left;
+}
+
+.magic-pop-leave-active {
+    transition: all 0.15s ease-in;
+    transform-origin: bottom left;
+}
+
+.magic-pop-enter-from,
+.magic-pop-leave-to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
 }
 </style>
