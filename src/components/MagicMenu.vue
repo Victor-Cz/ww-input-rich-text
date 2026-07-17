@@ -778,7 +778,7 @@ export default {
     transform: rotate(-90deg) translateX(1px);
 }
 
-/* Sélecteur de type compact (la dropdown est ancrée sur la pill, pas sur le chip) */
+/* Sélecteur de type compact (la dropdown est ancrée sur la zone, pas sur le chip) */
 .magic-type {
     position: static;
     flex-shrink: 0;
@@ -846,7 +846,7 @@ export default {
    indépendante empilée, façon suggestions de chat */
 .magic-dropdown {
     position: absolute;
-    bottom: calc(100% + 10px);
+    bottom: calc(100% + 4px);
     left: 0;
     display: flex;
     flex-direction: column;
