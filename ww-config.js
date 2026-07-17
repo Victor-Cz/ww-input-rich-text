@@ -2327,10 +2327,28 @@ export default {
             label: {
                 en: 'Show types on focus',
             },
-            type: 'OnOff',
-            defaultValue: false,
+            type: 'TextRadioGroup',
+            options: {
+                choices: [
+                    {
+                        value: 'yes',
+                        label: 'Yes',
+                    },
+                    {
+                        value: 'no-type-selected',
+                        label: 'If no type selected',
+                    },
+                    {
+                        value: 'no',
+                        default: true,
+                        label: 'No',
+                    },
+                ],
+            },
+            defaultValue: 'no',
             bindable: true,
-            description: 'Automatically open the modification types list when the prompt input gets focused.',
+            description:
+                'Automatically open the modification types list when the prompt input gets focused: always, only when no type is selected yet, or never.',
         },
         parameterAiMenuCustomTypes: {
             section: 'settings',

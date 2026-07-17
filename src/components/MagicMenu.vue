@@ -118,10 +118,12 @@ export default {
             type: [Number, String],
             default: 0,
         },
-        // Ouvrir automatiquement la liste des types quand l'input prend le focus
+        // Ouvrir automatiquement la liste des types quand l'input prend le focus :
+        // 'yes' (toujours), 'no-type-selected' (seulement si aucun type sélectionné), 'no' (jamais).
+        // Accepte aussi un booléen pour rétro-compatibilité
         showTypesOnFocus: {
-            type: Boolean,
-            default: false,
+            type: [String, Boolean],
+            default: 'no',
         },
         customModificationTypes: {
             type: Array,
@@ -266,7 +268,10 @@ export default {
             this.captureSelection();
 
             // Ouvrir la liste des types au focus si demandé (sauf juste après une sélection)
-            if (this.showTypesOnFocus && !this.suppressFocusOpen) {
+            const mode = this.showTypesOnFocus === true ? 'yes' : this.showTypesOnFocus;
+            const shouldOpen =
+                mode === 'yes' || (mode === 'no-type-selected' && !this.selectedModificationType);
+            if (shouldOpen && !this.suppressFocusOpen) {
                 this.isDropdownOpen = true;
             }
             this.suppressFocusOpen = false;
