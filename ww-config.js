@@ -123,6 +123,19 @@ export default {
                 'parameterAiMenuPlaceholders',
                 'parameterAiMenuCustomTypes',
             ],
+            'enableSeoAnalysis',
+            [
+                'seoKeyword',
+                'seoKeywordSynonyms',
+                'seoSecondaryKeywords',
+                'seoMetaTitle',
+                'seoMetaDescription',
+                'seoSlug',
+                'seoSiteDomain',
+                'seoLang',
+                'seoExpectH1',
+                'seoWordLists',
+            ],
         ],
     },
     options: {
@@ -134,6 +147,11 @@ export default {
         { name: 'mention:click', label: { en: 'On mention click' }, event: { mention: { id: '', label: '' } } },
         { name: 'focus', label: { en: 'On focus' }, event: { value: '' } },
         { name: 'blur', label: { en: 'On blur' }, event: { value: '' } },
+        {
+            name: 'seo:change',
+            label: { en: 'On SEO score change', fr: 'Au changement du score SEO' },
+            event: { score: 0, grade: '', scores: {} },
+        },
         {
             name: 'ai-prompt',
             label: { en: 'On AI prompt' },
@@ -589,6 +607,25 @@ export default {
             label: 'Close Current Link Popover',
             action: 'closeCurrentLinkPopover',
         },
+        // SEO actions
+        {
+            label: 'Highlight SEO check',
+            action: 'highlightSeoCheck',
+            args: [
+                {
+                    name: 'Check ID',
+                    type: 'Text',
+                },
+                {
+                    name: 'Color',
+                    type: 'Text',
+                },
+            ],
+        },
+        {
+            label: 'Clear SEO highlight',
+            action: 'clearSeoHighlight',
+        },
     ],
     properties: {
         readonly: {
@@ -660,6 +697,161 @@ export default {
             type: 'Textarea',
             defaultValue: 'Type here...',
             bindable: true,
+        },
+        // --- SEO analysis (extension activable) ---
+        enableSeoAnalysis: {
+            section: 'settings',
+            label: { en: 'SEO analysis', fr: 'Analyse SEO' },
+            type: 'OnOff',
+            defaultValue: false,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'boolean',
+                tooltip: 'Enable the SEO analysis: exposes a `seo` variable with a global score, per-category scores and detailed checks.',
+            },
+            /* wwEditor:end */
+        },
+        seoKeyword: {
+            section: 'settings',
+            label: { en: 'SEO: focus keyword', fr: 'SEO : mot-clé principal' },
+            type: 'Text',
+            defaultValue: '',
+            bindable: true,
+            hidden: content => !content.enableSeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'string',
+                tooltip: 'The main keyword the content should rank for (one per page).',
+            },
+            /* wwEditor:end */
+        },
+        seoKeywordSynonyms: {
+            section: 'settings',
+            label: { en: 'SEO: keyword synonyms', fr: 'SEO : synonymes du mot-clé' },
+            type: 'Array',
+            options: { item: { type: 'Text' } },
+            defaultValue: [],
+            bindable: true,
+            hidden: content => !content.enableSeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'array',
+                tooltip: 'Close variants of the focus keyword, counted as equivalent in every check. Array of strings or comma-separated string.',
+            },
+            /* wwEditor:end */
+        },
+        seoSecondaryKeywords: {
+            section: 'settings',
+            label: { en: 'SEO: secondary keywords', fr: 'SEO : mots-clés secondaires' },
+            type: 'Array',
+            options: { item: { type: 'Text' } },
+            defaultValue: [],
+            bindable: true,
+            hidden: content => !content.enableSeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'array',
+                tooltip: 'Related keywords scored separately from the focus keyword. Array of strings or comma-separated string.',
+            },
+            /* wwEditor:end */
+        },
+        seoMetaTitle: {
+            section: 'settings',
+            label: { en: 'SEO: meta title', fr: 'SEO : meta title' },
+            type: 'Text',
+            defaultValue: '',
+            bindable: true,
+            hidden: content => !content.enableSeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'string',
+                tooltip: 'The page meta title. Scored only when provided.',
+            },
+            /* wwEditor:end */
+        },
+        seoMetaDescription: {
+            section: 'settings',
+            label: { en: 'SEO: meta description', fr: 'SEO : meta description' },
+            type: 'Textarea',
+            defaultValue: '',
+            bindable: true,
+            hidden: content => !content.enableSeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'string',
+                tooltip: 'The page meta description. Scored only when provided.',
+            },
+            /* wwEditor:end */
+        },
+        seoSlug: {
+            section: 'settings',
+            label: { en: 'SEO: slug', fr: 'SEO : slug' },
+            type: 'Text',
+            defaultValue: '',
+            bindable: true,
+            hidden: content => !content.enableSeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'string',
+                tooltip: 'The page slug (e.g. "seo-score-calculator"). Scored only when provided.',
+            },
+            /* wwEditor:end */
+        },
+        seoSiteDomain: {
+            section: 'settings',
+            label: { en: 'SEO: site domain', fr: 'SEO : domaine du site' },
+            type: 'Text',
+            defaultValue: '',
+            bindable: true,
+            hidden: content => !content.enableSeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'string',
+                tooltip: 'Your site domain (e.g. "example.com") to tell internal links from external ones. Relative URLs count as internal.',
+            },
+            /* wwEditor:end */
+        },
+        seoLang: {
+            section: 'settings',
+            label: { en: 'SEO: language', fr: 'SEO : langue' },
+            type: 'TextSelect',
+            options: {
+                options: [
+                    { value: 'en', label: { en: 'English' } },
+                    { value: 'fr', label: { en: 'French', fr: 'Français' } },
+                ],
+            },
+            defaultValue: 'en',
+            bindable: true,
+            hidden: content => !content.enableSeoAnalysis,
+        },
+        seoExpectH1: {
+            section: 'settings',
+            label: { en: 'SEO: expect H1 in content', fr: 'SEO : H1 attendu dans le contenu' },
+            type: 'OnOff',
+            defaultValue: false,
+            hidden: content => !content.enableSeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'boolean',
+                tooltip: 'Turn on if the H1 title is written inside the editor (off when the page provides it).',
+            },
+            /* wwEditor:end */
+        },
+        seoWordLists: {
+            section: 'settings',
+            label: { en: 'SEO: custom word lists', fr: 'SEO : listes de mots personnalisées' },
+            type: 'Info',
+            options: { text: 'Bind an object to override default word lists' },
+            defaultValue: null,
+            bindable: true,
+            hidden: content => !content.enableSeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'object',
+                tooltip: 'Overrides default fr/en lists: { stopWords, genericAnchors, powerWords, sentimentWords } — each an array of strings.',
+            },
+            /* wwEditor:end */
         },
         editorPadding: {
             label: {

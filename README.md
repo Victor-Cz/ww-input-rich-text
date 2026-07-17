@@ -13,3 +13,8 @@ To serve locally, run `npm run serve --port=[PORT]`, and then go to Weweb editor
 ## Build
 
 Before release, you can check build error by running `npm run build --name=my-element`
+
+## Documentation
+
+- [AI.md](AI.md) — AI menu (custom modification types, placeholders, triggers)
+- [SEO.md](SEO.md) — SEO analysis extension (exposed `seo` variable, checks, highlight actions)

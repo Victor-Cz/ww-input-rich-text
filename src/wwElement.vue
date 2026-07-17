@@ -261,6 +261,7 @@ import AiMenu from './components/AiMenu.vue';
 import MagicMenu from './components/MagicMenu.vue';
 import LinkPopover from './components/LinkPopover.vue';
 import { SelectionHighlighter } from './extensions/SelectionHighlighter.js';
+import { SeoHighlighter } from './extensions/SeoHighlighter.js';
 import { TextSuggestion } from './extensions/TextSuggestion.js';
 import { TextStrike } from './extensions/TextStrike.js';
 import { CustomImage } from './extensions/CustomImage.js';
@@ -356,6 +357,14 @@ export default {
             readonly: true,
         });
 
+        const { value: seo, setValue: _setSeo } = wwLib.wwVariable.useComponentVariable({
+            uid: props.uid,
+            name: 'seo',
+            type: 'object',
+            defaultValue: null,
+            readonly: true,
+        });
+
         // Wrap setters to silently ignore calls after variable cleanup
         let _isDestroyed = false;
         onBeforeUnmount(() => { _isDestroyed = true; });
@@ -364,6 +373,7 @@ export default {
         const setStates = (...args) => { if (!_isDestroyed) _setStates(...args); };
         const setPendingChangesCount = (...args) => { if (!_isDestroyed) _setPendingChangesCount(...args); };
         const setCollaborationStatus = (...args) => { if (!_isDestroyed) _setCollaborationStatus(...args); };
+        const setSeo = (...args) => { if (!_isDestroyed) _setSeo(...args); };
 
 
         /* wwEditor:start */
@@ -411,6 +421,8 @@ export default {
             setPendingChangesCount,
             collaborationStatus,
             setCollaborationStatus,
+            seo,
+            setSeo,
             randomUid,
             /* wwEditor:start */
             createElement,
@@ -585,6 +597,23 @@ export default {
             if (this.richEditor && this.richEditor.view && this.richEditor.view.dom) {
                 this.richEditor.view.dom.setAttribute('spellcheck', (newValue ?? true) ? 'true' : 'false');
             }
+        },
+        // Analyse SEO : recalcul immédiat quand une entrée change, nettoyage quand désactivée
+        seoOptions: {
+            deep: true,
+            handler(options) {
+                if (!options) {
+                    if (this.seoDebounce) {
+                        clearTimeout(this.seoDebounce);
+                        this.seoDebounce = null;
+                    }
+                    this.seoRangesMap = null;
+                    this.setSeo(null);
+                    if (this.richEditor) this.richEditor.commands.clearSeoHighlights();
+                    return;
+                }
+                this.scheduleSeoAnalysis(true);
+            },
         },
     },
     computed: {
@@ -856,6 +885,21 @@ export default {
         delay() {
             return wwLib.wwUtils.getLengthUnit(this.content.debounceDelay)[0];
         },
+        seoOptions() {
+            if (!this.content.enableSeoAnalysis) return null;
+            return {
+                keyword: this.content.seoKeyword,
+                synonyms: this.content.seoKeywordSynonyms,
+                secondaryKeywords: this.content.seoSecondaryKeywords,
+                metaTitle: this.content.seoMetaTitle,
+                metaDescription: this.content.seoMetaDescription,
+                slug: this.content.seoSlug,
+                siteDomain: this.content.seoSiteDomain,
+                lang: this.content.seoLang,
+                wordLists: this.content.seoWordLists,
+                expectH1: this.content.seoExpectH1,
+            };
+        },
     },
     methods: {
         onEditorWheel(event) {
@@ -972,6 +1016,8 @@ export default {
                     SelectionHighlighter.configure({
                         defaultColor: 'var(--primary-color-33)',
                     }),
+                    // Surlignage SEO multi-plages (inerte tant qu'aucune décoration n'est posée)
+                    SeoHighlighter,
                     TextSuggestion.configure({
                         suggestionText: null,
                         position: 1,
@@ -1066,6 +1112,7 @@ export default {
                         // Initialiser l'accumulateur de diffs à vide lors de la création
                         this.pendingSteps = [];
                         this.setPendingChangesCount(0);
+                        this.scheduleSeoAnalysis(true);
                     },
                     onUpdate: ({ transaction }) => {
                         if (this.isDestroying) return;
@@ -1135,6 +1182,7 @@ export default {
                 this.$emit('trigger-event', { name: 'change', event: { value: this.variableValue } });
             }
             this.setMentions(this.richEditor.getJSON().content.reduce(extractMentions, []));
+            this.scheduleSeoAnalysis();
         },
         setLink(url) {
             if (this.richEditor.isActive('link')) {
@@ -1457,6 +1505,73 @@ export default {
             }
             this.$refs.linkPopover.closePopover();
         },
+
+        // SEO analysis
+        scheduleSeoAnalysis(immediate = false) {
+            if (!this.content.enableSeoAnalysis || !this.richEditor || this.isDestroying) return;
+            if (this.seoDebounce) {
+                clearTimeout(this.seoDebounce);
+                this.seoDebounce = null;
+            }
+            if (immediate) {
+                this.runSeoAnalysis();
+                return;
+            }
+            this.seoDebounce = setTimeout(() => {
+                this.seoDebounce = null;
+                this.runSeoAnalysis();
+            }, 500);
+        },
+
+        async runSeoAnalysis() {
+            if (!this.content.enableSeoAnalysis || !this.richEditor || this.isDestroying) return;
+            try {
+                // Import dynamique : le module d'analyse n'est chargé que si l'extension est activée
+                if (!this.seoAnalyzerPromise) {
+                    this.seoAnalyzerPromise = import('./seo/analyzer.js');
+                }
+                const { analyzeSeo } = await this.seoAnalyzerPromise;
+                if (!this.content.enableSeoAnalysis || !this.richEditor || this.isDestroying) return;
+
+                const previous = this.seo;
+                const { result, rangesMap } = analyzeSeo(this.richEditor.state.doc, this.seoOptions || {});
+                this.seoRangesMap = rangesMap;
+                // Les plages surlignées peuvent être obsolètes après ré-analyse
+                this.richEditor.commands.clearSeoHighlights();
+                this.setSeo(result);
+
+                if (!previous || previous.score !== result.score || previous.grade !== result.grade) {
+                    this.$emit('trigger-event', {
+                        name: 'seo:change',
+                        event: { score: result.score, grade: result.grade, scores: result.scores },
+                    });
+                }
+            } catch (error) {
+                console.error('[SEO] Analysis error:', error);
+            }
+        },
+
+        highlightSeoCheck(checkId, color = null) {
+            if (!this.richEditor || !this.seoRangesMap) return false;
+            const ranges = this.seoRangesMap[checkId];
+            if (!ranges || !ranges.length) return false;
+
+            this.richEditor.commands.setSeoHighlights(ranges, color || undefined);
+
+            // Scroller vers la première occurrence
+            try {
+                const { node } = this.richEditor.view.domAtPos(ranges[0].from);
+                const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+                element?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+            } catch {
+                // Position introuvable dans le DOM : le surlignage reste appliqué
+            }
+            return true;
+        },
+
+        clearSeoHighlight() {
+            if (this.richEditor) this.richEditor.commands.clearSeoHighlights();
+        },
     },
     mounted() {
         console.log('[Editor] Component mounted, checking collaboration config:', {
@@ -1492,6 +1607,12 @@ export default {
         if (this.debounce) {
             clearTimeout(this.debounce);
             this.debounce = null;
+        }
+
+        // Nettoyer l'analyse SEO en attente
+        if (this.seoDebounce) {
+            clearTimeout(this.seoDebounce);
+            this.seoDebounce = null;
         }
 
         // Nettoyer la collaboration
