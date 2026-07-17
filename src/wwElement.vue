@@ -1,5 +1,7 @@
 <template>
-    <div class="ww-rich-text" :class="{ '-readonly': isReadonly, editing: isEditing }" data-capture :style="{
+    <div class="ww-rich-text"
+        :class="{ '-readonly': isReadonly, editing: isEditing, 'has-magic-menu': content.enableAiMenu && isMagicMenu }"
+        data-capture :style="{
         '--primary-color': content.parameterAiMenuPrimaryColor ?? '#007bff',
         '--primary-color-1A': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '1A', // 10%
         '--primary-color-33': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '33', // 20%
@@ -210,9 +212,18 @@
                     :custom-modification-types="content.parameterAiMenuCustomTypes ?? []"
                     :placeholders="content.parameterAiMenuPlaceholders ?? {}"
                     :force-display="content.parameterAiMenuForceDisplay ?? false"
-                    @ai-prompt="handleAiPrompt" 
-                    @ai-suggestion-applied="handleAiSuggestionApplied" 
-                    v-if="richEditor && content.enableAiMenu" />
+                    @ai-prompt="handleAiPrompt"
+                    @ai-suggestion-applied="handleAiSuggestionApplied"
+                    v-if="richEditor && content.enableAiMenu && !isMagicMenu" />
+
+                <!-- Variante Magic : input léger docké en bas de l'élément -->
+                <magic-menu ref="aiMenu" :rich-editor="richEditor" :is-read-only="content.parameterAiMenuReadOnly ?? true"
+                    :parameter-ai-menu-primary-color="content.parameterAiMenuPrimaryColor ?? '#007bff'"
+                    :custom-modification-types="content.parameterAiMenuCustomTypes ?? []"
+                    :placeholders="content.parameterAiMenuPlaceholders ?? {}"
+                    @ai-prompt="handleAiPrompt"
+                    @ai-suggestion-applied="handleAiSuggestionApplied"
+                    v-if="richEditor && content.enableAiMenu && isMagicMenu" />
             </template>
         </div>
 </template>
@@ -244,6 +255,7 @@ import { Markdown } from 'tiptap-markdown';
 import TableIcon from './icons/table-icon.vue';
 
 import AiMenu from './components/AiMenu.vue';
+import MagicMenu from './components/MagicMenu.vue';
 import LinkPopover from './components/LinkPopover.vue';
 import { SelectionHighlighter } from './extensions/SelectionHighlighter.js';
 import { TextSuggestion } from './extensions/TextSuggestion.js';
@@ -277,6 +289,7 @@ export default {
         EditorContent,
         TableIcon,
         AiMenu,
+        MagicMenu,
         LinkPopover,
     },
     props: {
@@ -636,6 +649,9 @@ export default {
         },
         hideMenu() {
             return this.content.hideMenu || this.isReadonly;
+        },
+        isMagicMenu() {
+            return (this.content.parameterAiMenuVariant ?? 'classic') === 'magic';
         },
         menu() {
             return {
@@ -1473,6 +1489,12 @@ export default {
     display: flex;
     flex-direction: column;
     min-height: 150px;
+    position: relative;
+
+    /* Réserver de la place pour le magic menu docké en bas */
+    &.has-magic-menu .ww-rich-text__input {
+        padding-bottom: 56px;
+    }
 
     &.editing .ww-rich-text__input {
         position: relative;

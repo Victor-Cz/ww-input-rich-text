@@ -108,6 +108,7 @@ export default {
             [
                 'aiMenuSection',
                 'enableAiMenu',
+                'parameterAiMenuVariant',
                 'parameterAiMenuTitleGeneral',
                 'parameterAiMenu',
                 'parameterAiMenuReadOnly',
@@ -2175,6 +2176,30 @@ export default {
             type: 'OnOff',
             defaultValue: false,
         },
+        parameterAiMenuVariant: {
+            section: 'settings',
+            hidden: content => !content.enableAiMenu,
+            label: {
+                en: 'AI Menu style',
+            },
+            type: 'TextRadioGroup',
+            options: {
+                choices: [
+                    {
+                        value: 'classic',
+                        default: true,
+                        label: 'Classic',
+                    },
+                    {
+                        value: 'magic',
+                        label: 'Magic',
+                    },
+                ],
+            },
+            defaultValue: 'classic',
+            description:
+                'Classic: floating menu that follows the selection. Magic: a light, blurred prompt bar always docked at the bottom of the element.',
+        },
         parameterAiMenuTitleGeneral: {
             section: 'settings',
             hidden: content => !content.enableAiMenu,
@@ -2207,7 +2232,7 @@ export default {
         },
         parameterAiMenuForceDisplay: {
             section: 'settings',
-            hidden: content => !content.enableAiMenu,
+            hidden: content => !content.enableAiMenu || content.parameterAiMenuVariant === 'magic',
             label: {
                 en: 'Force Display in Editor',
             },
