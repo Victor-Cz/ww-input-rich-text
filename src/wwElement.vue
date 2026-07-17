@@ -1,5 +1,6 @@
 <template>
-    <div class="ww-rich-text" :class="{ '-readonly': isReadonly, editing: isEditing }" data-capture :style="{
+    <div class="ww-rich-text" :class="{ '-readonly': isReadonly, editing: isEditing }" data-capture
+        @wheel="onEditorWheel" :style="{
         '--primary-color': content.parameterAiMenuPrimaryColor ?? '#007bff',
         '--primary-color-1A': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '1A', // 10%
         '--primary-color-33': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '33', // 20%
@@ -853,6 +854,18 @@ export default {
         },
     },
     methods: {
+        onEditorWheel(event) {
+            /* wwEditor:start */
+            // In edit mode the click-blocking overlay (.editing::before) sits above the
+            // ProseMirror, so wheel events never reach the scroll container — forward them
+            if (!this.isEditing || !this.richEditor) return;
+            const dom = this.richEditor.view.dom;
+            if (!dom || dom.scrollHeight <= dom.clientHeight) return;
+            const previousScrollTop = dom.scrollTop;
+            dom.scrollTop += event.deltaY;
+            if (dom.scrollTop !== previousScrollTop) event.preventDefault();
+            /* wwEditor:end */
+        },
         loadEditor() {
             if (this.loading) return;
             this.loading = true;
