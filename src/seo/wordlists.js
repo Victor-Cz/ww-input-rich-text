@@ -1,6 +1,6 @@
 // Listes de mots par défaut pour l'analyse SEO.
 // Surchargables via la propriété `seoWordLists` du composant :
-// { stopWords, genericAnchors, powerWords, sentimentWords }
+// { stopWords, genericAnchors, powerWords, sentimentWords, transitionWords, complexWords }
 
 const FR = {
     stopWords: [
@@ -35,6 +35,21 @@ const FR = {
         'inquiétant', 'rassurant', 'urgent', 'attention', 'alerte', 'piège',
         'stupéfiant', 'choquant', 'émouvant', 'passionnant', 'excitant',
     ],
+    transitionWords: [
+        'ainsi', 'alors', 'aussi', 'car', 'cependant', 'certes', 'd\'abord',
+        'd\'ailleurs', 'de plus', 'de même', 'donc', 'du coup', 'en effet',
+        'en fait', 'en outre', 'en revanche', 'enfin', 'ensuite', 'également',
+        'finalement', 'mais', 'malgré', 'néanmoins', 'notamment', 'par ailleurs',
+        'par conséquent', 'par exemple', 'parce que', 'pourtant', 'premièrement',
+        'deuxièmement', 'troisièmement', 'puis', 'puisque', 'surtout', 'toutefois',
+        'tandis que', 'tout d\'abord', 'en conclusion', 'en résumé', 'en bref',
+        'autrement dit', 'c\'est-à-dire', 'd\'une part', 'd\'autre part',
+        'grâce à', 'à cause de', 'afin de', 'afin que', 'pour que', 'avant tout',
+        'en particulier', 'par la suite', 'au contraire', 'de ce fait',
+        'en définitive', 'quant à', 'si bien que', 'de surcroît', 'qui plus est',
+        'en somme', 'dès lors', 'bref', 'effectivement', 'désormais', 'or',
+    ],
+    complexWords: [],
 };
 
 const EN = {
@@ -71,6 +86,21 @@ const EN = {
         'catastrophe', 'worrying', 'reassuring', 'urgent', 'warning', 'alert',
         'trap', 'stunning', 'shocking', 'moving', 'exciting', 'thrilling',
     ],
+    transitionWords: [
+        'also', 'although', 'because', 'besides', 'but', 'consequently',
+        'finally', 'first', 'firstly', 'second', 'secondly', 'third', 'thirdly',
+        'for example', 'for instance', 'furthermore', 'hence', 'however',
+        'in addition', 'in conclusion', 'in fact', 'in other words', 'in short',
+        'in summary', 'indeed', 'instead', 'likewise', 'meanwhile', 'moreover',
+        'nevertheless', 'nonetheless', 'next', 'on the other hand', 'otherwise',
+        'similarly', 'so', 'still', 'therefore', 'thus', 'ultimately', 'whereas',
+        'while', 'yet', 'above all', 'additionally', 'accordingly', 'after all',
+        'afterwards', 'as a result', 'at first', 'at last', 'certainly',
+        'eventually', 'further', 'generally', 'in contrast', 'in particular',
+        'initially', 'lastly', 'notably', 'of course', 'overall', 'rather',
+        'specifically', 'subsequently', 'then', 'to conclude', 'to sum up',
+    ],
+    complexWords: [],
 };
 
 const LISTS = { fr: FR, en: EN };
@@ -82,7 +112,7 @@ const LISTS = { fr: FR, en: EN };
 export function getWordLists(lang, overrides) {
     const base = LISTS[lang] || LISTS.en;
     const result = {};
-    for (const key of ['stopWords', 'genericAnchors', 'powerWords', 'sentimentWords']) {
+    for (const key of ['stopWords', 'genericAnchors', 'powerWords', 'sentimentWords', 'transitionWords', 'complexWords']) {
         const override = overrides && Array.isArray(overrides[key]) && overrides[key].length ? overrides[key] : null;
         result[key] = (override || base[key]).map(word => String(word).toLowerCase());
     }

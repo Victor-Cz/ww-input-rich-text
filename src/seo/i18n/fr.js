@@ -64,6 +64,66 @@ export default {
             bad: '{value} bloc(s) de texte longs sont centrés, ce qui nuit à la lisibilité.',
         },
     },
+    // Lisibilité
+    sentenceLength: {
+        title: 'Longueur des phrases',
+        description: 'Vérifie la part de phrases trop longues (plus de 20 mots).',
+        messages: {
+            good: 'Les phrases ont une bonne longueur ({value} % de phrases longues).',
+            warning: '{value} % des phrases dépassent 20 mots : visez 25 % maximum.',
+            bad: '{value} % des phrases dépassent 20 mots : raccourcissez-les.',
+            na: 'Texte trop court pour évaluer la longueur des phrases.',
+        },
+    },
+    fleschReadingEase: {
+        title: 'Facilité de lecture (Flesch)',
+        description: 'Score de facilité de lecture Flesch adapté au français (0-100, plus c’est haut, plus c’est lisible).',
+        messages: {
+            good: 'Score Flesch de {value} : le texte est facile à lire.',
+            warning: 'Score Flesch de {value} : le texte est assez difficile à lire.',
+            bad: 'Score Flesch de {value} : le texte est difficile à lire, simplifiez-le.',
+            na: 'Texte trop court pour calculer le score de lisibilité.',
+        },
+    },
+    transitionWords: {
+        title: 'Mots de transition',
+        description: 'Vérifie que suffisamment de phrases contiennent un mot de transition (donc, ensuite, par exemple…).',
+        messages: {
+            good: '{value} % des phrases contiennent un mot de transition.',
+            warning: 'Seulement {value} % des phrases contiennent un mot de transition (visez 30 %).',
+            bad: '{value} % des phrases contiennent un mot de transition : ajoutez-en.',
+            na: 'Texte trop court pour évaluer les mots de transition.',
+        },
+    },
+    consecutiveSentences: {
+        title: 'Débuts de phrases répétés',
+        description: 'Vérifie qu’il n’y a pas 3 phrases consécutives ou plus commençant par le même mot.',
+        messages: {
+            good: 'Aucune répétition de débuts de phrases.',
+            bad: '{value} phrases consécutives commencent par le même mot : variez vos débuts de phrases.',
+            na: 'Texte trop court pour évaluer les débuts de phrases.',
+        },
+    },
+    passiveVoice: {
+        title: 'Voix passive',
+        description: 'Vérifie la part de phrases à la voix passive (10 % maximum recommandé).',
+        messages: {
+            good: '{value} % des phrases sont à la voix passive, c’est bien.',
+            warning: '{value} % des phrases sont à la voix passive : visez 10 % maximum.',
+            bad: '{value} % des phrases sont à la voix passive : privilégiez la voix active.',
+            na: 'Texte trop court pour évaluer la voix passive.',
+        },
+    },
+    complexWords: {
+        title: 'Mots complexes',
+        description: 'Vérifie la part de mots longs ou complexes (10 % maximum recommandé).',
+        messages: {
+            good: '{value} % de mots complexes : le vocabulaire reste accessible.',
+            warning: '{value} % de mots complexes : simplifiez le vocabulaire.',
+            bad: '{value} % de mots complexes : le texte est difficile, simplifiez-le.',
+            na: 'Texte trop court pour évaluer la complexité du vocabulaire.',
+        },
+    },
     // Liens
     outboundLinks: {
         title: 'Liens sortants',

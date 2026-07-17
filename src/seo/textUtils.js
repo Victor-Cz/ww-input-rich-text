@@ -87,6 +87,20 @@ export function includesAnyPhrase(text, phrases) {
 }
 
 /**
+ * Compte approximatif des syllabes d'un mot (groupes de voyelles sur le mot
+ * normalisé, e muet final retiré). Suffisant pour un score Flesch indicatif.
+ */
+export function countSyllables(word, lang) {
+    let cleaned = normalizeText(word).replace(/[^a-z]/g, '');
+    if (!cleaned) return 0;
+    if (cleaned.length > 2 && cleaned.endsWith('e') && !(lang === 'en' && cleaned.endsWith('le'))) {
+        cleaned = cleaned.slice(0, -1);
+    }
+    const groups = cleaned.match(/[aeiouy]+/g);
+    return Math.max(1, groups ? groups.length : 1);
+}
+
+/**
  * Découpe un texte en phrases. Retourne [{ text, start, end }] avec
  * index dans le texte d'origine.
  */

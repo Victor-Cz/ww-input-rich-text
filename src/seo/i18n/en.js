@@ -64,6 +64,66 @@ export default {
             bad: '{value} long text block(s) are center-aligned, which hurts readability.',
         },
     },
+    // Readability
+    sentenceLength: {
+        title: 'Sentence length',
+        description: 'Checks the share of sentences that are too long (more than 25 words).',
+        messages: {
+            good: 'Sentences have a good length ({value}% long sentences).',
+            warning: '{value}% of sentences exceed 25 words: aim for 25% maximum.',
+            bad: '{value}% of sentences exceed 25 words: shorten them.',
+            na: 'Text too short to assess sentence length.',
+        },
+    },
+    fleschReadingEase: {
+        title: 'Flesch reading ease',
+        description: 'Flesch reading-ease score (0-100, the higher the more readable).',
+        messages: {
+            good: 'Flesch score of {value}: the text is easy to read.',
+            warning: 'Flesch score of {value}: the text is fairly difficult to read.',
+            bad: 'Flesch score of {value}: the text is difficult to read, simplify it.',
+            na: 'Text too short to compute the readability score.',
+        },
+    },
+    transitionWords: {
+        title: 'Transition words',
+        description: 'Checks that enough sentences contain a transition word (therefore, however, for example…).',
+        messages: {
+            good: '{value}% of sentences contain a transition word.',
+            warning: 'Only {value}% of sentences contain a transition word (aim for 30%).',
+            bad: '{value}% of sentences contain a transition word: add more.',
+            na: 'Text too short to assess transition words.',
+        },
+    },
+    consecutiveSentences: {
+        title: 'Repeated sentence beginnings',
+        description: 'Checks that no 3 or more consecutive sentences start with the same word.',
+        messages: {
+            good: 'No repeated sentence beginnings.',
+            bad: '{value} consecutive sentences start with the same word: vary your sentence beginnings.',
+            na: 'Text too short to assess sentence beginnings.',
+        },
+    },
+    passiveVoice: {
+        title: 'Passive voice',
+        description: 'Checks the share of sentences using the passive voice (10% maximum recommended).',
+        messages: {
+            good: '{value}% of sentences use the passive voice, that is fine.',
+            warning: '{value}% of sentences use the passive voice: aim for 10% maximum.',
+            bad: '{value}% of sentences use the passive voice: prefer the active voice.',
+            na: 'Text too short to assess passive voice.',
+        },
+    },
+    complexWords: {
+        title: 'Complex words',
+        description: 'Checks the share of long or complex words (10% maximum recommended).',
+        messages: {
+            good: '{value}% complex words: the vocabulary stays accessible.',
+            warning: '{value}% complex words: simplify the vocabulary.',
+            bad: '{value}% complex words: the text is difficult, simplify it.',
+            na: 'Text too short to assess vocabulary complexity.',
+        },
+    },
     // Links
     outboundLinks: {
         title: 'Outbound links',
