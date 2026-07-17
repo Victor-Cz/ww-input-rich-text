@@ -6,6 +6,7 @@
                 <button
                     type="button"
                     class="magic-chip magic-reject"
+                    @mousedown.prevent
                     @click="rejectProposal"
                     :title="placeholders.cancelButtonTooltip"
                 >
@@ -15,6 +16,7 @@
                 <button
                     type="button"
                     class="magic-chip magic-accept"
+                    @mousedown.prevent
                     @click="validateProposal"
                     :title="placeholders.submitButtonTooltip"
                 >
@@ -35,7 +37,7 @@
                         :key="key"
                         class="magic-dropdown-option"
                         :style="{ animationDelay: `${index * 40}ms` }"
-                        @click="selectModificationType(key)"
+                        @mousedown.prevent="selectModificationType(key)"
                     >
                         <div v-if="type.icon" :class="['magic-type-icon', getTypeIcon(type)]" aria-hidden="true"></div>
                         <span>{{ type.label }}</span>
@@ -46,7 +48,9 @@
             <div class="magic-pill" :class="{ 'is-focused': isFocused, 'is-loading': isLoading }">
             <!-- Sélecteur de type de modification -->
             <div class="magic-type" v-if="typeCount > 0">
-                <button type="button" class="magic-type-header" @click="toggleDropdown">
+                <!-- mousedown.prevent : ne pas voler le focus de l'input (le blur
+                     rétrécirait la pill et déplacerait le bouton avant le click) -->
+                <button type="button" class="magic-type-header" @mousedown.prevent="toggleDropdown">
                     <div
                         :class="getSelectedTypeIcon() ? ['magic-type-icon', getSelectedTypeIcon()] : 'magic-type-icon icon-cog'"
                         aria-hidden="true"
@@ -76,6 +80,7 @@
                 type="button"
                 class="magic-submit"
                 :disabled="isSubmitDisabled"
+                @mousedown.prevent
                 @click="submitPrompt"
                 :title="placeholders.submitButtonTooltip"
             >
@@ -344,7 +349,9 @@ export default {
 
             this.$nextTick(() => {
                 const input = this.$el.querySelector('.magic-input');
-                if (input) {
+                // Si l'input a déjà le focus, focus() ne déclenche aucun événement :
+                // ne pas poser le flag, il avalerait la prochaine ouverture légitime
+                if (input && document.activeElement !== input) {
                     // Ne pas rouvrir la dropdown via le focus qui suit la sélection
                     this.suppressFocusOpen = true;
                     input.focus();
