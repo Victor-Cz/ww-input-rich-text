@@ -28,6 +28,7 @@ export default {
             'customMenu',
             'menuColor',
             'editorPadding',
+            'editorMaxWidth',
             [
                 'selectedTag',
                 'h1',
@@ -723,6 +724,24 @@ export default {
                 paddingBottom: '12px',
                 paddingLeft: '12px',
             },
+            bindable: true,
+            responsive: true,
+        },
+        editorMaxWidth: {
+            label: {
+                en: 'Text max width',
+                fr: 'Largeur max du texte',
+            },
+            type: 'Length',
+            options: {
+                unitChoices: [
+                    { value: 'none', label: 'none', default: true },
+                    { value: 'px', label: 'px', min: 200, max: 2000 },
+                    { value: '%', label: '%', min: 10, max: 100 },
+                ],
+                noRange: true,
+            },
+            defaultValue: 'none',
             bindable: true,
             responsive: true,
         },

@@ -843,6 +843,11 @@ export default {
                 '--editor-padding-right': this.content.editorPadding?.paddingRight || '12px',
                 '--editor-padding-bottom': this.content.editorPadding?.paddingBottom || '12px',
                 '--editor-padding-left': this.content.editorPadding?.paddingLeft || '12px',
+                // editor max width (100% = no constraint, keeps the padding calc valid)
+                '--editor-max-width':
+                    this.content.editorMaxWidth && this.content.editorMaxWidth !== 'none'
+                        ? this.content.editorMaxWidth
+                        : '100%',
             };
         },
         delay() {
@@ -1588,9 +1593,11 @@ export default {
         min-height: 100px;
         width: 100%;
         padding-top: var(--editor-padding-top, 12px);
-        padding-right: var(--editor-padding-right, 12px);
+        /* Center the text column when --editor-max-width is set: the extra space
+           goes into the padding, so the scrollbar stays on the editor edge */
+        padding-right: max(var(--editor-padding-right, 12px), calc((100% - var(--editor-max-width, 100%)) / 2));
         padding-bottom: var(--editor-padding-bottom, 12px);
-        padding-left: var(--editor-padding-left, 12px);
+        padding-left: max(var(--editor-padding-left, 12px), calc((100% - var(--editor-max-width, 100%)) / 2));
         overflow: auto;
         box-sizing: border-box;
         font-size: var(--p-fontSize);
