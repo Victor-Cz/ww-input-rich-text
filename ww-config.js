@@ -116,6 +116,8 @@ export default {
                 'parameterAiMenuForceDisplay',
                 'parameterAiMenuPrimaryColor',
                 'parameterMagicMenuButtonColor',
+                'parameterMagicMenuShowTypeLabel',
+                'parameterMagicMenuDefaultTypeIndex',
                 'parameterAiMenuTitlePlaceholders',
                 'parameterAiMenuPlaceholders',
                 'parameterAiMenuCustomTypes',
@@ -2294,6 +2296,29 @@ export default {
             defaultValue: '',
             bindable: true,
             description: 'Color of the magic menu submit button. Falls back to the primary color when empty.',
+        },
+        parameterMagicMenuShowTypeLabel: {
+            section: 'settings',
+            hidden: content => !content.enableAiMenu || content.parameterAiMenuVariant !== 'magic',
+            label: {
+                en: 'Display type label in badge',
+            },
+            type: 'OnOff',
+            defaultValue: false,
+            bindable: true,
+            description: 'Show the selected modification type label next to its icon in the badge.',
+        },
+        parameterMagicMenuDefaultTypeIndex: {
+            section: 'settings',
+            hidden: content => !content.enableAiMenu || content.parameterAiMenuVariant !== 'magic',
+            label: {
+                en: 'Default type index',
+            },
+            type: 'Number',
+            defaultValue: 0,
+            bindable: true,
+            description:
+                'Index of the modification type selected by default (0 = first). Leave empty for no default selection.',
         },
         parameterAiMenuCustomTypes: {
             section: 'settings',

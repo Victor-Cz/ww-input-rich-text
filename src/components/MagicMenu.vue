@@ -32,6 +32,7 @@
                         :class="getSelectedTypeIcon() ? ['magic-type-icon', getSelectedTypeIcon()] : 'magic-type-icon icon-cog'"
                         aria-hidden="true"
                     ></div>
+                    <span class="magic-type-label" v-if="showTypeLabel">{{ getSelectedTypeLabel() }}</span>
                     <div class="icon-chevron-down magic-chevron" :class="{ rotated: isDropdownOpen }" aria-hidden="true"></div>
                 </button>
                 <transition name="magic-pop">
@@ -40,16 +41,10 @@
                             v-for="(type, key) in modificationTypes"
                             :key="key"
                             class="magic-dropdown-option"
-                            :class="{ 'is-selected': key === selectedModificationType }"
                             @click="selectModificationType(key)"
                         >
                             <div v-if="type.icon" :class="['magic-type-icon', getTypeIcon(type)]" aria-hidden="true"></div>
                             <span>{{ type.label }}</span>
-                            <div
-                                v-if="key === selectedModificationType"
-                                class="icon-check magic-option-check"
-                                aria-hidden="true"
-                            ></div>
                         </div>
                     </div>
                 </transition>
@@ -104,6 +99,17 @@ export default {
         buttonColor: {
             type: String,
             default: '',
+        },
+        // Afficher le label du type sélectionné dans le badge
+        showTypeLabel: {
+            type: Boolean,
+            default: false,
+        },
+        // Index du type sélectionné par défaut dans la liste des types.
+        // Vide/null : aucun type sélectionné par défaut (état neutre)
+        defaultTypeIndex: {
+            type: [Number, String],
+            default: 0,
         },
         customModificationTypes: {
             type: Array,
@@ -201,15 +207,15 @@ export default {
         customModificationTypes: {
             immediate: true,
             handler() {
-                // Aucun type sélectionné par défaut : on garde l'état neutre (icône cog,
-                // placeholder global) et on désélectionne si le type n'existe plus
-                if (
-                    this.selectedModificationType &&
-                    !Object.keys(this.modificationTypes).includes(this.selectedModificationType)
-                ) {
-                    this.selectedModificationType = null;
+                // Garder un type valide sélectionné : le type à defaultTypeIndex sert de défaut
+                const keys = Object.keys(this.modificationTypes);
+                if (!this.selectedModificationType || !keys.includes(this.selectedModificationType)) {
+                    this.selectedModificationType = this.getDefaultTypeKey();
                 }
             },
+        },
+        defaultTypeIndex() {
+            this.selectedModificationType = this.getDefaultTypeKey();
         },
     },
     mounted() {
@@ -306,8 +312,7 @@ export default {
         },
 
         selectModificationType(typeKey) {
-            // Re-cliquer sur le type déjà sélectionné le désélectionne
-            this.selectedModificationType = this.selectedModificationType === typeKey ? null : typeKey;
+            this.selectedModificationType = typeKey;
             this.isDropdownOpen = false;
 
             this.$nextTick(() => {
@@ -557,6 +562,26 @@ export default {
             return textEnd;
         },
 
+        getDefaultTypeKey() {
+            // Index vide : pas de type par défaut
+            if (this.defaultTypeIndex === null || this.defaultTypeIndex === undefined || this.defaultTypeIndex === '') {
+                return null;
+            }
+            const index = Number(this.defaultTypeIndex);
+            if (Number.isNaN(index)) {
+                return null;
+            }
+            const keys = Object.keys(this.modificationTypes);
+            return keys[index] ?? keys[0] ?? null;
+        },
+
+        getSelectedTypeLabel() {
+            if (this.selectedModificationType && this.modificationTypes[this.selectedModificationType]) {
+                return this.modificationTypes[this.selectedModificationType].label;
+            }
+            return this.placeholders.chooseTypePlaceholder || 'Select a type';
+        },
+
         getSelectedTypeIcon() {
             if (this.selectedModificationType && this.modificationTypes[this.selectedModificationType]) {
                 return this.getTypeIcon(this.modificationTypes[this.selectedModificationType]);
@@ -757,6 +782,16 @@ export default {
     line-height: 1;
 }
 
+.magic-type-label {
+    font-size: 12px;
+    color: #6b7280;
+    white-space: nowrap;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0 2px;
+}
+
 .magic-chevron {
     font-size: 10px;
     transform: rotate(180deg);
@@ -799,26 +834,6 @@ export default {
 
 .magic-dropdown-option:hover {
     background: rgba(0, 0, 0, 0.05);
-}
-
-.magic-dropdown-option.is-selected {
-    background: var(--primary-color-1A, rgba(0, 123, 255, 0.1));
-    color: var(--primary-color, #007bff);
-    font-weight: 500;
-}
-
-.magic-dropdown-option.is-selected:hover {
-    background: var(--primary-color-33, rgba(0, 123, 255, 0.2));
-}
-
-.magic-dropdown-option.is-selected .magic-type-icon {
-    color: var(--primary-color, #007bff);
-}
-
-.magic-option-check {
-    flex-shrink: 0;
-    font-size: 11px;
-    color: var(--primary-color, #007bff);
 }
 
 .magic-dropdown-option span {

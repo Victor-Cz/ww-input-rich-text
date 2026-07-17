@@ -219,6 +219,8 @@
                 <magic-menu ref="aiMenu" :rich-editor="richEditor" :is-read-only="content.parameterAiMenuReadOnly ?? true"
                     :parameter-ai-menu-primary-color="content.parameterAiMenuPrimaryColor ?? '#007bff'"
                     :button-color="content.parameterMagicMenuButtonColor ?? ''"
+                    :show-type-label="content.parameterMagicMenuShowTypeLabel ?? false"
+                    :default-type-index="content.parameterMagicMenuDefaultTypeIndex"
                     :custom-modification-types="content.parameterAiMenuCustomTypes ?? []"
                     :placeholders="content.parameterAiMenuPlaceholders ?? {}"
                     @ai-prompt="handleAiPrompt"
