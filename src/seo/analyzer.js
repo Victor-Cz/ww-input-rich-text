@@ -2,6 +2,7 @@ import { imagesChecks } from './checks/images.js';
 import { keywordChecks } from './checks/keyword.js';
 import { classifyLinks, linksChecks } from './checks/links.js';
 import { metaChecks } from './checks/meta.js';
+import { fleschReadingScore, readabilityChecks } from './checks/readability.js';
 import { secondaryChecks } from './checks/secondary.js';
 import { structureChecks } from './checks/structure.js';
 import { extractModel, findPhrasesInModel } from './extractors.js';
@@ -29,6 +30,7 @@ export function analyzeSeo(doc, rawOptions = {}) {
 
     const checks = [
         ...structureChecks(context),
+        ...readabilityChecks(context),
         ...linksChecks(context),
         ...imagesChecks(context),
         ...keywordChecks(context),
@@ -39,7 +41,7 @@ export function analyzeSeo(doc, rawOptions = {}) {
     const rangesMap = {};
     const exposedChecks = checks.map(check => {
         rangesMap[check.id] = check.ranges || [];
-        const labels = getLabels(check.id, options.lang);
+        const labels = getLabels(check.id, options.uiLang);
         return {
             id: check.id,
             title: labels.title,
@@ -49,7 +51,7 @@ export function analyzeSeo(doc, rawOptions = {}) {
             score: typeof check.score === 'number' ? Math.round((check.score / 9) * 100) : null,
             value: check.value ?? null,
             matchCount: (check.ranges || []).length,
-            message: getMessage(check, options.lang),
+            message: getMessage(check, options.uiLang),
         };
     });
 
@@ -66,6 +68,7 @@ export function analyzeSeo(doc, rawOptions = {}) {
 }
 
 function normalizeOptions(raw) {
+    const lang = raw.lang === 'fr' ? 'fr' : 'en';
     return {
         keyword: cleanString(raw.keyword),
         synonyms: cleanStringArray(raw.synonyms),
@@ -74,7 +77,10 @@ function normalizeOptions(raw) {
         metaDescription: cleanString(raw.metaDescription),
         slug: cleanString(raw.slug),
         siteDomain: cleanString(raw.siteDomain),
-        lang: raw.lang === 'fr' ? 'fr' : 'en',
+        lang,
+        // Langue des textes exposés (title / description / message) —
+        // 'auto' ou absent : suit la langue d'analyse.
+        uiLang: raw.uiLang === 'fr' || raw.uiLang === 'en' ? raw.uiLang : lang,
         wordLists: raw.wordLists && typeof raw.wordLists === 'object' ? raw.wordLists : null,
         expectH1: !!raw.expectH1,
     };
@@ -117,6 +123,7 @@ function buildStats(model, options, phrases) {
         keywordDensity: model.wordCount
             ? Math.round((keywordOccurrences / model.wordCount) * 10000) / 100
             : 0,
+        fleschScore: fleschReadingScore(model, options.lang),
         readingTimeMinutes: Math.max(1, Math.round(model.wordCount / 200)),
     };
 }

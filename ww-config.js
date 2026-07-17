@@ -133,6 +133,7 @@ export default {
                 'seoSlug',
                 'seoSiteDomain',
                 'seoLang',
+                'seoUiLang',
                 'seoExpectH1',
                 'seoWordLists',
             ],
@@ -813,7 +814,7 @@ export default {
         },
         seoLang: {
             section: 'settings',
-            label: { en: 'SEO: language', fr: 'SEO : langue' },
+            label: { en: 'SEO: content language', fr: 'SEO : langue du contenu' },
             type: 'TextSelect',
             options: {
                 options: [
@@ -827,7 +828,28 @@ export default {
             /* wwEditor:start */
             bindingValidation: {
                 type: 'string',
-                tooltip: 'Language of the SEO analysis: thresholds, default word lists, and the localized title, description and message of each check ("en" or "fr").',
+                tooltip: 'Language of the analyzed content: sentence thresholds, Flesch coefficients, default word lists, plural forms ("en" or "fr").',
+            },
+            /* wwEditor:end */
+        },
+        seoUiLang: {
+            section: 'settings',
+            label: { en: 'SEO: texts language', fr: 'SEO : langue des textes' },
+            type: 'TextSelect',
+            options: {
+                options: [
+                    { value: 'auto', label: { en: 'Same as content', fr: 'Comme le contenu' } },
+                    { value: 'en', label: { en: 'English' } },
+                    { value: 'fr', label: { en: 'French', fr: 'Français' } },
+                ],
+            },
+            defaultValue: 'auto',
+            bindable: true,
+            hidden: content => !content.enableSeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'string',
+                tooltip: 'Language of each check\'s title, description and message ("auto", "en" or "fr"). "auto" follows the content language.',
             },
             /* wwEditor:end */
         },
@@ -855,7 +877,7 @@ export default {
             /* wwEditor:start */
             bindingValidation: {
                 type: 'object',
-                tooltip: 'Overrides default fr/en lists: { stopWords, genericAnchors, powerWords, sentimentWords } — each an array of strings.',
+                tooltip: 'Overrides default fr/en lists: { stopWords, genericAnchors, powerWords, sentimentWords, transitionWords, complexWords } — each an array of strings.',
             },
             /* wwEditor:end */
         },

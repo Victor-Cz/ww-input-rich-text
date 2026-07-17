@@ -921,6 +921,7 @@ export default {
                 slug: this.content.seoSlug,
                 siteDomain: this.content.seoSiteDomain,
                 lang: this.content.seoLang,
+                uiLang: this.content.seoUiLang,
                 wordLists: this.content.seoWordLists,
                 expectH1: this.content.seoExpectH1,
             };
