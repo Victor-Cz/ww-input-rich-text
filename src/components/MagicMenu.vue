@@ -112,6 +112,11 @@ export default {
             type: [Number, String],
             default: 0,
         },
+        // Ouvrir automatiquement la liste des types quand l'input prend le focus
+        showTypesOnFocus: {
+            type: Boolean,
+            default: false,
+        },
         customModificationTypes: {
             type: Array,
             default: () => [],
@@ -202,6 +207,7 @@ export default {
             isDropdownOpen: false,
             showSuccessCheck: false,
             lastMousedownInside: false,
+            suppressFocusOpen: false,
         };
     },
     watch: {
@@ -252,6 +258,12 @@ export default {
         onInputFocus() {
             this.isFocused = true;
             this.captureSelection();
+
+            // Ouvrir la liste des types au focus si demandé (sauf juste après une sélection)
+            if (this.showTypesOnFocus && !this.suppressFocusOpen) {
+                this.isDropdownOpen = true;
+            }
+            this.suppressFocusOpen = false;
         },
 
         onInputBlur(event) {
@@ -261,8 +273,11 @@ export default {
             // ou qu'une requête/proposition est en cours
             const related = event.relatedTarget;
             const stayingInside = (related && this.$el.contains(related)) || this.lastMousedownInside;
-            if (!stayingInside && !this.isLoading && !this.aiResponse) {
-                this.releaseSelection();
+            if (!stayingInside) {
+                this.isDropdownOpen = false;
+                if (!this.isLoading && !this.aiResponse) {
+                    this.releaseSelection();
+                }
             }
         },
 
@@ -319,6 +334,8 @@ export default {
             this.$nextTick(() => {
                 const input = this.$el.querySelector('.magic-input');
                 if (input) {
+                    // Ne pas rouvrir la dropdown via le focus qui suit la sélection
+                    this.suppressFocusOpen = true;
                     input.focus();
                 }
             });
@@ -630,6 +647,7 @@ export default {
 
 /* Pill compacte : gris léger + blur, s'anime au hover et s'étend au focus */
 .magic-pill {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -739,9 +757,9 @@ export default {
     transform: rotate(-90deg) translateX(1px);
 }
 
-/* Sélecteur de type compact */
+/* Sélecteur de type compact (la dropdown est ancrée sur la pill, pas sur le chip) */
 .magic-type {
-    position: relative;
+    position: static;
     flex-shrink: 0;
 }
 
@@ -822,7 +840,7 @@ export default {
     align-items: center;
     gap: 7px;
     width: fit-content;
-    padding: 8px 16px;
+    padding: 6px 14px;
     border-radius: 999px;
     background: rgba(122, 124, 130, 0.88);
     backdrop-filter: blur(10px);
@@ -925,7 +943,7 @@ export default {
     margin: 6px;
     flex-shrink: 0;
     border: 2px solid rgba(0, 0, 0, 0.08);
-    border-top: 2px solid var(--primary-color, #007bff);
+    border-top: 2px solid var(--magic-submit-color, var(--primary-color, #007bff));
     border-radius: 50%;
     animation: magic-spin 1s linear infinite;
 }

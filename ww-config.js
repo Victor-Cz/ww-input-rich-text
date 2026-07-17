@@ -118,6 +118,7 @@ export default {
                 'parameterMagicMenuButtonColor',
                 'parameterMagicMenuShowTypeLabel',
                 'parameterMagicMenuDefaultTypeIndex',
+                'parameterMagicMenuShowTypesOnFocus',
                 'parameterAiMenuTitlePlaceholders',
                 'parameterAiMenuPlaceholders',
                 'parameterAiMenuCustomTypes',
@@ -2319,6 +2320,17 @@ export default {
             bindable: true,
             description:
                 'Index of the modification type selected by default (0 = first). Leave empty for no default selection.',
+        },
+        parameterMagicMenuShowTypesOnFocus: {
+            section: 'settings',
+            hidden: content => !content.enableAiMenu || content.parameterAiMenuVariant !== 'magic',
+            label: {
+                en: 'Show types on focus',
+            },
+            type: 'OnOff',
+            defaultValue: false,
+            bindable: true,
+            description: 'Automatically open the modification types list when the prompt input gets focused.',
         },
         parameterAiMenuCustomTypes: {
             section: 'settings',

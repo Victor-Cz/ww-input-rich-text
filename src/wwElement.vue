@@ -221,6 +221,7 @@
                     :button-color="content.parameterMagicMenuButtonColor ?? ''"
                     :show-type-label="content.parameterMagicMenuShowTypeLabel ?? false"
                     :default-type-index="content.parameterMagicMenuDefaultTypeIndex"
+                    :show-types-on-focus="content.parameterMagicMenuShowTypesOnFocus ?? false"
                     :custom-modification-types="content.parameterAiMenuCustomTypes ?? []"
                     :placeholders="content.parameterAiMenuPlaceholders ?? {}"
                     @ai-prompt="handleAiPrompt"
