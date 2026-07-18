@@ -1,5 +1,5 @@
-import { makeCheck, notApplicable } from '../result.js';
 import { findPhrasesInModel } from '../extractors.js';
+import { makeCheck, notApplicable, ratioScore } from '../result.js';
 import { includesAnyPhrase } from '../textUtils.js';
 
 // Catégorie "secondary" — nécessite `seoSecondaryKeywords`.
@@ -19,14 +19,11 @@ export function secondaryChecks(context) {
     ];
 }
 
-// Vert : ≥ 70 % des secondaires présents · orange : 30-70 % · rouge : < 30 %
+// Cible : ≥ 70 % des secondaires présents — proportionnel en dessous
 function secondaryPresence(model, secondaries) {
     const found = secondaries.filter(keyword => findPhrasesInModel(model, [keyword]).length > 0);
     const percent = Math.round((found.length / secondaries.length) * 100);
-    let score;
-    if (percent >= 70) score = 9;
-    else if (percent >= 30) score = 6;
-    else score = 3;
+    const score = ratioScore(percent, 70);
     const ranges = found.length ? findPhrasesInModel(model, found) : [];
     return makeCheck(
         'secondaryPresence',
@@ -37,7 +34,7 @@ function secondaryPresence(model, secondaries) {
     );
 }
 
-// Vert : ≥ 50 % des secondaires dans au moins un sous-titre · orange : 25-50 % · rouge : < 25 %
+// Cible : ≥ 50 % des secondaires dans au moins un sous-titre — proportionnel
 function secondaryInSubheadings(model, secondaries) {
     const subheadings = model.headings.filter(heading => heading.level >= 2);
     if (!subheadings.length) return notApplicable('secondaryInSubheadings', 'secondary', 0);
@@ -46,10 +43,7 @@ function secondaryInSubheadings(model, secondaries) {
         subheadings.some(heading => includesAnyPhrase(heading.text, [keyword]))
     );
     const percent = Math.round((covered.length / secondaries.length) * 100);
-    let score;
-    if (percent >= 50) score = 9;
-    else if (percent >= 25) score = 6;
-    else score = 3;
+    const score = ratioScore(percent, 50);
 
     const matchedHeadings = subheadings.filter(heading =>
         covered.some(keyword => includesAnyPhrase(heading.text, [keyword]))
@@ -76,5 +70,5 @@ function secondaryDensity(model, secondaries) {
             offenderRanges = offenderRanges.concat(occurrences);
         }
     }
-    return makeCheck('secondaryDensity', 'secondary', offenders.length ? 3 : 9, offenders, offenderRanges);
+    return makeCheck('secondaryDensity', 'secondary', offenders.length ? 0 : 100, offenders, offenderRanges);
 }

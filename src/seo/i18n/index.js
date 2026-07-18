@@ -27,11 +27,19 @@ export function getCategoryLabels(categoryId, lang) {
     return { name: entry.name || '', description: entry.description || '' };
 }
 
-/** Message d'un check selon son statut, avec interpolation {value} / {value.x}. */
+/**
+ * Message d'un check selon son statut, avec interpolation {value} / {value.x}.
+ * Un check peut porter un `messageKey` pour désambiguïser deux causes
+ * partageant le même statut (ex. singleH1 : H1 manquant vs H1 multiples).
+ */
 export function getMessage(check, lang) {
     const entry = getLocale(lang)[check.id];
     if (!entry) return '';
-    const template = entry.messages[check.status] || entry.messages.good || '';
+    const template =
+        (check.messageKey && entry.messages[check.messageKey]) ||
+        entry.messages[check.status] ||
+        entry.messages.good ||
+        '';
     return template.replace(/\{value(?:\.([a-zA-Z]+))?\}/g, (_, key) => {
         const value = key ? check.value?.[key] : check.value;
         if (value === null || value === undefined) return '';

@@ -57,7 +57,7 @@ export default {
         description: 'Vérifie que le contenu contient exactement un titre H1.',
         messages: {
             good: 'La structure H1 est correcte.',
-            warning: 'Le contenu ne contient pas de H1 alors qu’un H1 est attendu.',
+            missing: 'Le contenu ne contient pas de H1 alors qu’un H1 est attendu : ajoutez un titre H1.',
             bad: 'Le contenu contient {value} H1 : il ne doit y en avoir qu’un.',
         },
     },

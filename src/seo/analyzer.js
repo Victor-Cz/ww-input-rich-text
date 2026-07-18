@@ -7,7 +7,7 @@ import { secondaryChecks } from './checks/secondary.js';
 import { structureChecks } from './checks/structure.js';
 import { extractModel, findPhrasesInModel } from './extractors.js';
 import { getCategoryLabels, getLabels, getMessage } from './i18n/index.js';
-import { aggregateScore, categoryScores, gradeFromScore } from './scoring.js';
+import { aggregateScore, capGrade, categoryScores, checkWeight, criticalIssues, gradeFromScore } from './scoring.js';
 import { getWordLists } from './wordlists.js';
 
 /**
@@ -42,33 +42,43 @@ export function analyzeSeo(doc, rawOptions = {}) {
     const exposedChecks = checks.map(check => {
         rangesMap[check.id] = check.ranges || [];
         const labels = getLabels(check.id, options.uiLang);
+        const matchCount = (check.ranges || []).length;
         return {
             id: check.id,
             title: labels.title,
             description: labels.description,
             category: check.category,
             status: check.status,
-            score: typeof check.score === 'number' ? Math.round((check.score / 9) * 100) : null,
+            score: typeof check.score === 'number' ? check.score : null,
+            weight: checkWeight(check.id),
             value: check.value ?? null,
-            matchCount: (check.ranges || []).length,
+            matchCount,
+            // L'action highlightSeoCheck a des occurrences à montrer dans l'éditeur
+            clickable: matchCount > 0,
             message: getMessage(check, options.uiLang),
         };
     });
 
     const score = aggregateScore(checks);
     const scores = categoryScores(checks);
+    const critical = criticalIssues(checks);
     const result = {
         score,
-        grade: gradeFromScore(score),
+        // Un check critique en échec interdit le vert, quel que soit le score
+        grade: capGrade(gradeFromScore(score), critical.length > 0),
+        criticalIssues: critical,
         scores,
         categories: Object.entries(scores).map(([category, categoryScore]) => {
             const labels = getCategoryLabels(category, options.uiLang);
+            const hasCritical = checks.some(
+                check => check.category === category && critical.includes(check.id)
+            );
             return {
                 id: category,
                 name: labels.name,
                 description: labels.description,
                 score: categoryScore,
-                grade: gradeFromScore(categoryScore),
+                grade: capGrade(gradeFromScore(categoryScore), hasCritical),
             };
         }),
         checks: exposedChecks,

@@ -57,7 +57,7 @@ export default {
         description: 'Checks that the content contains exactly one H1 heading.',
         messages: {
             good: 'The H1 structure is correct.',
-            warning: 'The content has no H1 while one is expected.',
+            missing: 'The content has no H1 while one is expected: add an H1 heading.',
             bad: 'The content contains {value} H1 headings: there must be only one.',
         },
     },

@@ -1,5 +1,5 @@
-import { makeCheck, notApplicable } from '../result.js';
 import { findPhrasesInBlock, findPhrasesInModel } from '../extractors.js';
+import { decreasingScore, makeCheck, notApplicable, ratioScore } from '../result.js';
 import { contentWords, findPhraseMatches, includesAnyPhrase } from '../textUtils.js';
 
 // Catégorie "keyword" — nécessite `seoKeyword`.
@@ -26,7 +26,7 @@ export function keywordChecks(context) {
     ];
 }
 
-// Yoast : 1-4 mots significatifs vert, 5-8 orange, > 8 rouge.
+// 1-4 mots significatifs = 100, puis -15 par mot au-delà.
 // 0 mot significatif (que des mots vides) : avertissement, hors score.
 function keyphraseLength(keyword, stopWords) {
     const words = contentWords(keyword, stopWords);
@@ -35,34 +35,33 @@ function keyphraseLength(keyword, stopWords) {
         check.status = 'warning';
         return check;
     }
-    let score;
-    if (words.length <= 4) score = 9;
-    else if (words.length <= 8) score = 6;
-    else score = 3;
+    const score = words.length <= 4 ? 100 : 100 - (words.length - 4) * 15;
     return makeCheck('keyphraseLength', 'keyword', score, words.length);
 }
 
-// Yoast : phrase-clé complète dans le 1er paragraphe → vert ;
-// tous les mots présents mais dispersés → orange ; sinon rouge.
+// Phrase-clé complète dans le 1er paragraphe → 100 ;
+// sinon proportionnel aux mots significatifs présents (tous dispersés → 60).
 function keywordInIntroduction(model, phrases, stopWords) {
     const intro = model.paragraphs.find(paragraph => paragraph.words > 0);
     if (!intro) return notApplicable('keywordInIntroduction', 'keyword');
 
     const fullMatches = findPhrasesInBlock(intro, phrases);
     if (fullMatches.length) {
-        return makeCheck('keywordInIntroduction', 'keyword', 9, true, fullMatches);
+        return makeCheck('keywordInIntroduction', 'keyword', 100, true, fullMatches);
     }
 
     const words = contentWords(phrases[0], stopWords);
-    const wordsPresent = words.length > 0 && words.every(word => findPhraseMatches(intro.text, word).length > 0);
-    if (wordsPresent) {
-        const wordRanges = findPhrasesInBlock(intro, words);
-        return makeCheck('keywordInIntroduction', 'keyword', 6, 'scattered', wordRanges);
+    const found = words.filter(word => findPhraseMatches(intro.text, word).length > 0);
+    if (found.length) {
+        const wordRanges = findPhrasesInBlock(intro, found);
+        const score = (found.length / words.length) * 60;
+        return makeCheck('keywordInIntroduction', 'keyword', score, 'scattered', wordRanges);
     }
-    return makeCheck('keywordInIntroduction', 'keyword', 3, false);
+    return makeCheck('keywordInIntroduction', 'keyword', 0, false);
 }
 
-// Vert : 0,5-3 % · orange : trop faible ou 3-4 % · rouge : absent ou > 4 %
+// Zone optimale 0,5-3 % → 100 ; proportionnel en dessous (0,4 % → 80) ;
+// au-delà, décroît jusqu'à 0 à 5 % (keyword stuffing)
 function keywordDensity(model, occurrences) {
     const words = model.wordCount;
     if (!words) return notApplicable('keywordDensity', 'keyword', 0);
@@ -71,19 +70,17 @@ function keywordDensity(model, occurrences) {
 
     if (words < 100) {
         let score;
-        if (count === 0) score = 3;
-        else if (count <= 2) score = 9;
-        else score = 2;
+        if (count === 0) score = 0;
+        else if (count <= 2) score = 100;
+        else score = Math.max(0, 100 - (count - 2) * 50);
         return makeCheck('keywordDensity', 'keyword', score, { occurrences: count, density: null }, ranges);
     }
 
     const density = (count / words) * 100;
     let score;
-    if (count === 0) score = 3;
-    else if (density < 0.5) score = 6;
-    else if (density <= 3) score = 9;
-    else if (density <= 4) score = 6;
-    else score = 2; // keyword stuffing
+    if (density < 0.5) score = ratioScore(density, 0.5);
+    else if (density <= 3) score = 100;
+    else score = decreasingScore(density, 3, 5);
     return makeCheck(
         'keywordDensity',
         'keyword',
@@ -101,10 +98,12 @@ function keywordInSubheadings(model, phrases) {
 
     const matched = subheadings.filter(heading => includesAnyPhrase(heading.text, phrases));
     const percent = Math.round((matched.length / subheadings.length) * 100);
+    // Zone optimale 30-75 % → 100 ; proportionnel en dessous ;
+    // au-delà, sur-optimisation : décroît doucement (plancher 50)
     let score;
-    if (percent >= 30 && percent <= 75) score = 9;
-    else if (percent > 0) score = 6;
-    else score = 3;
+    if (percent < 30) score = ratioScore(percent, 30);
+    else if (percent <= 75) score = 100;
+    else score = Math.max(50, 100 - (percent - 75) * 2);
     return makeCheck(
         'keywordInSubheadings',
         'keyword',
@@ -127,10 +126,8 @@ function keywordDistribution(model, occurrences) {
     const quarters = new Set(
         occurrences.map(range => Math.min(3, Math.floor(((range.from - start) / span) * 4)))
     );
-    let score;
-    if (quarters.size >= 3) score = 9;
-    else if (quarters.size === 2) score = 6;
-    else score = 3;
+    // Présence dans 3 des 4 quarts du texte = bien réparti
+    const score = ratioScore(quarters.size, 3);
     return makeCheck('keywordDistribution', 'keyword', score, quarters.size, occurrences);
 }
 
@@ -149,9 +146,9 @@ function keywordInImageAlt(model, phrases, stopWords) {
 
     const withAlt = model.images.filter(image => image.alt);
     let score;
-    if (matched.length) score = 9;
-    else if (withAlt.length) score = 6;
-    else score = 3;
+    if (matched.length) score = 100;
+    else if (withAlt.length) score = 30;
+    else score = 0;
     return makeCheck(
         'keywordInImageAlt',
         'keyword',
@@ -169,7 +166,7 @@ function competingAnchor(model, phrases) {
     return makeCheck(
         'competingAnchor',
         'keyword',
-        offenders.length ? 2 : 9,
+        offenders.length ? 0 : 100,
         offenders.length,
         offenders.map(link => ({ from: link.from, to: link.to }))
     );

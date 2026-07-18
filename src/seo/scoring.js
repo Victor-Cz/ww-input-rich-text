@@ -1,12 +1,63 @@
-// Agrégation des scores : formule Yoast Σ scores / (n × 9) × 100,
-// checks non applicables exclus du dénominateur.
+// Agrégation : moyenne des scores de checks (0-100) pondérée par importance,
+// checks non applicables exclus. Un check critique en échec plafonne le
+// grade global à orange, quel que soit le score.
 // Paliers Rank Math : vert > 80 · orange 51-80 · rouge ≤ 50.
+
+export const CRITICAL_WEIGHT = 4;
+const STANDARD_WEIGHT = 2;
+
+// Poids par check : 4 = critique · 2 = standard (défaut) · 1 = mineur
+export const CHECK_WEIGHTS = {
+    // Critiques : un échec compromet le référencement de la page
+    textLength: 4,
+    singleH1: 4,
+    keywordInIntroduction: 4,
+    keywordDensity: 4,
+    metaTitleKeyword: 4,
+    // Mineurs : signaux secondaires ou bonus
+    headingHierarchy: 1,
+    structuredContent: 1,
+    centeredContent: 1,
+    genericAnchors: 1,
+    emptyLinks: 1,
+    imageRatio: 1,
+    keyphraseLength: 1,
+    keywordDistribution: 1,
+    keywordInImageAlt: 1,
+    competingAnchor: 1,
+    secondaryInSubheadings: 1,
+    secondaryDensity: 1,
+    metaTitleKeywordPosition: 1,
+    metaTitleAttractiveness: 1,
+    slugLength: 1,
+    slugClean: 1,
+    fleschReadingEase: 1,
+    consecutiveSentences: 1,
+    complexWords: 1,
+};
+
+export function checkWeight(checkId) {
+    return CHECK_WEIGHTS[checkId] ?? STANDARD_WEIGHT;
+}
 
 export function aggregateScore(checks) {
     const applicable = checks.filter(check => typeof check.score === 'number');
     if (!applicable.length) return null;
-    const sum = applicable.reduce((total, check) => total + check.score, 0);
-    return Math.round((sum / (applicable.length * 9)) * 100);
+    let points = 0;
+    let total = 0;
+    for (const check of applicable) {
+        const weight = checkWeight(check.id);
+        points += check.score * weight;
+        total += weight;
+    }
+    return Math.round(points / total);
+}
+
+/** Ids des checks critiques en échec (applicables uniquement). */
+export function criticalIssues(checks) {
+    return checks
+        .filter(check => typeof check.score === 'number' && check.status === 'bad' && checkWeight(check.id) === CRITICAL_WEIGHT)
+        .map(check => check.id);
 }
 
 export function gradeFromScore(score) {
@@ -16,10 +67,17 @@ export function gradeFromScore(score) {
     return 'red';
 }
 
+/** Un check critique en échec interdit le vert. */
+export function capGrade(grade, hasCriticalIssue) {
+    if (grade === 'green' && hasCriticalIssue) return 'orange';
+    return grade;
+}
+
 export function categoryScores(checks) {
     const categories = {};
     for (const check of checks) {
-        (categories[check.category] = categories[check.category] || []).push(check);
+        if (!categories[check.category]) categories[check.category] = [];
+        categories[check.category].push(check);
     }
     const scores = {};
     for (const [category, categoryChecks] of Object.entries(categories)) {

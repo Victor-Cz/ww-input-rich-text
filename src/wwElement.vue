@@ -626,6 +626,7 @@ export default {
                         this.seoDebounce = null;
                     }
                     this.seoRangesMap = null;
+                    this.activeSeoHighlight = null;
                     this.setSeo(null);
                     if (this.richEditor) this.richEditor.commands.clearSeoHighlights();
                     return;
@@ -1562,8 +1563,8 @@ export default {
                 const previous = this.seo;
                 const { result, rangesMap } = analyzeSeo(this.richEditor.state.doc, this.seoOptions || {});
                 this.seoRangesMap = rangesMap;
-                // Les plages surlignées peuvent être obsolètes après ré-analyse
-                this.richEditor.commands.clearSeoHighlights();
+                // Surlignage persistant : ré-appliquer les plages fraîches du check actif
+                this.refreshSeoHighlight();
                 this.setSeo(result);
 
                 if (!previous || previous.score !== result.score || previous.grade !== result.grade) {
@@ -1582,6 +1583,10 @@ export default {
             const ranges = this.seoRangesMap[checkId];
             if (!ranges || !ranges.length) return false;
 
+            // Mode persistant : le check reste surligné à travers les éditions
+            // (mapping ProseMirror) et ses plages sont recalculées à chaque ré-analyse,
+            // jusqu'à clearSeoHighlight ou un highlight sur un autre check.
+            this.activeSeoHighlight = { checkId, color };
             this.richEditor.commands.setSeoHighlights(ranges, color || undefined);
 
             // Scroller vers la première occurrence
@@ -1595,7 +1600,27 @@ export default {
             return true;
         },
 
+        // Ré-applique le surlignage du check actif avec les plages de la dernière
+        // analyse (sans scroll : appelé pendant que l'utilisateur tape).
+        refreshSeoHighlight() {
+            if (!this.richEditor) return;
+            const active = this.activeSeoHighlight;
+            if (!active) {
+                this.richEditor.commands.clearSeoHighlights();
+                return;
+            }
+            const ranges = this.seoRangesMap?.[active.checkId] || [];
+            if (ranges.length) {
+                this.richEditor.commands.setSeoHighlights(ranges, active.color || undefined);
+            } else {
+                // Plus d'occurrence (corrigé) : rien à surligner, mais le mode
+                // reste actif au cas où de nouvelles occurrences apparaissent
+                this.richEditor.commands.clearSeoHighlights();
+            }
+        },
+
         clearSeoHighlight() {
+            this.activeSeoHighlight = null;
             if (this.richEditor) this.richEditor.commands.clearSeoHighlights();
         },
     },

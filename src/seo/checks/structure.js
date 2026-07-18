@@ -1,4 +1,4 @@
-import { makeCheck, notApplicable } from '../result.js';
+import { decreasingScore, makeCheck, notApplicable, ratioScore } from '../result.js';
 
 // Catégorie "structure" — aucun mot-clé requis.
 
@@ -15,29 +15,29 @@ export function structureChecks(context) {
     ];
 }
 
-// Seuils Yoast : vert ≥ 300 mots, orange 250-299, rouge < 250 (très mauvais < 100)
+// Cible : 300 mots — score proportionnel en dessous (250 → 83)
 function textLength(model) {
     const words = model.wordCount;
-    let score;
-    if (words >= 300) score = 9;
-    else if (words >= 250) score = 6;
-    else if (words >= 100) score = 3;
-    else score = 0;
-    return makeCheck('textLength', 'structure', score, words);
+    return makeCheck('textLength', 'structure', ratioScore(words, 300), words);
 }
 
+// Binaire : exactement un H1 (si attendu) ou 0-1 H1 (sinon), tout écart = 0
 function singleH1(model, options) {
     const h1Blocks = model.headings.filter(heading => heading.level === 1);
     const count = h1Blocks.length;
     let score;
-    if (count >= 2) score = 1;
-    else if (options.expectH1) score = count === 1 ? 9 : 3;
-    else score = 9; // 0 ou 1 H1 : ok quand le titre de page est hors éditeur
+    if (count >= 2) score = 0;
+    else if (options.expectH1) score = count === 1 ? 100 : 0;
+    else score = 100; // 0 ou 1 H1 : ok quand le titre de page est hors éditeur
     const ranges = count >= 2 ? h1Blocks.map(block => ({ from: block.from, to: block.to })) : [];
-    return makeCheck('singleH1', 'structure', score, count, ranges);
+    const check = makeCheck('singleH1', 'structure', score, count, ranges);
+    // Même statut 'bad' pour deux causes distinctes : message dédié au H1 manquant
+    if (options.expectH1 && count === 0) check.messageKey = 'missing';
+    return check;
 }
 
-// Rupture de hiérarchie : un titre saute plus d'un niveau (h2 → h4)
+// Rupture de hiérarchie : un titre saute plus d'un niveau (h2 → h4).
+// Score = proportion de transitions valides.
 function headingHierarchy(model) {
     const headings = model.headings;
     if (headings.length < 2) return notApplicable('headingHierarchy', 'structure', headings.length);
@@ -45,10 +45,11 @@ function headingHierarchy(model) {
     for (let i = 1; i < headings.length; i++) {
         if (headings[i].level > headings[i - 1].level + 1) offenders.push(headings[i]);
     }
+    const transitions = headings.length - 1;
     return makeCheck(
         'headingHierarchy',
         'structure',
-        offenders.length ? 6 : 9,
+        (1 - offenders.length / transitions) * 100,
         offenders.length,
         offenders.map(block => ({ from: block.from, to: block.to }))
     );
@@ -77,33 +78,25 @@ function subheadingDistribution(model) {
 
     const offenders = stretches.filter(stretch => stretch.words > 300);
     const worst = Math.max(0, ...stretches.map(stretch => stretch.words));
-    let score;
-    if (worst > 350) score = 3;
-    else if (worst > 300) score = 6;
-    else score = 9;
 
     const ranges = offenders.flatMap(stretch =>
         stretch.blocks.length
             ? [{ from: stretch.blocks[0].from, to: stretch.blocks[stretch.blocks.length - 1].to }]
             : []
     );
-    return makeCheck('subheadingDistribution', 'structure', score, worst, ranges);
+    // 100 jusqu'à 300 mots sans sous-titre, 0 à partir de 600
+    return makeCheck('subheadingDistribution', 'structure', decreasingScore(worst, 300, 600), worst, ranges);
 }
 
-// Seuils Yoast : paragraphe > 200 mots rouge, 150-200 orange
+// Basé sur le pire paragraphe : 100 jusqu'à 150 mots, 0 à partir de 300
 function paragraphLength(model) {
     if (!model.paragraphs.length) return notApplicable('paragraphLength', 'structure', 0);
-    const tooLong = model.paragraphs.filter(paragraph => paragraph.words > 200);
-    const long = model.paragraphs.filter(paragraph => paragraph.words > 150 && paragraph.words <= 200);
-    let score;
-    if (tooLong.length) score = 3;
-    else if (long.length) score = 6;
-    else score = 9;
-    const offenders = [...tooLong, ...long];
+    const worst = Math.max(...model.paragraphs.map(paragraph => paragraph.words));
+    const offenders = model.paragraphs.filter(paragraph => paragraph.words > 150);
     return makeCheck(
         'paragraphLength',
         'structure',
-        score,
+        decreasingScore(worst, 150, 300),
         offenders.length,
         offenders.map(block => ({ from: block.from, to: block.to }))
     );
@@ -113,7 +106,7 @@ function paragraphLength(model) {
 function structuredContent(model) {
     const count = model.listCount + model.tableCount;
     if (model.wordCount < 300) return notApplicable('structuredContent', 'structure', count);
-    return makeCheck('structuredContent', 'structure', count >= 1 ? 9 : 6, {
+    return makeCheck('structuredContent', 'structure', count >= 1 ? 100 : 50, {
         lists: model.listCount,
         tables: model.tableCount,
     });
@@ -125,7 +118,7 @@ function centeredContent(model) {
     return makeCheck(
         'centeredContent',
         'structure',
-        offenders.length ? 2 : 9,
+        offenders.length ? 0 : 100,
         offenders.length,
         offenders.map(block => ({ from: block.from, to: block.to }))
     );

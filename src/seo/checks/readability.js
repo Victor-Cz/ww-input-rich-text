@@ -1,5 +1,5 @@
 import { mapOffsetToPos } from '../extractors.js';
-import { makeCheck, notApplicable } from '../result.js';
+import { decreasingScore, makeCheck, notApplicable, ratioScore } from '../result.js';
 import { countSyllables, escapeRegExp, normalizeText, splitWords } from '../textUtils.js';
 
 // Catégorie "readability" — aucun mot-clé requis.
@@ -30,11 +30,8 @@ function sentenceLength(model, lang) {
     const limit = LONG_SENTENCE_WORDS[lang] || LONG_SENTENCE_WORDS.en;
     const longSentences = model.sentences.filter(sentence => sentence.words > limit);
     const percent = Math.round((longSentences.length / model.sentences.length) * 100);
-    let score;
-    if (percent <= 25) score = 9;
-    else if (percent <= 30) score = 6;
-    else score = 3;
-    return makeCheck('sentenceLength', 'readability', score, percent, longSentences.map(toRange));
+    // 100 jusqu'à 25 % de phrases longues, 0 à partir de 50 %
+    return makeCheck('sentenceLength', 'readability', decreasingScore(percent, 25, 50), percent, longSentences.map(toRange));
 }
 
 /**
@@ -58,11 +55,8 @@ export function fleschReadingScore(model, lang) {
 function fleschReadingEase(model, lang) {
     const value = fleschReadingScore(model, lang);
     if (value === null) return notApplicable('fleschReadingEase', 'readability');
-    let score;
-    if (value >= 60) score = 9;
-    else if (value >= 30) score = 6;
-    else score = 3;
-    return makeCheck('fleschReadingEase', 'readability', score, value);
+    // 100 dès que le Flesch atteint 60, proportionnel en dessous
+    return makeCheck('fleschReadingEase', 'readability', ratioScore(value, 60), value);
 }
 
 function transitionWords(model, wordLists) {
@@ -74,11 +68,8 @@ function transitionWords(model, wordLists) {
         ? model.sentences.filter(sentence => regex.test(normalizeText(sentence.text)))
         : [];
     const percent = Math.round((withTransition.length / model.sentences.length) * 100);
-    let score;
-    if (percent >= 30) score = 9;
-    else if (percent >= 20) score = 6;
-    else score = 3;
-    return makeCheck('transitionWords', 'readability', score, percent, withTransition.map(toRange));
+    // Cible : 30 % de phrases avec mot de transition
+    return makeCheck('transitionWords', 'readability', ratioScore(percent, 30), percent, withTransition.map(toRange));
 }
 
 // ≥ 3 phrases d'affilée commençant par le même mot
@@ -101,7 +92,7 @@ function consecutiveSentences(model) {
         }
         run = 1;
     }
-    return makeCheck('consecutiveSentences', 'readability', ranges.length ? 3 : 9, longestRun, ranges);
+    return makeCheck('consecutiveSentences', 'readability', ranges.length ? 0 : 100, longestRun, ranges);
 }
 
 // Heuristique voix passive : auxiliaire être/be suivi (adverbe toléré)
@@ -149,11 +140,8 @@ function passiveVoice(model, lang) {
         return false;
     });
     const percent = Math.round((passiveSentences.length / model.sentences.length) * 100);
-    let score;
-    if (percent <= 10) score = 9;
-    else if (percent <= 15) score = 6;
-    else score = 3;
-    return makeCheck('passiveVoice', 'readability', score, percent, passiveSentences.map(toRange));
+    // 100 jusqu'à 10 % de phrases passives, 0 à partir de 25 %
+    return makeCheck('passiveVoice', 'readability', decreasingScore(percent, 10, 25), percent, passiveSentences.map(toRange));
 }
 
 // Mot "complexe" : dans la liste utilisateur, ou long (≥ 8 lettres, ≥ 4 syllabes).
@@ -184,11 +172,8 @@ function complexWords(model, lang, wordLists) {
     }
     if (!total) return notApplicable('complexWords', 'readability', 0);
     const percent = Math.round((complex / total) * 100);
-    let score;
-    if (percent < 10) score = 9;
-    else if (percent <= 15) score = 6;
-    else score = 3;
-    return makeCheck('complexWords', 'readability', score, percent, ranges);
+    // 100 jusqu'à 10 % de mots complexes, 0 à partir de 25 %
+    return makeCheck('complexWords', 'readability', decreasingScore(percent, 10, 25), percent, ranges);
 }
 
 function toRange(sentence) {

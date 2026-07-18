@@ -1,4 +1,4 @@
-import { makeCheck, notApplicable } from '../result.js';
+import { makeCheck, notApplicable, ratioScore } from '../result.js';
 
 // Catégorie "images" — aucun mot-clé requis.
 
@@ -7,23 +7,21 @@ export function imagesChecks(context) {
     return [imagePresence(model), imageAlt(model), imageRatio(model)];
 }
 
-// Yoast : ≥ 1 image → vert ; Rank Math : score max à 4 médias
+// Aucune image → 0 ; une seule sur un texte long → 70 ; sinon 100
 function imagePresence(model) {
     const count = model.images.length;
     let score;
-    if (count >= 4) score = 9;
-    else if (count >= 1) score = model.wordCount > 1000 ? 7 : 9;
-    else score = 3;
+    if (!count) score = 0;
+    else if (model.wordCount > 1000 && count < 2) score = 70;
+    else score = 100;
     return makeCheck('imagePresence', 'images', score, count);
 }
 
+// Score = proportion d'images avec attribut alt
 function imageAlt(model) {
     if (!model.images.length) return notApplicable('imageAlt', 'images', 0);
     const missing = model.images.filter(image => !image.alt);
-    let score;
-    if (!missing.length) score = 9;
-    else if (missing.length < model.images.length) score = 6;
-    else score = 3;
+    const score = (1 - missing.length / model.images.length) * 100;
     return makeCheck(
         'imageAlt',
         'images',
@@ -33,15 +31,14 @@ function imageAlt(model) {
     );
 }
 
-// ~1 image par 500 mots au-delà de 300 mots
+// ~1 image par 500 mots au-delà de 300 mots — score proportionnel
 function imageRatio(model) {
     if (!model.images.length || model.wordCount < 300) {
         return notApplicable('imageRatio', 'images', model.images.length);
     }
-    const expected = Math.floor(model.wordCount / 500);
-    const score = model.images.length >= expected ? 9 : 6;
-    return makeCheck('imageRatio', 'images', score, {
+    const expected = Math.max(1, Math.floor(model.wordCount / 500));
+    return makeCheck('imageRatio', 'images', ratioScore(model.images.length, expected), {
         images: model.images.length,
-        expected: Math.max(1, expected),
+        expected,
     });
 }
