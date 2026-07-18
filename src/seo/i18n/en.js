@@ -196,7 +196,8 @@ export default {
         messages: {
             good: 'The content contains {value} image(s), that is sufficient.',
             warning: '{value} image(s) for this amount of text: add more.',
-            bad: 'No images: add at least one media element.',
+            bad: 'Only {value} image(s) for this amount of text: add more.',
+            none: 'No images: add at least one media element.',
         },
     },
     imageAlt: {

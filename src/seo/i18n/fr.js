@@ -196,7 +196,8 @@ export default {
         messages: {
             good: 'Le contenu contient {value} image(s), c’est suffisant.',
             warning: '{value} image(s) pour ce volume de texte : ajoutez-en.',
-            bad: 'Aucune image : ajoutez au moins un média.',
+            bad: 'Seulement {value} image(s) pour ce volume de texte : ajoutez-en.',
+            none: 'Aucune image : ajoutez au moins un média.',
         },
     },
     imageAlt: {

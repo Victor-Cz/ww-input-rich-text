@@ -14,10 +14,14 @@ export function imagesChecks(context) {
 
 // Nombre d'images vs attendu : 1 image par ~500 mots (minimum 1).
 // Score proportionnel : 2 images pour 4 attendues → 50. value : nombre d'images.
+// messageKey 'none' quand il n'y a réellement aucune image (le statut 'bad'
+// couvre aussi « trop peu d'images » avec 1+ image sur un texte long).
 function imagePresence(model) {
     const count = model.images.length;
     const expected = Math.max(1, Math.floor(model.wordCount / 500));
-    return makeCheck('imagePresence', 'images', ratioScore(count, expected), count);
+    const check = makeCheck('imagePresence', 'images', ratioScore(count, expected), count);
+    if (count === 0) check.messageKey = 'none';
+    return check;
 }
 
 // Yoast : ≥ 50 % des mots significatifs du mot-clé dans au moins un alt.
