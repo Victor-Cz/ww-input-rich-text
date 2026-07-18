@@ -10,7 +10,7 @@ export function keywordChecks(context) {
     const { model, phrases, wordLists } = context;
     if (!phrases.length) {
         return ['keyphraseLength', 'keywordInH1', 'keywordInIntroduction', 'keywordDensity',
-            'keywordInSubheadings', 'keywordDistribution', 'keywordInImageAlt']
+            'keywordInSubheadings', 'keywordDistribution']
             .map(id => notApplicable(id, 'keyword'));
     }
 
@@ -22,7 +22,6 @@ export function keywordChecks(context) {
         keywordDensity(model, occurrences),
         keywordInSubheadings(model, phrases),
         keywordDistribution(model, occurrences),
-        keywordInImageAlt(model, phrases, wordLists.stopWords),
     ];
 }
 
@@ -147,33 +146,4 @@ function keywordDistribution(model, occurrences) {
     // Présence dans 3 des 4 quarts du texte = bien réparti
     const score = ratioScore(quarters.size, 3);
     return makeCheck('keywordDistribution', 'keyword', score, quarters.size, occurrences);
-}
-
-// Yoast : ≥ 50 % des mots significatifs du mot-clé dans au moins un alt
-function keywordInImageAlt(model, phrases, stopWords) {
-    if (!model.images.length) return notApplicable('keywordInImageAlt', 'keyword', 0);
-
-    const words = contentWords(phrases[0], stopWords);
-    const matched = model.images.filter(image => {
-        if (!image.alt) return false;
-        if (includesAnyPhrase(image.alt, phrases)) return true;
-        if (!words.length) return false;
-        const found = words.filter(word => findPhraseMatches(image.alt, word).length > 0);
-        return found.length / words.length >= 0.5;
-    });
-
-    const withAlt = model.images.filter(image => image.alt);
-    // 100 : mot-clé dans ≥ 1 alt · 50 (warning) : des alt existent mais sans le
-    // mot-clé · 0 (bad) : aucune image n'a d'alt
-    let score;
-    if (matched.length) score = 100;
-    else if (withAlt.length) score = 50;
-    else score = 0;
-    return makeCheck(
-        'keywordInImageAlt',
-        'keyword',
-        score,
-        matched.length,
-        matched.map(image => ({ from: image.from, to: image.to, node: true }))
-    );
 }
