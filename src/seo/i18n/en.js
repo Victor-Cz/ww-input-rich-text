@@ -198,8 +198,8 @@ export default {
     },
     // Images
     imagePresence: {
-        title: 'Image presence',
-        description: 'Checks that the content has enough images for its text volume (about one per 500 words).',
+        title: 'Image count',
+        description: 'Checks the number of images against the text length: about one per 500 words (minimum one).',
         objective: '≥ 1 image per ~500 words',
         messages: {
             good: 'The content contains {value} image(s), that is sufficient.',
