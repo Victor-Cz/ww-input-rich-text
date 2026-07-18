@@ -4,6 +4,9 @@
 // La clé `categories` porte le nom / la description de chaque catégorie de checks.
 
 export default {
+    // Message par défaut pour un check non applicable sans message `na` dédié
+    // (donnée manquante — mot-clé/meta non fournis — ou texte trop court).
+    defaultNa: 'Non évalué : information manquante ou texte trop court.',
     categories: {
         structure: {
             name: 'Structure',
@@ -156,8 +159,9 @@ export default {
         objective: '≥ 1 lien externe par ~1000 mots',
         messages: {
             good: 'Le texte contient {value} lien(s) sortant(s), c’est suffisant.',
-            warning: '{value} lien(s) sortant(s) pour ce volume de texte : ajoutez-en.',
-            bad: 'Pas assez de liens sortants ({value}) : ajoutez des liens vers des sources externes.',
+            warning: '{value} lien(s) sortant(s) pour ce volume de texte : visez-en {target}.',
+            bad: 'Seulement {value} lien(s) sortant(s) : visez-en {target} vers des sources externes.',
+            none: 'Aucun lien sortant : visez-en {target} vers des sources externes.',
         },
     },
     internalLinks: {
@@ -166,8 +170,9 @@ export default {
         objective: '≥ 1 lien interne par ~500 mots',
         messages: {
             good: 'Le texte contient {value} lien(s) interne(s), c’est suffisant.',
-            warning: '{value} lien(s) interne(s) pour ce volume de texte : ajoutez-en.',
-            bad: 'Pas assez de liens internes ({value}) : ajoutez des liens vers d’autres pages du site.',
+            warning: '{value} lien(s) interne(s) pour ce volume de texte : visez-en {target}.',
+            bad: 'Seulement {value} lien(s) interne(s) : visez-en {target} vers d’autres pages du site.',
+            none: 'Aucun lien interne : visez-en {target} vers d’autres pages du site.',
         },
     },
     genericAnchors: {
@@ -195,9 +200,9 @@ export default {
         objective: '≥ 1 image par ~500 mots',
         messages: {
             good: 'Le contenu contient {value} image(s), c’est suffisant.',
-            warning: '{value} image(s) pour ce volume de texte : ajoutez-en.',
-            bad: 'Seulement {value} image(s) pour ce volume de texte : ajoutez-en.',
-            none: 'Aucune image : ajoutez au moins un média.',
+            warning: '{value} image(s) pour ce volume de texte : visez-en {target}.',
+            bad: 'Seulement {value} image(s) pour ce volume de texte : visez-en {target}.',
+            none: 'Aucune image : visez-en {target} pour ce volume de texte.',
         },
     },
     imageAlt: {
@@ -219,7 +224,7 @@ export default {
             good: 'La longueur du mot-clé est bonne ({value} mots significatifs).',
             warning: 'Le mot-clé est long ({value} mots) : visez 1 à 4 mots significatifs.',
             bad: 'Le mot-clé est trop long ({value} mots).',
-            na: 'Le mot-clé ne contient que des mots vides : choisissez un mot-clé plus spécifique.',
+            onlyStopwords: 'Le mot-clé ne contient que des mots vides : choisissez un mot-clé plus spécifique.',
         },
     },
     headingLength: {
@@ -271,7 +276,8 @@ export default {
         messages: {
             good: 'Le mot-clé apparaît dans {value} % des sous-titres.',
             warning: 'Le mot-clé apparaît dans {value} % des sous-titres (visez 30-75 %).',
-            bad: 'Le mot-clé n’apparaît dans aucun sous-titre.',
+            bad: 'Le mot-clé n’apparaît que dans {value} % des sous-titres (visez 30-75 %).',
+            none: 'Le mot-clé n’apparaît dans aucun sous-titre.',
         },
     },
     keywordDistribution: {
@@ -321,7 +327,8 @@ export default {
         messages: {
             good: '{value} % des mots-clés secondaires apparaissent dans un sous-titre.',
             warning: 'Peu de mots-clés secondaires dans les sous-titres ({value} %).',
-            bad: 'Les mots-clés secondaires n’apparaissent pas dans les sous-titres.',
+            bad: 'Trop peu de mots-clés secondaires dans les sous-titres ({value} %) : visez 50 %.',
+            none: 'Les mots-clés secondaires n’apparaissent dans aucun sous-titre.',
         },
     },
     // Metas
@@ -372,6 +379,7 @@ export default {
         objective: '1-2 occurrences',
         messages: {
             good: 'Le mot-clé apparaît {value} fois dans la meta description.',
+            warning: 'Le mot-clé apparaît {value} fois dans la meta description : 1 à 2 est idéal.',
             bad: 'Le mot-clé doit apparaître 1 à 2 fois dans la meta description (actuellement {value}).',
         },
     },

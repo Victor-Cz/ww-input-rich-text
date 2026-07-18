@@ -32,22 +32,38 @@ export function getCategoryLabels(categoryId, lang) {
 }
 
 /**
- * Message d'un check selon son statut, avec interpolation {value} / {value.x}.
+ * Message d'un check selon son statut, avec interpolation `{value}` (valeur
+ * mesurée) et `{target}` (objectif chiffré, ex. nombre d'images visé).
  * Un check peut porter un `messageKey` pour désambiguïser deux causes
  * partageant le même statut (ex. headingHierarchy : H1 manquant vs H1 multiples).
  */
 export function getMessage(check, lang) {
-    const entry = getLocale(lang)[check.id];
+    const locale = getLocale(lang);
+    const entry = locale[check.id];
     if (!entry) return '';
-    const template =
-        (check.messageKey && entry.messages[check.messageKey]) ||
-        entry.messages[check.status] ||
-        entry.messages.good ||
-        '';
-    return template.replace(/\{value(?:\.([a-zA-Z]+))?\}/g, (_, key) => {
-        const value = key ? check.value?.[key] : check.value;
+    const template = pickTemplate(entry.messages, check, locale.defaultNa || '');
+    return template.replace(/\{(value|target)(?:\.([a-zA-Z]+))?\}/g, (_, field, key) => {
+        const base = field === 'target' ? check.target : check.value;
+        const value = key ? base?.[key] : base;
         if (value === null || value === undefined) return '';
         if (Array.isArray(value)) return value.join(', ');
         return String(value);
     });
+}
+
+// Choisit le message. `messageKey` explicite prioritaire. Sinon, repli par
+// SÉVÉRITÉ (jamais vers `good` depuis un statut négatif, jamais vers `good`
+// depuis `na`) : un statut sans message dédié ne doit pas afficher « tout va bien ».
+function pickTemplate(messages, check, defaultNa) {
+    if (check.messageKey && messages[check.messageKey]) return messages[check.messageKey];
+    switch (check.status) {
+        case 'na':
+            return messages.na || defaultNa;
+        case 'bad':
+            return messages.bad || messages.warning || messages.good || '';
+        case 'warning':
+            return messages.warning || messages.bad || messages.good || '';
+        default:
+            return messages.good || '';
+    }
 }

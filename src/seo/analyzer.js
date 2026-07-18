@@ -53,6 +53,7 @@ export function analyzeSeo(doc, rawOptions = {}) {
             score: typeof check.score === 'number' ? check.score : null,
             weight: checkWeight(check.id),
             value: check.value ?? null,
+            target: check.target ?? null,
             matchCount,
             // L'action highlightSeoCheck a des occurrences à montrer dans l'éditeur
             clickable: matchCount > 0,

@@ -39,12 +39,13 @@ function secondaryKeywords(model, secondaries) {
 }
 
 // 1-4 mots significatifs = 100, puis -15 par mot au-delà.
-// 0 mot significatif (que des mots vides) : avertissement, hors score.
+// 0 mot significatif (que des mots vides) : avertissement dédié, hors score.
 function keyphraseLength(keyword, stopWords) {
     const words = contentWords(keyword, stopWords);
     if (!words.length) {
         const check = notApplicable('keyphraseLength', 'keyword', 0);
         check.status = 'warning';
+        check.messageKey = 'onlyStopwords';
         return check;
     }
     const score = words.length <= 4 ? 100 : 100 - (words.length - 4) * 15;

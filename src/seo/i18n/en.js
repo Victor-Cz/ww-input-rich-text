@@ -4,6 +4,9 @@
 // The `categories` key holds the name / description of each check category.
 
 export default {
+    // Default message for a non-applicable check without a dedicated `na` message
+    // (missing input — keyword/meta not provided — or text too short).
+    defaultNa: 'Not evaluated: missing input or text too short.',
     categories: {
         structure: {
             name: 'Structure',
@@ -156,8 +159,9 @@ export default {
         objective: '≥ 1 external link per ~1000 words',
         messages: {
             good: 'The text contains {value} outbound link(s), that is sufficient.',
-            warning: '{value} outbound link(s) for this amount of text: add more.',
-            bad: 'Not enough outbound links ({value}): add links to external sources.',
+            warning: '{value} outbound link(s) for this amount of text: aim for {target}.',
+            bad: 'Only {value} outbound link(s): aim for {target} to external sources.',
+            none: 'No outbound links: aim for {target} to external sources.',
         },
     },
     internalLinks: {
@@ -166,8 +170,9 @@ export default {
         objective: '≥ 1 internal link per ~500 words',
         messages: {
             good: 'The text contains {value} internal link(s), that is sufficient.',
-            warning: '{value} internal link(s) for this amount of text: add more.',
-            bad: 'Not enough internal links ({value}): add links to other pages of the site.',
+            warning: '{value} internal link(s) for this amount of text: aim for {target}.',
+            bad: 'Only {value} internal link(s): aim for {target} to other pages of the site.',
+            none: 'No internal links: aim for {target} to other pages of the site.',
         },
     },
     genericAnchors: {
@@ -195,9 +200,9 @@ export default {
         objective: '≥ 1 image per ~500 words',
         messages: {
             good: 'The content contains {value} image(s), that is sufficient.',
-            warning: '{value} image(s) for this amount of text: add more.',
-            bad: 'Only {value} image(s) for this amount of text: add more.',
-            none: 'No images: add at least one media element.',
+            warning: '{value} image(s) for this amount of text: aim for {target}.',
+            bad: 'Only {value} image(s) for this amount of text: aim for {target}.',
+            none: 'No images: aim for {target} for this amount of text.',
         },
     },
     imageAlt: {
@@ -219,7 +224,7 @@ export default {
             good: 'The keyphrase length is good ({value} content words).',
             warning: 'The keyphrase is long ({value} words): aim for 1 to 4 content words.',
             bad: 'The keyphrase is too long ({value} words).',
-            na: 'The keyphrase only contains function words: choose a more specific keyphrase.',
+            onlyStopwords: 'The keyphrase only contains function words: choose a more specific keyphrase.',
         },
     },
     headingLength: {
@@ -271,7 +276,8 @@ export default {
         messages: {
             good: 'The keyphrase appears in {value}% of subheadings.',
             warning: 'The keyphrase appears in {value}% of subheadings (aim for 30-75%).',
-            bad: 'The keyphrase does not appear in any subheading.',
+            bad: 'The keyphrase appears in only {value}% of subheadings (aim for 30-75%).',
+            none: 'The keyphrase does not appear in any subheading.',
         },
     },
     keywordDistribution: {
@@ -321,7 +327,8 @@ export default {
         messages: {
             good: '{value}% of secondary keywords appear in a subheading.',
             warning: 'Few secondary keywords in subheadings ({value}%).',
-            bad: 'Secondary keywords do not appear in subheadings.',
+            bad: 'Too few secondary keywords in subheadings ({value}%): aim for 50%.',
+            none: 'Secondary keywords do not appear in any subheading.',
         },
     },
     // Metas
@@ -372,6 +379,7 @@ export default {
         objective: '1-2 occurrences',
         messages: {
             good: 'The keyphrase appears {value} time(s) in the meta description.',
+            warning: 'The keyphrase appears {value} times in the meta description: 1-2 is ideal.',
             bad: 'The keyphrase should appear 1-2 times in the meta description (currently {value}).',
         },
     },

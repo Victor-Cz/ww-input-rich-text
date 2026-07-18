@@ -69,7 +69,10 @@ function keywordInSubheadings(model, phrases) {
     else score = Math.max(50, 100 - (percent - 75) * 2);
     // Surligner les occurrences du mot-clé dans les sous-titres, pas le sous-titre entier
     const ranges = matched.flatMap(heading => findPhrasesInBlock(heading, phrases));
-    return makeCheck('keywordInSubheadings', 'headings', score, percent, ranges);
+    const check = makeCheck('keywordInSubheadings', 'headings', score, percent, ranges);
+    // 'bad' couvre « aucun » (0 %) ET « trop peu » (1-29 %) : message dédié au 0 %
+    if (matched.length === 0) check.messageKey = 'none';
+    return check;
 }
 
 // Cible : ≥ 50 % des mots-clés secondaires dans au moins un sous-titre — proportionnel.
@@ -88,5 +91,7 @@ function secondaryInSubheadings(model, secondaries) {
     // Surligner les occurrences des mots-clés secondaires dans les sous-titres,
     // pas le sous-titre entier
     const ranges = subheadings.flatMap(heading => findPhrasesInBlock(heading, covered));
-    return makeCheck('secondaryInSubheadings', 'headings', score, percent, ranges);
+    const check = makeCheck('secondaryInSubheadings', 'headings', score, percent, ranges);
+    if (covered.length === 0) check.messageKey = 'none';
+    return check;
 }

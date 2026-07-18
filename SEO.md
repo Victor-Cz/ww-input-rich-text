@@ -74,6 +74,7 @@ mots-clés tolère casse, accents et pluriels simples (s/x/es).
       score: 100,            // 0-100 continu, null si na
       weight: 4,             // importance dans la moyenne : 4 critique · 2 standard · 1 mineur
       value: 1.2,            // valeur mesurée — toujours un scalaire (nombre, chaîne ou booléen)
+      target: null,          // objectif chiffré quand il dépend du contenu (ex. nb d'images/liens visé), sinon null
       matchCount: 8,         // nb d'occurrences surlignables dans l'éditeur
       clickable: true,       // l'action highlightSeoCheck a quelque chose à montrer
       message: 'La densité du mot-clé est bonne (1.2 %).',

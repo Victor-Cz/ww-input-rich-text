@@ -20,6 +20,7 @@ function imagePresence(model) {
     const count = model.images.length;
     const expected = Math.max(1, Math.floor(model.wordCount / 500));
     const check = makeCheck('imagePresence', 'images', ratioScore(count, expected), count);
+    check.target = expected;
     if (count === 0) check.messageKey = 'none';
     return check;
 }

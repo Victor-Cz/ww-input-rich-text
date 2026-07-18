@@ -76,17 +76,25 @@ function extractDomain(href) {
 }
 
 // Nombre de liens sortants vs attendu : 1 par ~1000 mots (minimum 1).
-// Score proportionnel. value : nombre de liens sortants.
+// Score proportionnel. value : nb de liens sortants · target : nb visé.
 function outboundLinks({ external }, wordCount) {
     const expected = Math.max(1, Math.floor(wordCount / 1000));
-    return makeCheck('outboundLinks', 'links', ratioScore(external.length, expected), external.length, toRanges(external));
+    const check = makeCheck('outboundLinks', 'links', ratioScore(external.length, expected),
+        external.length, toRanges(external));
+    check.target = expected;
+    if (external.length === 0) check.messageKey = 'none';
+    return check;
 }
 
 // Nombre de liens internes vs attendu : 1 par ~500 mots (minimum 1).
-// Score proportionnel. value : nombre de liens internes.
+// Score proportionnel. value : nb de liens internes · target : nb visé.
 function internalLinks({ internal }, wordCount) {
     const expected = Math.max(1, Math.floor(wordCount / 500));
-    return makeCheck('internalLinks', 'links', ratioScore(internal.length, expected), internal.length, toRanges(internal));
+    const check = makeCheck('internalLinks', 'links', ratioScore(internal.length, expected),
+        internal.length, toRanges(internal));
+    check.target = expected;
+    if (internal.length === 0) check.messageKey = 'none';
+    return check;
 }
 
 // Ancres non descriptives (« cliquez ici », « en savoir plus »…).
