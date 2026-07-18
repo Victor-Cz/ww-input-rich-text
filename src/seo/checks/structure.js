@@ -6,8 +6,7 @@ export function structureChecks(context) {
     const { model, options } = context;
     return [
         textLength(model),
-        singleH1(model, options),
-        headingHierarchy(model),
+        headingHierarchy(model, options),
         subheadingDistribution(model),
         paragraphLength(model),
         structuredContent(model),
@@ -21,26 +20,30 @@ function textLength(model) {
     return makeCheck('textLength', 'structure', ratioScore(words, 300), words);
 }
 
-// Binaire : exactement un H1 (si attendu) ou 0-1 H1 (sinon), tout écart = 0
-function singleH1(model, options) {
-    const h1Blocks = model.headings.filter(heading => heading.level === 1);
-    const count = h1Blocks.length;
-    let score;
-    if (count >= 2) score = 0;
-    else if (options.expectH1) score = count === 1 ? 100 : 0;
-    else score = 100; // 0 ou 1 H1 : ok quand le titre de page est hors éditeur
-    const ranges = count >= 2 ? h1Blocks.map(block => ({ from: block.from, to: block.to })) : [];
-    const check = makeCheck('singleH1', 'structure', score, count, ranges);
-    // Même statut 'bad' pour deux causes distinctes : message dédié au H1 manquant
-    if (options.expectH1 && count === 0) check.messageKey = 'missing';
-    return check;
-}
-
-// Rupture de hiérarchie : un titre saute plus d'un niveau (h2 → h4).
-// Score = proportion de transitions valides.
-function headingHierarchy(model) {
+// Structure des titres : unicité du H1 (contrainte dure) + pas de saut de niveau
+// (h2 → h4). Check critique.
+// - ≥ 2 H1 → 0 (messageKey 'multipleH1'), H1 surlignés
+// - H1 attendu mais absent → 0 (messageKey 'missingH1')
+// - sinon : score = proportion de transitions de niveau valides
+// value : nombre de problèmes (H1 en trop / manquant / sauts de niveau)
+function headingHierarchy(model, options) {
     const headings = model.headings;
-    if (headings.length < 2) return notApplicable('headingHierarchy', 'structure', headings.length);
+    const h1Blocks = headings.filter(heading => heading.level === 1);
+
+    if (h1Blocks.length >= 2) {
+        const check = makeCheck('headingHierarchy', 'structure', 0, h1Blocks.length,
+            h1Blocks.map(block => ({ from: block.from, to: block.to })));
+        check.messageKey = 'multipleH1';
+        return check;
+    }
+    if (options.expectH1 && h1Blocks.length === 0) {
+        const check = makeCheck('headingHierarchy', 'structure', 0, 0);
+        check.messageKey = 'missingH1';
+        return check;
+    }
+
+    // H1 correct : évaluer les sauts de niveau (aucun possible avec < 2 titres)
+    if (headings.length < 2) return makeCheck('headingHierarchy', 'structure', 100, 0);
     const offenders = [];
     for (let i = 1; i < headings.length; i++) {
         if (headings[i].level > headings[i - 1].level + 1) offenders.push(headings[i]);

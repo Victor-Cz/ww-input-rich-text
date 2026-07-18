@@ -34,7 +34,7 @@ export function getCategoryLabels(categoryId, lang) {
 /**
  * Message d'un check selon son statut, avec interpolation {value} / {value.x}.
  * Un check peut porter un `messageKey` pour désambiguïser deux causes
- * partageant le même statut (ex. singleH1 : H1 manquant vs H1 multiples).
+ * partageant le même statut (ex. headingHierarchy : H1 manquant vs H1 multiples).
  */
 export function getMessage(check, lang) {
     const entry = getLocale(lang)[check.id];

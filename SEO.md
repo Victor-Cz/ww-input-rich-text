@@ -42,7 +42,7 @@ mots-clés tolère casse, accents et pluriels simples (s/x/es).
 - **Statut dérivé du score** : `good` ≥ 80 · `warning` 40-79 · `bad` < 40 ·
   `na` = non applicable (exclu du global).
 - **Score global et par catégorie : moyenne pondérée** par l'importance du check
-  (`weight`) : critique = 4 (`textLength`, `singleH1`, `keywordInIntroduction`,
+  (`weight`) : critique = 4 (`textLength`, `headingHierarchy`, `keywordInIntroduction`,
   `keywordDensity`, `metaTitleKeyword`), standard = 2, mineur = 1.
 - **Grade** : `green` > 80 · `orange` 51-80 · `red` ≤ 50 — mais un check
   **critique en échec plafonne le grade à `orange`** (global et catégorie),
@@ -54,7 +54,8 @@ mots-clés tolère casse, accents et pluriels simples (s/x/es).
 {
   score: 78,             // score global 0-100 (moyenne pondérée, checks na exclus)
   grade: 'orange',       // green (> 80) | orange (51-80) | red (≤ 50), plafonné si criticalIssues
-  criticalIssues: ['singleH1'],   // checks critiques (weight 4) en échec
+  criticalIssues: ['headingHierarchy'],   // checks critiques (weight 4) en échec
+  highlighting: false,   // true tant que des éléments SEO sont surlignés dans l'éditeur
   scores: {              // sous-score 0-100 par catégorie (null si non applicable)
     structure, headings, readability, links, images, keyword, meta
   },
@@ -90,8 +91,8 @@ mots-clés tolère casse, accents et pluriels simples (s/x/es).
 
 ## Check ids
 
-- **structure** : `textLength`, `singleH1`, `headingHierarchy`,
-  `subheadingDistribution`, `paragraphLength`, `structuredContent`,
+- **structure** : `textLength`, `headingHierarchy` (unicité du H1 **+** hiérarchie
+  des niveaux), `subheadingDistribution`, `paragraphLength`, `structuredContent`,
   `centeredContent` (toute la **structure** des titres est ici)
 - **headings** (**contenu** des titres) : `headingLength`, `keywordInH1`,
   `keywordInSubheadings`, `secondaryInSubheadings` (les checks mot-clé sont na
@@ -126,10 +127,10 @@ mots-clés tolère casse, accents et pluriels simples (s/x/es).
 - **Clear SEO highlight** (`clearSeoHighlight()`) : désactive le mode et efface
   le surlignage.
 
-La variable readonly **`seoHighlighting`** (booléen) est `true` tant que des
-éléments SEO sont surlignés dans l'éditeur, `false` sinon (effacé, corrigé, ou
-extension désactivée). Utile pour n'afficher un bouton « effacer le surlignage »
-que lorsqu'il y a quelque chose à effacer.
+Le champ **`seo.highlighting`** (booléen) est `true` tant que des éléments SEO
+sont surlignés dans l'éditeur, `false` sinon (effacé, corrigé, ou extension
+désactivée). Utile pour n'afficher un bouton « effacer le surlignage » que
+lorsqu'il y a quelque chose à effacer.
 
 ## Trigger event
 

@@ -45,23 +45,15 @@ export default {
             bad: 'Le texte fait {value} mots, c’est trop court pour bien se positionner.',
         },
     },
-    singleH1: {
-        title: 'Titre H1 unique',
-        description: 'Vérifie que le contenu contient exactement un titre H1.',
-        objective: 'Un seul titre H1',
-        messages: {
-            good: 'La structure H1 est correcte.',
-            missing: 'Le contenu ne contient pas de H1 alors qu’un H1 est attendu : ajoutez un titre H1.',
-            bad: 'Le contenu contient {value} H1 : il ne doit y en avoir qu’un.',
-        },
-    },
     headingHierarchy: {
-        title: 'Hiérarchie des titres',
-        description: 'Vérifie que les niveaux de titres se suivent sans saut (ex. pas de H2 → H4).',
-        objective: 'Aucun saut de niveau',
+        title: 'Structure des titres',
+        description: 'Vérifie qu’il y a un seul titre H1 et que les niveaux se suivent sans saut (ex. pas de H2 → H4).',
+        objective: 'Un seul H1, aucun saut de niveau',
         messages: {
-            good: 'La hiérarchie des titres est cohérente.',
+            good: 'La structure des titres est cohérente.',
             warning: '{value} titre(s) sautent un niveau (ex. H2 → H4).',
+            multipleH1: 'Le contenu contient {value} H1 : il ne doit y en avoir qu’un.',
+            missingH1: 'Le contenu ne contient pas de H1 alors qu’un H1 est attendu : ajoutez un titre H1.',
         },
     },
     subheadingDistribution: {

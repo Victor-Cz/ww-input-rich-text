@@ -10,12 +10,11 @@ const STANDARD_WEIGHT = 2;
 export const CHECK_WEIGHTS = {
     // Critiques : un échec compromet le référencement de la page
     textLength: 4,
-    singleH1: 4,
+    headingHierarchy: 4, // unicité du H1 + hiérarchie des niveaux
     keywordInIntroduction: 4,
     keywordDensity: 4,
     metaTitleKeyword: 4,
     // Mineurs : signaux secondaires ou bonus
-    headingHierarchy: 1,
     structuredContent: 1,
     centeredContent: 1,
     genericAnchors: 1,

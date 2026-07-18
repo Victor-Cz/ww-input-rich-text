@@ -365,14 +365,6 @@ export default {
             readonly: true,
         });
 
-        const { value: seoHighlighting, setValue: _setSeoHighlighting } = wwLib.wwVariable.useComponentVariable({
-            uid: props.uid,
-            name: 'seoHighlighting',
-            type: 'boolean',
-            defaultValue: false,
-            readonly: true,
-        });
-
         const { value: history, setValue: _setHistory } = wwLib.wwVariable.useComponentVariable({
             uid: props.uid,
             name: 'history',
@@ -390,7 +382,6 @@ export default {
         const setPendingChangesCount = (...args) => { if (!_isDestroyed) _setPendingChangesCount(...args); };
         const setCollaborationStatus = (...args) => { if (!_isDestroyed) _setCollaborationStatus(...args); };
         const setSeo = (...args) => { if (!_isDestroyed) _setSeo(...args); };
-        const setSeoHighlighting = (...args) => { if (!_isDestroyed) _setSeoHighlighting(...args); };
         const setHistory = (...args) => { if (!_isDestroyed) _setHistory(...args); };
 
 
@@ -441,8 +432,6 @@ export default {
             setCollaborationStatus,
             seo,
             setSeo,
-            seoHighlighting,
-            setSeoHighlighting,
             history,
             setHistory,
             randomUid,
@@ -457,6 +446,7 @@ export default {
         richEditor: null,
         loading: false,
         pendingSteps: [], // Accumulateur de diffs
+        seoHighlightVisible: false, // reflété dans seo.highlighting
     }),
 
     watch: {
@@ -638,8 +628,8 @@ export default {
                     }
                     this.seoRangesMap = null;
                     this.activeSeoHighlight = null;
+                    this.seoHighlightVisible = false;
                     this.setSeo(null);
-                    this.setSeoHighlighting(false);
                     if (this.richEditor) this.richEditor.commands.clearSeoHighlights();
                     return;
                 }
@@ -1574,8 +1564,10 @@ export default {
                 const previous = this.seo;
                 const { result, rangesMap } = analyzeSeo(this.richEditor.state.doc, this.seoOptions || {});
                 this.seoRangesMap = rangesMap;
-                // Surlignage persistant : ré-appliquer les plages fraîches du check actif
+                // Surlignage persistant : ré-appliquer les plages fraîches du check actif,
+                // puis refléter l'état de surlignage dans l'objet seo exposé
                 this.refreshSeoHighlight();
+                result.highlighting = this.seoHighlightVisible;
                 this.setSeo(result);
 
                 if (!previous || previous.score !== result.score || previous.grade !== result.grade) {
@@ -1602,45 +1594,59 @@ export default {
             // jusqu'à clearSeoHighlight ou un highlight sur un autre check.
             this.activeSeoHighlight = { checkId, color: effectiveColor };
             this.richEditor.commands.setSeoHighlights(ranges, effectiveColor || undefined);
-            this.setSeoHighlighting(true);
+            this.setSeoHighlightingState(true);
 
-            // Scroller vers la première occurrence
-            try {
-                const { node } = this.richEditor.view.domAtPos(ranges[0].from);
-                const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
-                element?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
-            } catch {
-                // Position introuvable dans le DOM : le surlignage reste appliqué
-            }
+            this.scrollToSeoRange(ranges[0]);
             return true;
         },
 
         // Ré-applique le surlignage du check actif avec les plages de la dernière
         // analyse (sans scroll : appelé pendant que l'utilisateur tape).
+        // Ré-applique le surlignage du check actif et met à jour le flag interne.
+        // Ne touche PAS à la variable seo : appelé depuis runSeoAnalysis qui pose
+        // ensuite result.highlighting.
         refreshSeoHighlight() {
             if (!this.richEditor) return;
             const active = this.activeSeoHighlight;
-            if (!active) {
-                this.richEditor.commands.clearSeoHighlights();
-                this.setSeoHighlighting(false);
-                return;
-            }
-            const ranges = this.seoRangesMap?.[active.checkId] || [];
+            const ranges = active ? this.seoRangesMap?.[active.checkId] || [] : [];
             if (ranges.length) {
                 this.richEditor.commands.setSeoHighlights(ranges, active.color || undefined);
-                this.setSeoHighlighting(true);
+                this.seoHighlightVisible = true;
             } else {
-                // Plus d'occurrence (corrigé) : rien à surligner, mais le mode
-                // reste actif au cas où de nouvelles occurrences apparaissent
+                // Pas de mode actif, ou plus d'occurrence (corrigé) : rien de surligné,
+                // mais le mode reste armé si de nouvelles occurrences apparaissent
                 this.richEditor.commands.clearSeoHighlights();
-                this.setSeoHighlighting(false);
+                this.seoHighlightVisible = false;
             }
         },
 
         clearSeoHighlight() {
             this.activeSeoHighlight = null;
             if (this.richEditor) this.richEditor.commands.clearSeoHighlights();
-            this.setSeoHighlighting(false);
+            this.setSeoHighlightingState(false);
+        },
+
+        // Met à jour le flag interne + reflète `highlighting` dans l'objet seo exposé
+        // (pour les actions déclenchées hors ré-analyse : highlight/clear au clic).
+        setSeoHighlightingState(value) {
+            this.seoHighlightVisible = value;
+            if (this.seo) this.setSeo({ ...this.seo, highlighting: value });
+        },
+
+        // Scroll vers une plage. Les plages de texte pointent à l'intérieur du
+        // texte (domAtPos OK) ; les plages de bloc/nœud (titres, images) pointent
+        // AVANT le nœud → domAtPos renvoie le conteneur parent et ne scrolle pas.
+        // nodeDOM(pos) renvoie le DOM du nœud qui commence à cette position.
+        scrollToSeoRange(range) {
+            if (!this.richEditor || !range) return;
+            try {
+                const view = this.richEditor.view;
+                const dom = view.nodeDOM(range.from) || view.domAtPos(range.from)?.node;
+                const element = dom?.nodeType === Node.ELEMENT_NODE ? dom : dom?.parentElement;
+                element?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+            } catch {
+                // Position introuvable dans le DOM : le surlignage reste appliqué
+            }
         },
     },
     mounted() {

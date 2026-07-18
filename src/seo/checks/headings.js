@@ -3,8 +3,8 @@ import { decreasingScore, makeCheck, notApplicable, ratioScore } from '../result
 import { contentWords, findPhraseMatches, includesAnyPhrase } from '../textUtils.js';
 
 // Catégorie "headings" — contenu des titres (H1-H6) : longueur et présence
-// des mots-clés. La structure des titres (singleH1, headingHierarchy,
-// subheadingDistribution) reste en catégorie "structure".
+// des mots-clés. La structure des titres (headingHierarchy — unicité du H1 +
+// hiérarchie des niveaux — et subheadingDistribution) reste en catégorie "structure".
 
 export function headingsChecks(context) {
     const { model, phrases, wordLists } = context;

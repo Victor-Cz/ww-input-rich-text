@@ -45,23 +45,15 @@ export default {
             bad: 'The text is {value} words long, that is too short to rank well.',
         },
     },
-    singleH1: {
-        title: 'Single H1 heading',
-        description: 'Checks that the content contains exactly one H1 heading.',
-        objective: 'A single H1 heading',
-        messages: {
-            good: 'The H1 structure is correct.',
-            missing: 'The content has no H1 while one is expected: add an H1 heading.',
-            bad: 'The content contains {value} H1 headings: there must be only one.',
-        },
-    },
     headingHierarchy: {
-        title: 'Heading hierarchy',
-        description: 'Checks that heading levels follow each other without skips (e.g. no H2 → H4).',
-        objective: 'No skipped levels',
+        title: 'Heading structure',
+        description: 'Checks there is exactly one H1 and that heading levels follow each other without skips (e.g. no H2 → H4).',
+        objective: 'One H1, no skipped levels',
         messages: {
-            good: 'The heading hierarchy is consistent.',
+            good: 'The heading structure is consistent.',
             warning: '{value} heading(s) skip a level (e.g. H2 → H4).',
+            multipleH1: 'The content contains {value} H1 headings: there must be only one.',
+            missingH1: 'The content has no H1 while one is expected: add an H1 heading.',
         },
     },
     subheadingDistribution: {
