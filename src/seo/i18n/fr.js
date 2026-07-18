@@ -229,6 +229,17 @@ export default {
             na: 'Le mot-clé ne contient que des mots vides : choisissez un mot-clé plus spécifique.',
         },
     },
+    keywordInH1: {
+        title: 'Mot-clé dans le titre H1',
+        description: 'Vérifie que le mot-clé principal apparaît dans le titre H1 du contenu.',
+        objective: 'Mot-clé dans le H1',
+        messages: {
+            good: 'Le mot-clé apparaît dans le titre H1.',
+            warning: 'Les mots du mot-clé sont dans le H1 mais dispersés.',
+            bad: 'Le mot-clé n’apparaît pas dans le titre H1.',
+            na: 'Pas de titre H1 dans le contenu.',
+        },
+    },
     keywordInIntroduction: {
         title: 'Mot-clé dans l’introduction',
         description: 'Vérifie que le mot-clé principal apparaît dès le premier paragraphe.',

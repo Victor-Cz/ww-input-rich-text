@@ -9,14 +9,15 @@ import { contentWords, findPhraseMatches, includesAnyPhrase } from '../textUtils
 export function keywordChecks(context) {
     const { model, phrases, wordLists } = context;
     if (!phrases.length) {
-        return ['keyphraseLength', 'keywordInIntroduction', 'keywordDensity', 'keywordInSubheadings',
-            'keywordDistribution', 'keywordInImageAlt', 'competingAnchor']
+        return ['keyphraseLength', 'keywordInH1', 'keywordInIntroduction', 'keywordDensity',
+            'keywordInSubheadings', 'keywordDistribution', 'keywordInImageAlt', 'competingAnchor']
             .map(id => notApplicable(id, 'keyword'));
     }
 
     const occurrences = findPhrasesInModel(model, phrases);
     return [
         keyphraseLength(context.options.keyword, wordLists.stopWords),
+        keywordInH1(model, phrases, wordLists.stopWords),
         keywordInIntroduction(model, phrases, wordLists.stopWords),
         keywordDensity(model, occurrences),
         keywordInSubheadings(model, phrases),
@@ -24,6 +25,27 @@ export function keywordChecks(context) {
         keywordInImageAlt(model, phrases, wordLists.stopWords),
         competingAnchor(model, phrases),
     ];
+}
+
+// Mot-clé dans le titre H1 : phrase complète → 100 ; mots dispersés →
+// proportionnel (max 60) ; absent → 0 (le H1 est surligné pour le localiser).
+// na si le contenu n'a pas de H1. value : 'full' | 'scattered' | 'missing'
+function keywordInH1(model, phrases, stopWords) {
+    const h1 = model.headings.find(heading => heading.level === 1);
+    if (!h1) return notApplicable('keywordInH1', 'keyword');
+
+    const fullMatches = findPhrasesInBlock(h1, phrases);
+    if (fullMatches.length) {
+        return makeCheck('keywordInH1', 'keyword', 100, 'full', fullMatches);
+    }
+
+    const words = contentWords(phrases[0], stopWords);
+    const found = words.filter(word => findPhraseMatches(h1.text, word).length > 0);
+    if (found.length) {
+        const score = (found.length / words.length) * 60;
+        return makeCheck('keywordInH1', 'keyword', score, 'scattered', findPhrasesInBlock(h1, found));
+    }
+    return makeCheck('keywordInH1', 'keyword', 0, 'missing', [{ from: h1.from, to: h1.to }]);
 }
 
 // 1-4 mots significatifs = 100, puis -15 par mot au-delà.

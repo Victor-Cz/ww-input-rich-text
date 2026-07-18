@@ -99,9 +99,9 @@ mots-clés tolère casse, accents et pluriels simples (s/x/es).
 - **links** : `outboundLinks`, `internalLinks`, `genericAnchors`, `emptyLinks`
 - **images** : `imagePresence` (présence + quantité vs longueur du texte),
   `imageAlt`
-- **keyword** : `keyphraseLength`, `keywordInIntroduction`, `keywordDensity`,
-  `keywordInSubheadings`, `keywordDistribution`, `keywordInImageAlt`,
-  `competingAnchor`
+- **keyword** : `keyphraseLength`, `keywordInH1`, `keywordInIntroduction`,
+  `keywordDensity`, `keywordInSubheadings`, `keywordDistribution`,
+  `keywordInImageAlt`, `competingAnchor`
 - **secondary** : `secondaryPresence`, `secondaryInSubheadings`,
   `secondaryDensity`
 - **meta** : `metaTitleKeyword` (présence + position), `metaTitleLength`,

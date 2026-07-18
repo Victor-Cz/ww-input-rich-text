@@ -229,6 +229,17 @@ export default {
             na: 'The keyphrase only contains function words: choose a more specific keyphrase.',
         },
     },
+    keywordInH1: {
+        title: 'Keyphrase in H1 heading',
+        description: 'Checks that the focus keyword appears in the content H1 heading.',
+        objective: 'Keyphrase in the H1',
+        messages: {
+            good: 'The keyphrase appears in the H1 heading.',
+            warning: 'The keyphrase words are in the H1 but scattered.',
+            bad: 'The keyphrase does not appear in the H1 heading.',
+            na: 'No H1 heading in the content.',
+        },
+    },
     keywordInIntroduction: {
         title: 'Keyphrase in introduction',
         description: 'Checks that the focus keyword appears in the first paragraph.',
