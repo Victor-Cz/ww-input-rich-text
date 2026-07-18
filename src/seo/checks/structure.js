@@ -102,14 +102,12 @@ function paragraphLength(model) {
     );
 }
 
-// Au moins une liste ou un tableau (featured snippets)
+// Au moins une liste ou un tableau (featured snippets).
+// value : nombre de listes + tableaux (détail dans stats).
 function structuredContent(model) {
     const count = model.listCount + model.tableCount;
     if (model.wordCount < 300) return notApplicable('structuredContent', 'structure', count);
-    return makeCheck('structuredContent', 'structure', count >= 1 ? 100 : 50, {
-        lists: model.listCount,
-        tables: model.tableCount,
-    });
+    return makeCheck('structuredContent', 'structure', count >= 1 ? 100 : 50, count);
 }
 
 // Yoast Premium : blocs de texte centrés > 50 caractères

@@ -25,13 +25,8 @@ function secondaryPresence(model, secondaries) {
     const percent = Math.round((found.length / secondaries.length) * 100);
     const score = ratioScore(percent, 70);
     const ranges = found.length ? findPhrasesInModel(model, found) : [];
-    return makeCheck(
-        'secondaryPresence',
-        'secondary',
-        score,
-        { percent, found: found.length, total: secondaries.length },
-        ranges
-    );
+    // value : % des secondaires présents
+    return makeCheck('secondaryPresence', 'secondary', score, percent, ranges);
 }
 
 // Cible : ≥ 50 % des secondaires dans au moins un sous-titre — proportionnel
@@ -48,11 +43,12 @@ function secondaryInSubheadings(model, secondaries) {
     const matchedHeadings = subheadings.filter(heading =>
         covered.some(keyword => includesAnyPhrase(heading.text, [keyword]))
     );
+    // value : % des secondaires couverts par un sous-titre
     return makeCheck(
         'secondaryInSubheadings',
         'secondary',
         score,
-        { percent, covered: covered.length, total: secondaries.length },
+        percent,
         matchedHeadings.map(heading => ({ from: heading.from, to: heading.to }))
     );
 }
@@ -70,5 +66,6 @@ function secondaryDensity(model, secondaries) {
             offenderRanges = offenderRanges.concat(occurrences);
         }
     }
-    return makeCheck('secondaryDensity', 'secondary', offenders.length ? 0 : 100, offenders, offenderRanges);
+    // value : nb de secondaires en sur-densité (les occurrences sont surlignables)
+    return makeCheck('secondaryDensity', 'secondary', offenders.length ? 0 : 100, offenders.length, offenderRanges);
 }

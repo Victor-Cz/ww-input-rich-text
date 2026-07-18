@@ -7,12 +7,14 @@ import { countSyllables, escapeRegExp, normalizeText, splitWords } from '../text
 
 const MIN_SENTENCES = 5;
 
+// Pas de check Flesch : le score Flesch est un composite de la longueur des
+// phrases et de la complexité des mots, déjà testées par sentenceLength et
+// complexWords — il reste disponible dans stats.fleschScore.
 export function readabilityChecks(context) {
     const { model, options, wordLists } = context;
     const lang = options.lang;
     return [
         sentenceLength(model, lang),
-        fleschReadingEase(model, lang),
         transitionWords(model, wordLists),
         consecutiveSentences(model),
         passiveVoice(model, lang),
@@ -50,13 +52,6 @@ export function fleschReadingScore(model, lang) {
         ? 207 - 1.015 * wordsPerSentence - 73.6 * syllablesPerWord
         : 206.835 - 1.015 * wordsPerSentence - 84.6 * syllablesPerWord;
     return Math.round(Math.min(100, Math.max(0, raw)));
-}
-
-function fleschReadingEase(model, lang) {
-    const value = fleschReadingScore(model, lang);
-    if (value === null) return notApplicable('fleschReadingEase', 'readability');
-    // 100 dès que le Flesch atteint 60, proportionnel en dessous
-    return makeCheck('fleschReadingEase', 'readability', ratioScore(value, 60), value);
 }
 
 function transitionWords(model, wordLists) {

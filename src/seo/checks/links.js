@@ -41,14 +41,16 @@ export function classifyLinks(links, siteDomain) {
     return { external, internal, empty, all: links };
 }
 
+// Accepte un domaine nu ou une URL complète (https://www.monsite.com/page)
 function normalizeDomain(domain) {
     if (!domain) return null;
     return String(domain)
+        .trim()
         .toLowerCase()
         .replace(/^https?:\/\//, '')
         .replace(/^www\./, '')
         .split('/')[0]
-        .trim() || null;
+        .split(':')[0] || null;
 }
 
 function extractDomain(href) {

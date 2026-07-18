@@ -130,7 +130,6 @@ export default {
                 'seoSecondaryKeywords',
                 'seoMetaTitle',
                 'seoMetaDescription',
-                'seoSlug',
                 'seoSiteDomain',
                 'seoLang',
                 'seoUiLang',
@@ -784,20 +783,6 @@ export default {
             },
             /* wwEditor:end */
         },
-        seoSlug: {
-            section: 'settings',
-            label: { en: 'SEO: slug', fr: 'SEO : slug' },
-            type: 'Text',
-            defaultValue: '',
-            bindable: true,
-            hidden: content => !content.enableSeoAnalysis,
-            /* wwEditor:start */
-            bindingValidation: {
-                type: 'string',
-                tooltip: 'The page slug (e.g. "seo-score-calculator"). Scored only when provided.',
-            },
-            /* wwEditor:end */
-        },
         seoSiteDomain: {
             section: 'settings',
             label: { en: 'SEO: site domain', fr: 'SEO : domaine du site' },
@@ -808,7 +793,7 @@ export default {
             /* wwEditor:start */
             bindingValidation: {
                 type: 'string',
-                tooltip: 'Your site domain (e.g. "example.com") to tell internal links from external ones. Relative URLs count as internal.',
+                tooltip: 'Your site domain or full URL (e.g. "example.com" or "https://www.example.com/page") to tell internal links from external ones. Relative URLs count as internal.',
             },
             /* wwEditor:end */
         },

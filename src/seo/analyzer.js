@@ -47,6 +47,7 @@ export function analyzeSeo(doc, rawOptions = {}) {
             id: check.id,
             title: labels.title,
             description: labels.description,
+            objective: labels.objective,
             category: check.category,
             status: check.status,
             score: typeof check.score === 'number' ? check.score : null,
@@ -96,7 +97,6 @@ function normalizeOptions(raw) {
         secondaryKeywords: cleanStringArray(raw.secondaryKeywords),
         metaTitle: cleanString(raw.metaTitle),
         metaDescription: cleanString(raw.metaDescription),
-        slug: cleanString(raw.slug),
         siteDomain: cleanString(raw.siteDomain),
         lang,
         // Langue des textes exposés (title / description / message) —

@@ -1,23 +1,24 @@
-import { makeCheck, notApplicable, ratioScore } from '../result.js';
+import { makeCheck, notApplicable } from '../result.js';
 
 // Catégorie "images" — aucun mot-clé requis.
 
 export function imagesChecks(context) {
     const { model } = context;
-    return [imagePresence(model), imageAlt(model), imageRatio(model)];
+    return [imagePresence(model), imageAlt(model)];
 }
 
-// Aucune image → 0 ; une seule sur un texte long → 70 ; sinon 100
+// Présence ET quantité en un seul check : aucune image → 0 ; sinon, base 60
+// + proportionnel au nombre attendu (~1 image par 500 mots, min 1).
+// value : nombre d'images.
 function imagePresence(model) {
     const count = model.images.length;
-    let score;
-    if (!count) score = 0;
-    else if (model.wordCount > 1000 && count < 2) score = 70;
-    else score = 100;
+    if (!count) return makeCheck('imagePresence', 'images', 0, count);
+    const expected = Math.max(1, Math.floor(model.wordCount / 500));
+    const score = 60 + Math.min(1, count / expected) * 40;
     return makeCheck('imagePresence', 'images', score, count);
 }
 
-// Score = proportion d'images avec attribut alt
+// Score = proportion d'images avec attribut alt. value : nb d'alt manquants.
 function imageAlt(model) {
     if (!model.images.length) return notApplicable('imageAlt', 'images', 0);
     const missing = model.images.filter(image => !image.alt);
@@ -29,16 +30,4 @@ function imageAlt(model) {
         missing.length,
         missing.map(image => ({ from: image.from, to: image.to, node: true }))
     );
-}
-
-// ~1 image par 500 mots au-delà de 300 mots — score proportionnel
-function imageRatio(model) {
-    if (!model.images.length || model.wordCount < 300) {
-        return notApplicable('imageRatio', 'images', model.images.length);
-    }
-    const expected = Math.max(1, Math.floor(model.wordCount / 500));
-    return makeCheck('imageRatio', 'images', ratioScore(model.images.length, expected), {
-        images: model.images.length,
-        expected,
-    });
 }

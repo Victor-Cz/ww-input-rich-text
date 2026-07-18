@@ -41,13 +41,14 @@ function keyphraseLength(keyword, stopWords) {
 
 // Phrase-clé complète dans le 1er paragraphe → 100 ;
 // sinon proportionnel aux mots significatifs présents (tous dispersés → 60).
+// value : 'full' | 'scattered' | 'missing'
 function keywordInIntroduction(model, phrases, stopWords) {
     const intro = model.paragraphs.find(paragraph => paragraph.words > 0);
     if (!intro) return notApplicable('keywordInIntroduction', 'keyword');
 
     const fullMatches = findPhrasesInBlock(intro, phrases);
     if (fullMatches.length) {
-        return makeCheck('keywordInIntroduction', 'keyword', 100, true, fullMatches);
+        return makeCheck('keywordInIntroduction', 'keyword', 100, 'full', fullMatches);
     }
 
     const words = contentWords(phrases[0], stopWords);
@@ -57,37 +58,33 @@ function keywordInIntroduction(model, phrases, stopWords) {
         const score = (found.length / words.length) * 60;
         return makeCheck('keywordInIntroduction', 'keyword', score, 'scattered', wordRanges);
     }
-    return makeCheck('keywordInIntroduction', 'keyword', 0, false);
+    return makeCheck('keywordInIntroduction', 'keyword', 0, 'missing');
 }
 
 // Zone optimale 0,5-3 % → 100 ; proportionnel en dessous (0,4 % → 80) ;
-// au-delà, décroît jusqu'à 0 à 5 % (keyword stuffing)
+// au-delà, décroît jusqu'à 0 à 5 % (keyword stuffing).
+// value : densité en % (occurrences via matchCount / stats).
 function keywordDensity(model, occurrences) {
     const words = model.wordCount;
     if (!words) return notApplicable('keywordDensity', 'keyword', 0);
     const count = occurrences.length;
     const ranges = occurrences;
+    const density = Math.round((count / words) * 10000) / 100;
 
     if (words < 100) {
+        // Texte court : la densité en % n'est pas significative, on compte les occurrences
         let score;
         if (count === 0) score = 0;
         else if (count <= 2) score = 100;
         else score = Math.max(0, 100 - (count - 2) * 50);
-        return makeCheck('keywordDensity', 'keyword', score, { occurrences: count, density: null }, ranges);
+        return makeCheck('keywordDensity', 'keyword', score, density, ranges);
     }
 
-    const density = (count / words) * 100;
     let score;
     if (density < 0.5) score = ratioScore(density, 0.5);
     else if (density <= 3) score = 100;
     else score = decreasingScore(density, 3, 5);
-    return makeCheck(
-        'keywordDensity',
-        'keyword',
-        score,
-        { occurrences: count, density: Math.round(density * 100) / 100 },
-        ranges
-    );
+    return makeCheck('keywordDensity', 'keyword', score, density, ranges);
 }
 
 // Yoast : 30-75 % des H2/H3 contiennent le mot-clé → vert ;

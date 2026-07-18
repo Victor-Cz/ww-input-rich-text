@@ -13,11 +13,15 @@ function getLocale(lang) {
     return LOCALES[lang] || LOCALES.en;
 }
 
-/** Titre et description statiques d'un check, localisés (en par défaut). */
+/** Titre, description et objectif statiques d'un check, localisés (en par défaut). */
 export function getLabels(checkId, lang) {
     const entry = getLocale(lang)[checkId];
-    if (!entry) return { title: '', description: '' };
-    return { title: entry.title || '', description: entry.description || '' };
+    if (!entry) return { title: '', description: '', objective: '' };
+    return {
+        title: entry.title || '',
+        description: entry.description || '',
+        objective: entry.objective || '',
+    };
 }
 
 /** Nom et description statiques d'une catégorie, localisés (en par défaut). */

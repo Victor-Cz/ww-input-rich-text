@@ -919,7 +919,6 @@ export default {
                 secondaryKeywords: this.content.seoSecondaryKeywords,
                 metaTitle: this.content.seoMetaTitle,
                 metaDescription: this.content.seoMetaDescription,
-                slug: this.content.seoSlug,
                 siteDomain: this.content.seoSiteDomain,
                 lang: this.content.seoLang,
                 uiLang: this.content.seoUiLang,
