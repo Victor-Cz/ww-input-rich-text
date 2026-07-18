@@ -7,7 +7,11 @@ export default {
     categories: {
         structure: {
             name: 'Structure',
-            description: 'Structure du contenu : longueur du texte, hiérarchie des titres, paragraphes et mise en forme.',
+            description: 'Structure du contenu : longueur du texte, paragraphes et mise en forme.',
+        },
+        headings: {
+            name: 'Titres',
+            description: 'Hiérarchie et contenu des titres (H1-H6) : structure, mot-clé principal, mots-clés secondaires.',
         },
         readability: {
             name: 'Lisibilité',

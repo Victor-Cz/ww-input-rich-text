@@ -55,7 +55,7 @@ mots-clés tolère casse, accents et pluriels simples (s/x/es).
   grade: 'orange',       // green (> 80) | orange (51-80) | red (≤ 50), plafonné si criticalIssues
   criticalIssues: ['singleH1'],   // checks critiques (weight 4) en échec
   scores: {              // sous-score 0-100 par catégorie (null si non applicable)
-    structure, readability, links, images, keyword, secondary, meta
+    structure, headings, readability, links, images, keyword, secondary, meta
   },
   categories: [          // les mêmes, avec labels localisés et grade plafonné
     { id: 'structure', name: 'Structure', description: '…', score: 77, grade: 'orange' },
@@ -89,9 +89,11 @@ mots-clés tolère casse, accents et pluriels simples (s/x/es).
 
 ## Check ids
 
-- **structure** : `textLength`, `singleH1`, `headingHierarchy`,
-  `subheadingDistribution`, `paragraphLength`, `structuredContent`,
-  `centeredContent`
+- **structure** : `textLength`, `singleH1`, `paragraphLength`,
+  `structuredContent`, `centeredContent`
+- **headings** : `headingHierarchy`, `subheadingDistribution`, `keywordInH1`,
+  `keywordInSubheadings`, `secondaryInSubheadings` (l'unicité du H1 reste en
+  structure ; les checks mot-clé sont na sans mot-clé)
 - **readability** : `sentenceLength`, `transitionWords`,
   `consecutiveSentences`, `passiveVoice`, `complexWords`
   (le score Flesch, composite de `sentenceLength` + `complexWords`, est
@@ -100,10 +102,9 @@ mots-clés tolère casse, accents et pluriels simples (s/x/es).
   `competingAnchor` (ancre = mot-clé ; na sans mot-clé)
 - **images** : `imagePresence` (présence + quantité vs longueur du texte),
   `imageAlt`, `keywordInImageAlt` (na sans mot-clé)
-- **keyword** : `keyphraseLength`, `keywordInH1`, `keywordInIntroduction`,
-  `keywordDensity`, `keywordInSubheadings`, `keywordDistribution`
-- **secondary** : `secondaryPresence`, `secondaryInSubheadings`,
-  `secondaryDensity`
+- **keyword** : `keyphraseLength`, `keywordInIntroduction`, `keywordDensity`,
+  `keywordDistribution`
+- **secondary** : `secondaryPresence`, `secondaryDensity`
 - **meta** : `metaTitleKeyword` (présence + position), `metaTitleLength`,
   `metaTitleAttractiveness`, `metaDescriptionLength`, `metaDescriptionKeyword`
 

@@ -1,20 +1,18 @@
 import { findPhrasesInModel } from '../extractors.js';
 import { makeCheck, notApplicable, ratioScore } from '../result.js';
-import { includesAnyPhrase } from '../textUtils.js';
 
 // Catégorie "secondary" — nécessite `seoSecondaryKeywords`.
 // Secondaires = sujets connexes distincts du mot-clé principal.
+// (secondaryInSubheadings vit en catégorie "headings".)
 
 export function secondaryChecks(context) {
     const { model } = context;
     const secondaries = context.options.secondaryKeywords;
     if (!secondaries.length) {
-        return ['secondaryPresence', 'secondaryInSubheadings', 'secondaryDensity']
-            .map(id => notApplicable(id, 'secondary'));
+        return ['secondaryPresence', 'secondaryDensity'].map(id => notApplicable(id, 'secondary'));
     }
     return [
         secondaryPresence(model, secondaries),
-        secondaryInSubheadings(model, secondaries),
         secondaryDensity(model, secondaries),
     ];
 }
@@ -27,30 +25,6 @@ function secondaryPresence(model, secondaries) {
     const ranges = found.length ? findPhrasesInModel(model, found) : [];
     // value : % des secondaires présents
     return makeCheck('secondaryPresence', 'secondary', score, percent, ranges);
-}
-
-// Cible : ≥ 50 % des secondaires dans au moins un sous-titre — proportionnel
-function secondaryInSubheadings(model, secondaries) {
-    const subheadings = model.headings.filter(heading => heading.level >= 2);
-    if (!subheadings.length) return notApplicable('secondaryInSubheadings', 'secondary', 0);
-
-    const covered = secondaries.filter(keyword =>
-        subheadings.some(heading => includesAnyPhrase(heading.text, [keyword]))
-    );
-    const percent = Math.round((covered.length / secondaries.length) * 100);
-    const score = ratioScore(percent, 50);
-
-    const matchedHeadings = subheadings.filter(heading =>
-        covered.some(keyword => includesAnyPhrase(heading.text, [keyword]))
-    );
-    // value : % des secondaires couverts par un sous-titre
-    return makeCheck(
-        'secondaryInSubheadings',
-        'secondary',
-        score,
-        percent,
-        matchedHeadings.map(heading => ({ from: heading.from, to: heading.to }))
-    );
 }
 
 // Anti-stuffing : un secondaire > 2,5 % de densité → rouge

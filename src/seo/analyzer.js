@@ -1,3 +1,4 @@
+import { headingsChecks } from './checks/headings.js';
 import { imagesChecks } from './checks/images.js';
 import { keywordChecks } from './checks/keyword.js';
 import { classifyLinks, linksChecks } from './checks/links.js';
@@ -30,6 +31,7 @@ export function analyzeSeo(doc, rawOptions = {}) {
 
     const checks = [
         ...structureChecks(context),
+        ...headingsChecks(context),
         ...readabilityChecks(context),
         ...linksChecks(context),
         ...imagesChecks(context),

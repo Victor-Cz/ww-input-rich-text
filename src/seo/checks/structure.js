@@ -7,8 +7,6 @@ export function structureChecks(context) {
     return [
         textLength(model),
         singleH1(model, options),
-        headingHierarchy(model),
-        subheadingDistribution(model),
         paragraphLength(model),
         structuredContent(model),
         centeredContent(model),
@@ -34,58 +32,6 @@ function singleH1(model, options) {
     // Même statut 'bad' pour deux causes distinctes : message dédié au H1 manquant
     if (options.expectH1 && count === 0) check.messageKey = 'missing';
     return check;
-}
-
-// Rupture de hiérarchie : un titre saute plus d'un niveau (h2 → h4).
-// Score = proportion de transitions valides.
-function headingHierarchy(model) {
-    const headings = model.headings;
-    if (headings.length < 2) return notApplicable('headingHierarchy', 'structure', headings.length);
-    const offenders = [];
-    for (let i = 1; i < headings.length; i++) {
-        if (headings[i].level > headings[i - 1].level + 1) offenders.push(headings[i]);
-    }
-    const transitions = headings.length - 1;
-    return makeCheck(
-        'headingHierarchy',
-        'structure',
-        (1 - offenders.length / transitions) * 100,
-        offenders.length,
-        offenders.map(block => ({ from: block.from, to: block.to }))
-    );
-}
-
-// Seuils Yoast : bloc sans sous-titre > 350 mots rouge, 300-350 orange
-function subheadingDistribution(model) {
-    const hasSubheadings = model.headings.some(heading => heading.level >= 2);
-    if (model.wordCount <= 300 && !hasSubheadings) {
-        return notApplicable('subheadingDistribution', 'structure', model.wordCount);
-    }
-
-    // Découper le contenu en tronçons entre sous-titres (H2-H6)
-    const stretches = [];
-    let current = { words: 0, blocks: [] };
-    for (const block of model.blocks) {
-        if (block.type === 'heading' && block.level >= 2) {
-            stretches.push(current);
-            current = { words: 0, blocks: [] };
-        } else if (!block.isCode) {
-            current.words += block.words;
-            current.blocks.push(block);
-        }
-    }
-    stretches.push(current);
-
-    const offenders = stretches.filter(stretch => stretch.words > 300);
-    const worst = Math.max(0, ...stretches.map(stretch => stretch.words));
-
-    const ranges = offenders.flatMap(stretch =>
-        stretch.blocks.length
-            ? [{ from: stretch.blocks[0].from, to: stretch.blocks[stretch.blocks.length - 1].to }]
-            : []
-    );
-    // 100 jusqu'à 300 mots sans sous-titre, 0 à partir de 600
-    return makeCheck('subheadingDistribution', 'structure', decreasingScore(worst, 300, 600), worst, ranges);
 }
 
 // Basé sur le pire paragraphe : 100 jusqu'à 150 mots, 0 à partir de 300
