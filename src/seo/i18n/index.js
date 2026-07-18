@@ -1,5 +1,6 @@
 // i18n des checks SEO : une entrée par check et par locale
-// ({ title, description, messages: { good / warning / bad / na } }).
+// ({ title, description, messages: { good / warning / bad / na } }),
+// plus une entrée `categories` ({ name, description } par catégorie).
 // L'id du check reste stable : l'utilisateur peut ignorer ces textes
 // et fournir les siens côté WeWeb.
 
@@ -17,6 +18,13 @@ export function getLabels(checkId, lang) {
     const entry = getLocale(lang)[checkId];
     if (!entry) return { title: '', description: '' };
     return { title: entry.title || '', description: entry.description || '' };
+}
+
+/** Nom et description statiques d'une catégorie, localisés (en par défaut). */
+export function getCategoryLabels(categoryId, lang) {
+    const entry = getLocale(lang).categories?.[categoryId];
+    if (!entry) return { name: '', description: '' };
+    return { name: entry.name || '', description: entry.description || '' };
 }
 
 /** Message d'un check selon son statut, avec interpolation {value} / {value.x}. */

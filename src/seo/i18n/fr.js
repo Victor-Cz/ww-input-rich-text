@@ -1,8 +1,47 @@
 // Locale française des checks SEO : title, description, et messages par
 // statut (good / warning / bad, plus na pour certains checks).
 // Les messages supportent l'interpolation {value} / {value.x}.
+// La clé `categories` porte le nom / la description de chaque catégorie de checks.
 
 export default {
+    categories: {
+        structure: {
+            name: 'Structure',
+            description: 'Structure du contenu : longueur du texte, hiérarchie des titres, paragraphes et mise en forme.',
+        },
+        readability: {
+            name: 'Lisibilité',
+            description: 'Facilité de lecture du texte : longueur des phrases, vocabulaire, style.',
+        },
+        links: {
+            name: 'Liens',
+            description: 'Liens internes et sortants, et qualité de leurs ancres.',
+        },
+        images: {
+            name: 'Images',
+            description: 'Présence et optimisation des images et médias (attributs alt, ratio image / texte).',
+        },
+        keyword: {
+            name: 'Mot-clé principal',
+            description: 'Utilisation du mot-clé principal dans l’ensemble du contenu.',
+        },
+        secondary: {
+            name: 'Mots-clés secondaires',
+            description: 'Présence et répartition des mots-clés secondaires.',
+        },
+        metaTitle: {
+            name: 'Meta title',
+            description: 'Optimisation du meta title de la page (mot-clé, longueur, attractivité).',
+        },
+        metaDescription: {
+            name: 'Meta description',
+            description: 'Optimisation de la meta description de la page (mot-clé, longueur).',
+        },
+        slug: {
+            name: 'Slug',
+            description: 'Optimisation du slug de la page (mot-clé, longueur, propreté).',
+        },
+    },
     // Structure
     textLength: {
         title: 'Longueur du texte',

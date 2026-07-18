@@ -1,8 +1,47 @@
 // English locale for SEO checks: title, description, and per-status messages
 // (good / warning / bad, plus na for some checks).
 // Messages support {value} / {value.x} interpolation.
+// The `categories` key holds the name / description of each check category.
 
 export default {
+    categories: {
+        structure: {
+            name: 'Structure',
+            description: 'Content structure: text length, heading hierarchy, paragraphs and formatting.',
+        },
+        readability: {
+            name: 'Readability',
+            description: 'How easy the text is to read: sentence length, vocabulary, style.',
+        },
+        links: {
+            name: 'Links',
+            description: 'Internal and outbound links, and the quality of their anchors.',
+        },
+        images: {
+            name: 'Images',
+            description: 'Presence and optimization of images and media (alt attributes, image / text ratio).',
+        },
+        keyword: {
+            name: 'Focus keyphrase',
+            description: 'Use of the focus keyphrase throughout the content.',
+        },
+        secondary: {
+            name: 'Secondary keywords',
+            description: 'Presence and distribution of the secondary keywords.',
+        },
+        metaTitle: {
+            name: 'Meta title',
+            description: 'Optimization of the page meta title (keyphrase, length, appeal).',
+        },
+        metaDescription: {
+            name: 'Meta description',
+            description: 'Optimization of the page meta description (keyphrase, length).',
+        },
+        slug: {
+            name: 'Slug',
+            description: 'Optimization of the page URL slug (keyphrase, length, cleanliness).',
+        },
+    },
     // Structure
     textLength: {
         title: 'Text length',

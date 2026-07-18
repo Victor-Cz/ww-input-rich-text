@@ -6,7 +6,7 @@ import { fleschReadingScore, readabilityChecks } from './checks/readability.js';
 import { secondaryChecks } from './checks/secondary.js';
 import { structureChecks } from './checks/structure.js';
 import { extractModel, findPhrasesInModel } from './extractors.js';
-import { getLabels, getMessage } from './i18n/index.js';
+import { getCategoryLabels, getLabels, getMessage } from './i18n/index.js';
 import { aggregateScore, categoryScores, gradeFromScore } from './scoring.js';
 import { getWordLists } from './wordlists.js';
 
@@ -56,10 +56,21 @@ export function analyzeSeo(doc, rawOptions = {}) {
     });
 
     const score = aggregateScore(checks);
+    const scores = categoryScores(checks);
     const result = {
         score,
         grade: gradeFromScore(score),
-        scores: categoryScores(checks),
+        scores,
+        categories: Object.entries(scores).map(([category, categoryScore]) => {
+            const labels = getCategoryLabels(category, options.uiLang);
+            return {
+                id: category,
+                name: labels.name,
+                description: labels.description,
+                score: categoryScore,
+                grade: gradeFromScore(categoryScore),
+            };
+        }),
         checks: exposedChecks,
         stats: buildStats(model, options, phrases),
     };
