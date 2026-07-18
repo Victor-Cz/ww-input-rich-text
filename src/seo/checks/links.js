@@ -1,17 +1,33 @@
 import { makeCheck, notApplicable, ratioScore } from '../result.js';
-import { normalizeText } from '../textUtils.js';
+import { includesAnyPhrase, normalizeText } from '../textUtils.js';
 
 // Catégorie "links" — aucun mot-clé requis.
 
 export function linksChecks(context) {
-    const { model, options, wordLists } = context;
+    const { model, options, phrases, wordLists } = context;
     const classified = classifyLinks(model.links, options.siteDomain);
     return [
         outboundLinks(classified, model.wordCount),
         internalLinks(classified, model.wordCount),
         genericAnchors(model.links, wordLists.genericAnchors),
         emptyLinks(classified),
+        competingAnchor(model, phrases),
     ];
+}
+
+// Yoast "competing links" : un lien dont l'ancre contient le mot-clé
+// détourne le signal vers une autre page (cannibalisation).
+// na sans mot-clé ou sans lien. value : nb de liens fautifs.
+function competingAnchor(model, phrases) {
+    if (!phrases.length || !model.links.length) return notApplicable('competingAnchor', 'links', 0);
+    const offenders = model.links.filter(link => includesAnyPhrase(link.text, phrases));
+    return makeCheck(
+        'competingAnchor',
+        'links',
+        offenders.length ? 0 : 100,
+        offenders.length,
+        offenders.map(link => ({ from: link.from, to: link.to }))
+    );
 }
 
 export function classifyLinks(links, siteDomain) {

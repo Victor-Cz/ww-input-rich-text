@@ -96,12 +96,13 @@ mots-clés tolère casse, accents et pluriels simples (s/x/es).
   `consecutiveSentences`, `passiveVoice`, `complexWords`
   (le score Flesch, composite de `sentenceLength` + `complexWords`, est
   disponible dans `stats.fleschScore` mais n'est pas un check)
-- **links** : `outboundLinks`, `internalLinks`, `genericAnchors`, `emptyLinks`
+- **links** : `outboundLinks`, `internalLinks`, `genericAnchors`, `emptyLinks`,
+  `competingAnchor` (ancre = mot-clé ; na sans mot-clé)
 - **images** : `imagePresence` (présence + quantité vs longueur du texte),
   `imageAlt`
 - **keyword** : `keyphraseLength`, `keywordInH1`, `keywordInIntroduction`,
   `keywordDensity`, `keywordInSubheadings`, `keywordDistribution`,
-  `keywordInImageAlt`, `competingAnchor`
+  `keywordInImageAlt`
 - **secondary** : `secondaryPresence`, `secondaryInSubheadings`,
   `secondaryDensity`
 - **meta** : `metaTitleKeyword` (présence + position), `metaTitleLength`,

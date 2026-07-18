@@ -10,7 +10,7 @@ export function keywordChecks(context) {
     const { model, phrases, wordLists } = context;
     if (!phrases.length) {
         return ['keyphraseLength', 'keywordInH1', 'keywordInIntroduction', 'keywordDensity',
-            'keywordInSubheadings', 'keywordDistribution', 'keywordInImageAlt', 'competingAnchor']
+            'keywordInSubheadings', 'keywordDistribution', 'keywordInImageAlt']
             .map(id => notApplicable(id, 'keyword'));
     }
 
@@ -23,7 +23,6 @@ export function keywordChecks(context) {
         keywordInSubheadings(model, phrases),
         keywordDistribution(model, occurrences),
         keywordInImageAlt(model, phrases, wordLists.stopWords),
-        competingAnchor(model, phrases),
     ];
 }
 
@@ -176,19 +175,5 @@ function keywordInImageAlt(model, phrases, stopWords) {
         score,
         matched.length,
         matched.map(image => ({ from: image.from, to: image.to, node: true }))
-    );
-}
-
-// Yoast "competing links" : un lien dont l'ancre contient le mot-clé
-// détourne le signal vers une autre page (cannibalisation)
-function competingAnchor(model, phrases) {
-    if (!model.links.length) return notApplicable('competingAnchor', 'keyword', 0);
-    const offenders = model.links.filter(link => includesAnyPhrase(link.text, phrases));
-    return makeCheck(
-        'competingAnchor',
-        'keyword',
-        offenders.length ? 0 : 100,
-        offenders.length,
-        offenders.map(link => ({ from: link.from, to: link.to }))
     );
 }
