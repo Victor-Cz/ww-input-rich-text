@@ -25,7 +25,7 @@ export const CHECK_WEIGHTS = {
     keywordInImageAlt: 1,
     competingAnchor: 1,
     secondaryInSubheadings: 1,
-    secondaryDensity: 1,
+    secondaryKeywords: 1,
     metaTitleAttractiveness: 1,
     consecutiveSentences: 1,
     complexWords: 1,

@@ -2,69 +2,33 @@ import { findPhrasesInBlock } from '../extractors.js';
 import { decreasingScore, makeCheck, notApplicable, ratioScore } from '../result.js';
 import { contentWords, findPhraseMatches, includesAnyPhrase } from '../textUtils.js';
 
-// Catégorie "headings" — hiérarchie et contenu des titres (H1-H6).
-// L'unicité du H1 (singleH1) reste en catégorie "structure".
+// Catégorie "headings" — contenu des titres (H1-H6) : longueur et présence
+// des mots-clés. La structure des titres (singleH1, headingHierarchy,
+// subheadingDistribution) reste en catégorie "structure".
 
 export function headingsChecks(context) {
     const { model, phrases, wordLists } = context;
     return [
-        headingHierarchy(model),
-        subheadingDistribution(model),
+        headingLength(model),
         keywordInH1(model, phrases, wordLists.stopWords),
         keywordInSubheadings(model, phrases),
         secondaryInSubheadings(model, context.options.secondaryKeywords),
     ];
 }
 
-// Rupture de hiérarchie : un titre saute plus d'un niveau (h2 → h4).
-// Score = proportion de transitions valides.
-function headingHierarchy(model) {
-    const headings = model.headings;
-    if (headings.length < 2) return notApplicable('headingHierarchy', 'headings', headings.length);
-    const offenders = [];
-    for (let i = 1; i < headings.length; i++) {
-        if (headings[i].level > headings[i - 1].level + 1) offenders.push(headings[i]);
-    }
-    const transitions = headings.length - 1;
+// Longueur des titres : un titre concis reste scannable. 100 jusqu'à 60
+// caractères (pire titre), 0 à 100. value : nb de titres trop longs.
+function headingLength(model) {
+    if (!model.headings.length) return notApplicable('headingLength', 'headings', 0);
+    const worst = Math.max(...model.headings.map(heading => heading.text.trim().length));
+    const offenders = model.headings.filter(heading => heading.text.trim().length > 60);
     return makeCheck(
-        'headingHierarchy',
+        'headingLength',
         'headings',
-        (1 - offenders.length / transitions) * 100,
+        decreasingScore(worst, 60, 100),
         offenders.length,
-        offenders.map(block => ({ from: block.from, to: block.to }))
+        offenders.map(heading => ({ from: heading.from, to: heading.to }))
     );
-}
-
-// Seuils Yoast : bloc sans sous-titre > 300 mots. 100 jusqu'à 300, 0 à 600.
-function subheadingDistribution(model) {
-    const hasSubheadings = model.headings.some(heading => heading.level >= 2);
-    if (model.wordCount <= 300 && !hasSubheadings) {
-        return notApplicable('subheadingDistribution', 'headings', model.wordCount);
-    }
-
-    // Découper le contenu en tronçons entre sous-titres (H2-H6)
-    const stretches = [];
-    let current = { words: 0, blocks: [] };
-    for (const block of model.blocks) {
-        if (block.type === 'heading' && block.level >= 2) {
-            stretches.push(current);
-            current = { words: 0, blocks: [] };
-        } else if (!block.isCode) {
-            current.words += block.words;
-            current.blocks.push(block);
-        }
-    }
-    stretches.push(current);
-
-    const offenders = stretches.filter(stretch => stretch.words > 300);
-    const worst = Math.max(0, ...stretches.map(stretch => stretch.words));
-
-    const ranges = offenders.flatMap(stretch =>
-        stretch.blocks.length
-            ? [{ from: stretch.blocks[0].from, to: stretch.blocks[stretch.blocks.length - 1].to }]
-            : []
-    );
-    return makeCheck('subheadingDistribution', 'headings', decreasingScore(worst, 300, 600), worst, ranges);
 }
 
 // Mot-clé dans le titre H1 : phrase complète → 100 ; mots dispersés →
@@ -103,16 +67,12 @@ function keywordInSubheadings(model, phrases) {
     if (percent < 30) score = ratioScore(percent, 30);
     else if (percent <= 75) score = 100;
     else score = Math.max(50, 100 - (percent - 75) * 2);
-    return makeCheck(
-        'keywordInSubheadings',
-        'headings',
-        score,
-        percent,
-        matched.map(heading => ({ from: heading.from, to: heading.to }))
-    );
+    // Surligner les occurrences du mot-clé dans les sous-titres, pas le sous-titre entier
+    const ranges = matched.flatMap(heading => findPhrasesInBlock(heading, phrases));
+    return makeCheck('keywordInSubheadings', 'headings', score, percent, ranges);
 }
 
-// Cible : ≥ 50 % des secondaires dans au moins un sous-titre — proportionnel.
+// Cible : ≥ 50 % des mots-clés secondaires dans au moins un sous-titre — proportionnel.
 // na sans secondaires ou sans sous-titre. value : % de secondaires couverts.
 function secondaryInSubheadings(model, secondaries) {
     if (!secondaries.length) return notApplicable('secondaryInSubheadings', 'headings');
@@ -125,14 +85,8 @@ function secondaryInSubheadings(model, secondaries) {
     const percent = Math.round((covered.length / secondaries.length) * 100);
     const score = ratioScore(percent, 50);
 
-    const matchedHeadings = subheadings.filter(heading =>
-        covered.some(keyword => includesAnyPhrase(heading.text, [keyword]))
-    );
-    return makeCheck(
-        'secondaryInSubheadings',
-        'headings',
-        score,
-        percent,
-        matchedHeadings.map(heading => ({ from: heading.from, to: heading.to }))
-    );
+    // Surligner les occurrences des mots-clés secondaires dans les sous-titres,
+    // pas le sous-titre entier
+    const ranges = subheadings.flatMap(heading => findPhrasesInBlock(heading, covered));
+    return makeCheck('secondaryInSubheadings', 'headings', score, percent, ranges);
 }

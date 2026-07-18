@@ -8,9 +8,13 @@ import { contentWords, findPhraseMatches } from '../textUtils.js';
 
 export function keywordChecks(context) {
     const { model, phrases, wordLists } = context;
+    const secondaryKeywordsCheck = secondaryKeywords(model, context.options.secondaryKeywords);
     if (!phrases.length) {
-        return ['keyphraseLength', 'keywordInIntroduction', 'keywordDensity', 'keywordDistribution']
-            .map(id => notApplicable(id, 'keyword'));
+        return [
+            ...['keyphraseLength', 'keywordInIntroduction', 'keywordDensity', 'keywordDistribution']
+                .map(id => notApplicable(id, 'keyword')),
+            secondaryKeywordsCheck,
+        ];
     }
 
     const occurrences = findPhrasesInModel(model, phrases);
@@ -19,7 +23,19 @@ export function keywordChecks(context) {
         keywordInIntroduction(model, phrases, wordLists.stopWords),
         keywordDensity(model, occurrences),
         keywordDistribution(model, occurrences),
+        secondaryKeywordsCheck,
     ];
+}
+
+// Mots-clés secondaires : % de secondaires apparaissant dans le texte.
+// Cible ≥ 70 %, proportionnel en dessous. na sans secondaires fournis.
+// value : % des secondaires présents ; occurrences surlignables.
+function secondaryKeywords(model, secondaries) {
+    if (!secondaries.length) return notApplicable('secondaryKeywords', 'keyword');
+    const found = secondaries.filter(keyword => findPhrasesInModel(model, [keyword]).length > 0);
+    const percent = Math.round((found.length / secondaries.length) * 100);
+    const ranges = found.length ? findPhrasesInModel(model, found) : [];
+    return makeCheck('secondaryKeywords', 'keyword', ratioScore(percent, 70), percent, ranges);
 }
 
 // 1-4 mots significatifs = 100, puis -15 par mot au-delà.

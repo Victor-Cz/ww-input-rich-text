@@ -11,7 +11,7 @@ export default {
         },
         headings: {
             name: 'Headings',
-            description: 'Heading hierarchy and content (H1-H6): structure, focus keyword, secondary keywords.',
+            description: 'Heading content (H1-H6): length and keyword presence (heading structure lives in the Structure category).',
         },
         readability: {
             name: 'Readability',
@@ -26,12 +26,8 @@ export default {
             description: 'Presence and optimization of images and media (alt attributes).',
         },
         keyword: {
-            name: 'Focus keyword',
-            description: 'Use of the focus keyword throughout the content.',
-        },
-        secondary: {
-            name: 'Secondary keywords',
-            description: 'Presence and distribution of secondary keywords.',
+            name: 'Keywords',
+            description: 'Use of the focus keyword and secondary keywords throughout the content.',
         },
         meta: {
             name: 'Metas',
@@ -233,6 +229,17 @@ export default {
             na: 'The keyphrase only contains function words: choose a more specific keyphrase.',
         },
     },
+    headingLength: {
+        title: 'Heading length',
+        description: 'Checks that headings stay concise (60 characters maximum recommended).',
+        objective: '≤ 60 characters per heading',
+        messages: {
+            good: 'Headings have a good length.',
+            warning: '{value} heading(s) are a bit long (> 60 characters).',
+            bad: '{value} heading(s) are too long: shorten them.',
+            na: 'No headings in the content.',
+        },
+    },
     keywordInH1: {
         title: 'Keyphrase in H1 heading',
         description: 'Checks that the focus keyword appears in the content H1 heading.',
@@ -303,34 +310,25 @@ export default {
             bad: '{value} link(s) use the keyphrase as anchor text (cannibalization).',
         },
     },
-    // Secondary keywords
-    secondaryPresence: {
-        title: 'Secondary keywords presence',
+    secondaryKeywords: {
+        title: 'Secondary keywords',
         description: 'Checks that secondary keywords appear in the text.',
-        objective: '≥ 70% of secondaries present',
+        objective: '≥ 70% of secondary keywords present',
         messages: {
             good: '{value}% of secondary keywords are present.',
             warning: 'Only {value}% of secondary keywords are present (aim for 70%).',
             bad: 'Almost no secondary keywords present ({value}%).',
         },
     },
+    // Headings category
     secondaryInSubheadings: {
-        title: 'Secondaries in subheadings',
+        title: 'Secondary keywords in subheadings',
         description: 'Checks that secondary keywords appear in subheadings.',
-        objective: '≥ 50% in a subheading',
+        objective: '≥ 50% of secondary keywords in a subheading',
         messages: {
             good: '{value}% of secondary keywords appear in a subheading.',
             warning: 'Few secondary keywords in subheadings ({value}%).',
             bad: 'Secondary keywords do not appear in subheadings.',
-        },
-    },
-    secondaryDensity: {
-        title: 'Secondaries density',
-        description: 'Checks that no secondary keyword exceeds 2.5% density (over-optimization).',
-        objective: '≤ 2.5% per secondary',
-        messages: {
-            good: 'No secondary keyword is overused.',
-            bad: 'Over-optimization: {value} secondary keyword(s) exceed 2.5% density.',
         },
     },
     // Metas

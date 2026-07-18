@@ -11,7 +11,7 @@ export default {
         },
         headings: {
             name: 'Titres',
-            description: 'Hiérarchie et contenu des titres (H1-H6) : structure, mot-clé principal, mots-clés secondaires.',
+            description: 'Contenu des titres (H1-H6) : longueur et présence des mots-clés (la structure des titres est en catégorie Structure).',
         },
         readability: {
             name: 'Lisibilité',
@@ -26,12 +26,8 @@ export default {
             description: 'Présence et optimisation des images et médias (attributs alt).',
         },
         keyword: {
-            name: 'Mot-clé principal',
-            description: 'Utilisation du mot-clé principal dans l’ensemble du contenu.',
-        },
-        secondary: {
-            name: 'Mots-clés secondaires',
-            description: 'Présence et répartition des mots-clés secondaires.',
+            name: 'Mots-clés',
+            description: 'Utilisation du mot-clé principal et des mots-clés secondaires dans le contenu.',
         },
         meta: {
             name: 'Metas',
@@ -233,6 +229,17 @@ export default {
             na: 'Le mot-clé ne contient que des mots vides : choisissez un mot-clé plus spécifique.',
         },
     },
+    headingLength: {
+        title: 'Longueur des titres',
+        description: 'Vérifie que les titres restent concis (60 caractères maximum recommandés).',
+        objective: '≤ 60 caractères par titre',
+        messages: {
+            good: 'Les titres ont une bonne longueur.',
+            warning: '{value} titre(s) sont un peu longs (> 60 caractères).',
+            bad: '{value} titre(s) sont trop longs : raccourcissez-les.',
+            na: 'Aucun titre dans le contenu.',
+        },
+    },
     keywordInH1: {
         title: 'Mot-clé dans le titre H1',
         description: 'Vérifie que le mot-clé principal apparaît dans le titre H1 du contenu.',
@@ -303,34 +310,25 @@ export default {
             bad: '{value} lien(s) utilisent le mot-clé comme ancre (cannibalisation).',
         },
     },
-    // Mots-clés secondaires
-    secondaryPresence: {
-        title: 'Présence des mots-clés secondaires',
+    secondaryKeywords: {
+        title: 'Mots-clés secondaires',
         description: 'Vérifie que les mots-clés secondaires apparaissent dans le texte.',
-        objective: '≥ 70 % des secondaires présents',
+        objective: '≥ 70 % des mots-clés secondaires présents',
         messages: {
             good: '{value} % des mots-clés secondaires sont présents.',
             warning: 'Seulement {value} % des mots-clés secondaires sont présents (visez 70 %).',
             bad: 'Presque aucun mot-clé secondaire présent ({value} %).',
         },
     },
+    // Titres (catégorie headings)
     secondaryInSubheadings: {
-        title: 'Secondaires dans les sous-titres',
+        title: 'Mots-clés secondaires dans les sous-titres',
         description: 'Vérifie que les mots-clés secondaires apparaissent dans des sous-titres.',
-        objective: '≥ 50 % dans un sous-titre',
+        objective: '≥ 50 % des mots-clés secondaires dans un sous-titre',
         messages: {
-            good: '{value} % des secondaires apparaissent dans un sous-titre.',
-            warning: 'Peu de secondaires dans les sous-titres ({value} %).',
+            good: '{value} % des mots-clés secondaires apparaissent dans un sous-titre.',
+            warning: 'Peu de mots-clés secondaires dans les sous-titres ({value} %).',
             bad: 'Les mots-clés secondaires n’apparaissent pas dans les sous-titres.',
-        },
-    },
-    secondaryDensity: {
-        title: 'Densité des secondaires',
-        description: 'Vérifie qu’aucun mot-clé secondaire ne dépasse 2,5 % de densité (sur-optimisation).',
-        objective: '≤ 2,5 % par secondaire',
-        messages: {
-            good: 'Aucun mot-clé secondaire n’est sur-utilisé.',
-            bad: 'Sur-optimisation : {value} mot(s)-clé(s) secondaire(s) dépassent 2,5 % de densité.',
         },
     },
     // Metas

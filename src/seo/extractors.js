@@ -88,6 +88,7 @@ export function extractModel(doc) {
                 text: sentence.text,
                 from: mapOffsetToPos(block, sentence.start),
                 to: mapOffsetToPos(block, sentence.end),
+                startInBlock: sentence.start,
                 words: countWords(sentence.text),
                 block,
             });

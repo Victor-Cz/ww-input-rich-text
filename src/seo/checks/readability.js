@@ -58,13 +58,23 @@ function transitionWords(model, wordLists) {
     if (model.wordCount <= 200 || model.sentences.length < MIN_SENTENCES) {
         return notApplicable('transitionWords', 'readability', 0);
     }
-    const regex = buildListRegex(wordLists.transitionWords);
-    const withTransition = regex
-        ? model.sentences.filter(sentence => regex.test(normalizeText(sentence.text)))
-        : [];
-    const percent = Math.round((withTransition.length / model.sentences.length) * 100);
+    let withTransition = 0;
+    const ranges = [];
+    for (const sentence of model.sentences) {
+        const matches = findListMatches(sentence.text, wordLists.transitionWords);
+        if (!matches.length) continue;
+        withTransition++;
+        // Surligner les mots de transition eux-mêmes, pas la phrase entière
+        for (const match of matches) {
+            ranges.push({
+                from: mapOffsetToPos(sentence.block, sentence.startInBlock + match.start),
+                to: mapOffsetToPos(sentence.block, sentence.startInBlock + match.end),
+            });
+        }
+    }
+    const percent = Math.round((withTransition / model.sentences.length) * 100);
     // Cible : 30 % de phrases avec mot de transition
-    return makeCheck('transitionWords', 'readability', ratioScore(percent, 30), percent, withTransition.map(toRange));
+    return makeCheck('transitionWords', 'readability', ratioScore(percent, 30), percent, ranges);
 }
 
 // ≥ 3 phrases d'affilée commençant par le même mot
@@ -180,10 +190,11 @@ function firstWord(sentence) {
 }
 
 /**
- * RegExp qui matche un des mots/groupes de la liste, borné par des non-lettres.
- * Tolère les variantes d'apostrophe (' vs ') et d'espace.
+ * Toutes les occurrences d'un des mots/groupes de la liste dans un texte,
+ * bornées par des non-lettres. Retourne des offsets [start, end) dans le texte
+ * d'origine. Tolère les variantes d'apostrophe (' vs ') et d'espace.
  */
-function buildListRegex(words) {
+function findListMatches(text, words) {
     const cleaned = (words || [])
         .map(word =>
             escapeRegExp(normalizeText(word).trim())
@@ -191,6 +202,14 @@ function buildListRegex(words) {
                 .replace(/ +/g, `[\\s\\u00A0]+`)
         )
         .filter(Boolean);
-    if (!cleaned.length) return null;
-    return new RegExp(`(?:^|[^\\p{L}])(?:${cleaned.join('|')})(?=[^\\p{L}]|$)`, 'iu');
+    if (!cleaned.length) return [];
+    const regex = new RegExp(`(^|[^\\p{L}])(${cleaned.join('|')})(?=[^\\p{L}]|$)`, 'giu');
+    const normalized = normalizeText(text);
+    const matches = [];
+    for (let match = regex.exec(normalized); match !== null; match = regex.exec(normalized)) {
+        const start = match.index + match[1].length;
+        matches.push({ start, end: start + match[2].length });
+        if (regex.lastIndex === match.index) regex.lastIndex++;
+    }
+    return matches;
 }

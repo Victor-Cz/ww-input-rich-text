@@ -56,7 +56,7 @@ mots-clés tolère casse, accents et pluriels simples (s/x/es).
   grade: 'orange',       // green (> 80) | orange (51-80) | red (≤ 50), plafonné si criticalIssues
   criticalIssues: ['singleH1'],   // checks critiques (weight 4) en échec
   scores: {              // sous-score 0-100 par catégorie (null si non applicable)
-    structure, headings, readability, links, images, keyword, secondary, meta
+    structure, headings, readability, links, images, keyword, meta
   },
   categories: [          // les mêmes, avec labels localisés et grade plafonné
     { id: 'structure', name: 'Structure', description: '…', score: 77, grade: 'orange' },
@@ -90,11 +90,12 @@ mots-clés tolère casse, accents et pluriels simples (s/x/es).
 
 ## Check ids
 
-- **structure** : `textLength`, `singleH1`, `paragraphLength`,
-  `structuredContent`, `centeredContent`
-- **headings** : `headingHierarchy`, `subheadingDistribution`, `keywordInH1`,
-  `keywordInSubheadings`, `secondaryInSubheadings` (l'unicité du H1 reste en
-  structure ; les checks mot-clé sont na sans mot-clé)
+- **structure** : `textLength`, `singleH1`, `headingHierarchy`,
+  `subheadingDistribution`, `paragraphLength`, `structuredContent`,
+  `centeredContent` (toute la **structure** des titres est ici)
+- **headings** (**contenu** des titres) : `headingLength`, `keywordInH1`,
+  `keywordInSubheadings`, `secondaryInSubheadings` (les checks mot-clé sont na
+  sans mot-clé / sans secondaires)
 - **readability** : `sentenceLength`, `transitionWords`,
   `consecutiveSentences`, `passiveVoice`, `complexWords`
   (le score Flesch, composite de `sentenceLength` + `complexWords`, est
@@ -104,8 +105,8 @@ mots-clés tolère casse, accents et pluriels simples (s/x/es).
 - **images** : `imagePresence` (présence + quantité vs longueur du texte),
   `imageAlt`, `keywordInImageAlt` (na sans mot-clé)
 - **keyword** : `keyphraseLength`, `keywordInIntroduction`, `keywordDensity`,
-  `keywordDistribution`
-- **secondary** : `secondaryPresence`, `secondaryDensity`
+  `keywordDistribution`, `secondaryKeywords` (présence des mots-clés secondaires ;
+  na sans secondaires)
 - **meta** : `metaTitleKeyword` (présence + position), `metaTitleLength`,
   `metaTitleAttractiveness`, `metaDescriptionLength`, `metaDescriptionKeyword`
 

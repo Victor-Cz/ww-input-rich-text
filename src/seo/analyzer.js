@@ -4,7 +4,6 @@ import { keywordChecks } from './checks/keyword.js';
 import { classifyLinks, linksChecks } from './checks/links.js';
 import { metaChecks } from './checks/meta.js';
 import { fleschReadingScore, readabilityChecks } from './checks/readability.js';
-import { secondaryChecks } from './checks/secondary.js';
 import { structureChecks } from './checks/structure.js';
 import { extractModel, findPhrasesInModel } from './extractors.js';
 import { getCategoryLabels, getLabels, getMessage } from './i18n/index.js';
@@ -36,7 +35,6 @@ export function analyzeSeo(doc, rawOptions = {}) {
         ...linksChecks(context),
         ...imagesChecks(context),
         ...keywordChecks(context),
-        ...secondaryChecks(context),
         ...metaChecks(context),
     ];
 
