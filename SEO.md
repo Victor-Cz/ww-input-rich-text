@@ -126,6 +126,11 @@ mots-clés tolère casse, accents et pluriels simples (s/x/es).
 - **Clear SEO highlight** (`clearSeoHighlight()`) : désactive le mode et efface
   le surlignage.
 
+La variable readonly **`seoHighlighting`** (booléen) est `true` tant que des
+éléments SEO sont surlignés dans l'éditeur, `false` sinon (effacé, corrigé, ou
+extension désactivée). Utile pour n'afficher un bouton « effacer le surlignage »
+que lorsqu'il y a quelque chose à effacer.
+
 ## Trigger event
 
 - **On SEO score change** (`seo:change`) : `{ score, grade, scores }` — émis à la

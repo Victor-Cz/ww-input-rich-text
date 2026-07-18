@@ -365,6 +365,14 @@ export default {
             readonly: true,
         });
 
+        const { value: seoHighlighting, setValue: _setSeoHighlighting } = wwLib.wwVariable.useComponentVariable({
+            uid: props.uid,
+            name: 'seoHighlighting',
+            type: 'boolean',
+            defaultValue: false,
+            readonly: true,
+        });
+
         const { value: history, setValue: _setHistory } = wwLib.wwVariable.useComponentVariable({
             uid: props.uid,
             name: 'history',
@@ -382,6 +390,7 @@ export default {
         const setPendingChangesCount = (...args) => { if (!_isDestroyed) _setPendingChangesCount(...args); };
         const setCollaborationStatus = (...args) => { if (!_isDestroyed) _setCollaborationStatus(...args); };
         const setSeo = (...args) => { if (!_isDestroyed) _setSeo(...args); };
+        const setSeoHighlighting = (...args) => { if (!_isDestroyed) _setSeoHighlighting(...args); };
         const setHistory = (...args) => { if (!_isDestroyed) _setHistory(...args); };
 
 
@@ -432,6 +441,8 @@ export default {
             setCollaborationStatus,
             seo,
             setSeo,
+            seoHighlighting,
+            setSeoHighlighting,
             history,
             setHistory,
             randomUid,
@@ -628,6 +639,7 @@ export default {
                     this.seoRangesMap = null;
                     this.activeSeoHighlight = null;
                     this.setSeo(null);
+                    this.setSeoHighlighting(false);
                     if (this.richEditor) this.richEditor.commands.clearSeoHighlights();
                     return;
                 }
@@ -1590,6 +1602,7 @@ export default {
             // jusqu'à clearSeoHighlight ou un highlight sur un autre check.
             this.activeSeoHighlight = { checkId, color: effectiveColor };
             this.richEditor.commands.setSeoHighlights(ranges, effectiveColor || undefined);
+            this.setSeoHighlighting(true);
 
             // Scroller vers la première occurrence
             try {
@@ -1609,21 +1622,25 @@ export default {
             const active = this.activeSeoHighlight;
             if (!active) {
                 this.richEditor.commands.clearSeoHighlights();
+                this.setSeoHighlighting(false);
                 return;
             }
             const ranges = this.seoRangesMap?.[active.checkId] || [];
             if (ranges.length) {
                 this.richEditor.commands.setSeoHighlights(ranges, active.color || undefined);
+                this.setSeoHighlighting(true);
             } else {
                 // Plus d'occurrence (corrigé) : rien à surligner, mais le mode
                 // reste actif au cas où de nouvelles occurrences apparaissent
                 this.richEditor.commands.clearSeoHighlights();
+                this.setSeoHighlighting(false);
             }
         },
 
         clearSeoHighlight() {
             this.activeSeoHighlight = null;
             if (this.richEditor) this.richEditor.commands.clearSeoHighlights();
+            this.setSeoHighlighting(false);
         },
     },
     mounted() {
