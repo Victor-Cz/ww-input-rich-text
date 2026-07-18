@@ -1,4 +1,4 @@
-import { makeCheck, notApplicable } from '../result.js';
+import { makeCheck, notApplicable, ratioScore } from '../result.js';
 
 // Catégorie "images" — aucun mot-clé requis.
 
@@ -7,15 +7,12 @@ export function imagesChecks(context) {
     return [imagePresence(model), imageAlt(model)];
 }
 
-// Présence ET quantité en un seul check : aucune image → 0 ; sinon, base 60
-// + proportionnel au nombre attendu (~1 image par 500 mots, min 1).
-// value : nombre d'images.
+// Nombre d'images vs attendu : 1 image par ~500 mots (minimum 1).
+// Score proportionnel : 2 images pour 4 attendues → 50. value : nombre d'images.
 function imagePresence(model) {
     const count = model.images.length;
-    if (!count) return makeCheck('imagePresence', 'images', 0, count);
     const expected = Math.max(1, Math.floor(model.wordCount / 500));
-    const score = 60 + Math.min(1, count / expected) * 40;
-    return makeCheck('imagePresence', 'images', score, count);
+    return makeCheck('imagePresence', 'images', ratioScore(count, expected), count);
 }
 
 // Score = proportion d'images avec attribut alt. value : nb d'alt manquants.
