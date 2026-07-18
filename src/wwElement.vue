@@ -1582,11 +1582,14 @@ export default {
             const ranges = this.seoRangesMap[checkId];
             if (!ranges || !ranges.length) return false;
 
+            // Couleur : argument de l'action > seoHighlightColor (settings) > défaut de l'extension
+            const effectiveColor = color || this.content.seoHighlightColor || null;
+
             // Mode persistant : le check reste surligné à travers les éditions
             // (mapping ProseMirror) et ses plages sont recalculées à chaque ré-analyse,
             // jusqu'à clearSeoHighlight ou un highlight sur un autre check.
-            this.activeSeoHighlight = { checkId, color };
-            this.richEditor.commands.setSeoHighlights(ranges, color || undefined);
+            this.activeSeoHighlight = { checkId, color: effectiveColor };
+            this.richEditor.commands.setSeoHighlights(ranges, effectiveColor || undefined);
 
             // Scroller vers la première occurrence
             try {

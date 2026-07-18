@@ -134,6 +134,7 @@ export default {
                 'seoLang',
                 'seoUiLang',
                 'seoExpectH1',
+                'seoHighlightColor',
                 'seoWordLists',
             ],
         ],
@@ -835,6 +836,20 @@ export default {
             bindingValidation: {
                 type: 'string',
                 tooltip: 'Language of each check\'s title, description and message ("auto", "en" or "fr"). "auto" follows the content language.',
+            },
+            /* wwEditor:end */
+        },
+        seoHighlightColor: {
+            section: 'settings',
+            label: { en: 'SEO: highlight color', fr: 'SEO : couleur de surlignage' },
+            type: 'Color',
+            defaultValue: '',
+            bindable: true,
+            hidden: content => !content.enableSeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'string',
+                tooltip: 'Default color of the highlightSeoCheck action (any CSS color). The action Color argument overrides it per call.',
             },
             /* wwEditor:end */
         },

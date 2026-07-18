@@ -26,6 +26,7 @@ contenu, immédiate quand une entrée SEO change.
 | `seoLang` | Select | `en` (défaut) ou `fr` — langue d'analyse (listes de mots, seuils, heuristiques) |
 | `seoUiLang` | Select | Langue des textes exposés (titles, descriptions, messages) — suit `seoLang` par défaut |
 | `seoExpectH1` | OnOff | Le H1 est-il écrit dans l'éditeur (off si la page le fournit) |
+| `seoHighlightColor` | Color | Couleur par défaut du surlignage (`highlightSeoCheck`) ; l'argument `Color` de l'action la surcharge par appel |
 | `seoWordLists` | Object (binding) | Surcharge des listes : `{ stopWords, genericAnchors, powerWords, sentimentWords, transitionWords, complexWords }` |
 
 Les arrays acceptent aussi une chaîne séparée par des virgules. Le matching des
@@ -119,6 +120,8 @@ mots-clés tolère casse, accents et pluriels simples (s/x/es).
   plages sont **recalculées à chaque ré-analyse** — les occurrences corrigées
   disparaissent, les nouvelles apparaissent — jusqu'à `clearSeoHighlight` ou un
   highlight sur un autre check.
+  Couleur : argument `Color` de l'action > propriété `seoHighlightColor` >
+  défaut de l'extension (jaune translucide).
 - **Clear SEO highlight** (`clearSeoHighlight()`) : désactive le mode et efface
   le surlignage.
 
