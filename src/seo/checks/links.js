@@ -1,4 +1,4 @@
-import { makeCheck, notApplicable } from '../result.js';
+import { makeCheck, notApplicable, ratioScore } from '../result.js';
 import { normalizeText } from '../textUtils.js';
 
 // Catégorie "links" — aucun mot-clé requis.
@@ -7,8 +7,8 @@ export function linksChecks(context) {
     const { model, options, wordLists } = context;
     const classified = classifyLinks(model.links, options.siteDomain);
     return [
-        outboundLinks(classified),
-        internalLinks(classified),
+        outboundLinks(classified, model.wordCount),
+        internalLinks(classified, model.wordCount),
         genericAnchors(model.links, wordLists.genericAnchors),
         emptyLinks(classified),
     ];
@@ -59,25 +59,18 @@ function extractDomain(href) {
     return match[1].toLowerCase().replace(/^www\./, '');
 }
 
-function isNofollow(link) {
-    return /\bnofollow\b/i.test(link.rel || '');
+// Nombre de liens sortants vs attendu : 1 par ~1000 mots (minimum 1).
+// Score proportionnel. value : nombre de liens sortants.
+function outboundLinks({ external }, wordCount) {
+    const expected = Math.max(1, Math.floor(wordCount / 1000));
+    return makeCheck('outboundLinks', 'links', ratioScore(external.length, expected), external.length, toRanges(external));
 }
 
-// Aucun lien sortant → 0, tous nofollow → 60, au moins un suivi → 100
-function outboundLinks({ external }) {
-    let score;
-    if (!external.length) score = 0;
-    else if (external.every(isNofollow)) score = 60;
-    else score = 100;
-    return makeCheck('outboundLinks', 'links', score, external.length, toRanges(external));
-}
-
-function internalLinks({ internal }) {
-    let score;
-    if (!internal.length) score = 0;
-    else if (internal.every(isNofollow)) score = 60;
-    else score = 100;
-    return makeCheck('internalLinks', 'links', score, internal.length, toRanges(internal));
+// Nombre de liens internes vs attendu : 1 par ~500 mots (minimum 1).
+// Score proportionnel. value : nombre de liens internes.
+function internalLinks({ internal }, wordCount) {
+    const expected = Math.max(1, Math.floor(wordCount / 500));
+    return makeCheck('internalLinks', 'links', ratioScore(internal.length, expected), internal.length, toRanges(internal));
 }
 
 // Ancres non descriptives (« cliquez ici », « en savoir plus »…).

@@ -160,22 +160,22 @@ export default {
     // Liens
     outboundLinks: {
         title: 'Liens sortants',
-        description: 'Vérifie la présence de liens vers des sources externes suivis par les moteurs.',
-        objective: '≥ 1 lien externe suivi',
+        description: 'Vérifie le nombre de liens vers des sources externes : environ un par 1000 mots (minimum un).',
+        objective: '≥ 1 lien externe par ~1000 mots',
         messages: {
-            good: 'Le texte contient {value} lien(s) sortant(s).',
-            warning: 'Tous les liens sortants sont en nofollow.',
-            bad: 'Aucun lien sortant : ajoutez des liens vers des sources externes.',
+            good: 'Le texte contient {value} lien(s) sortant(s), c’est suffisant.',
+            warning: '{value} lien(s) sortant(s) pour ce volume de texte : ajoutez-en.',
+            bad: 'Pas assez de liens sortants ({value}) : ajoutez des liens vers des sources externes.',
         },
     },
     internalLinks: {
         title: 'Liens internes',
-        description: 'Vérifie la présence de liens vers d’autres pages du site (maillage interne).',
-        objective: '≥ 1 lien interne',
+        description: 'Vérifie le nombre de liens vers d’autres pages du site : environ un par 500 mots (minimum un).',
+        objective: '≥ 1 lien interne par ~500 mots',
         messages: {
-            good: 'Le texte contient {value} lien(s) interne(s).',
-            warning: 'Tous les liens internes sont en nofollow.',
-            bad: 'Aucun lien interne : ajoutez des liens vers d’autres pages du site.',
+            good: 'Le texte contient {value} lien(s) interne(s), c’est suffisant.',
+            warning: '{value} lien(s) interne(s) pour ce volume de texte : ajoutez-en.',
+            bad: 'Pas assez de liens internes ({value}) : ajoutez des liens vers d’autres pages du site.',
         },
     },
     genericAnchors: {

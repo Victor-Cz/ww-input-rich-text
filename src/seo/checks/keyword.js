@@ -142,9 +142,11 @@ function keywordInImageAlt(model, phrases, stopWords) {
     });
 
     const withAlt = model.images.filter(image => image.alt);
+    // 100 : mot-clé dans ≥ 1 alt · 50 (warning) : des alt existent mais sans le
+    // mot-clé · 0 (bad) : aucune image n'a d'alt
     let score;
     if (matched.length) score = 100;
-    else if (withAlt.length) score = 30;
+    else if (withAlt.length) score = 50;
     else score = 0;
     return makeCheck(
         'keywordInImageAlt',

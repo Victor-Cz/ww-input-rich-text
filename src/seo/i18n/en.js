@@ -160,22 +160,22 @@ export default {
     // Links
     outboundLinks: {
         title: 'Outbound links',
-        description: 'Checks for links to external sources that search engines can follow.',
-        objective: '≥ 1 followed external link',
+        description: 'Checks the number of links to external sources: about one per 1000 words (minimum one).',
+        objective: '≥ 1 external link per ~1000 words',
         messages: {
-            good: 'The text contains {value} outbound link(s).',
-            warning: 'All outbound links are nofollowed.',
-            bad: 'No outbound links: add links to external sources.',
+            good: 'The text contains {value} outbound link(s), that is sufficient.',
+            warning: '{value} outbound link(s) for this amount of text: add more.',
+            bad: 'Not enough outbound links ({value}): add links to external sources.',
         },
     },
     internalLinks: {
         title: 'Internal links',
-        description: 'Checks for links to other pages of the site (internal linking).',
-        objective: '≥ 1 internal link',
+        description: 'Checks the number of links to other pages of the site: about one per 500 words (minimum one).',
+        objective: '≥ 1 internal link per ~500 words',
         messages: {
-            good: 'The text contains {value} internal link(s).',
-            warning: 'All internal links are nofollowed.',
-            bad: 'No internal links: add links to other pages of the site.',
+            good: 'The text contains {value} internal link(s), that is sufficient.',
+            warning: '{value} internal link(s) for this amount of text: add more.',
+            bad: 'Not enough internal links ({value}): add links to other pages of the site.',
         },
     },
     genericAnchors: {
