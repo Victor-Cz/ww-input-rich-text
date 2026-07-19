@@ -113,6 +113,8 @@ export default {
 .image-node-wrapper.seo-highlight > .fallback-image {
     outline: 3px solid var(--seo-highlight-color, rgba(255, 200, 50, 0.45));
     outline-offset: 2px;
+    /* épouse les coins arrondis de la carte image (12px + 2px d'offset) */
+    border-radius: 14px;
 }
 
 .image-figure {
