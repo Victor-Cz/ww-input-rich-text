@@ -101,6 +101,20 @@ export default {
     display: block;
 }
 
+/* Surlignage SEO : la décoration pose la classe `seo-highlight` + la variable
+   de couleur sur le node-view-wrapper (pleine largeur). On pose l'outline sur
+   le conteneur image réel pour qu'il épouse l'image, pas la largeur du bloc. */
+.image-node-wrapper.seo-highlight {
+    outline: none;
+}
+
+.image-node-wrapper.seo-highlight .image-layout,
+.image-node-wrapper.seo-highlight .image-figure,
+.image-node-wrapper.seo-highlight > .fallback-image {
+    outline: 3px solid var(--seo-highlight-color, rgba(255, 200, 50, 0.45));
+    outline-offset: 2px;
+}
+
 .image-figure {
     display: block;
     margin: 1em 0;

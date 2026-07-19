@@ -50,11 +50,14 @@ export const SeoHighlighter = Extension.create({
               if (to <= from) continue
 
               if (range.node) {
-                // Plage couvrant un nœud atomique (image…)
+                // Plage couvrant un nœud atomique (image…). La décoration ne peut
+                // cibler que le DOM du nœud (le node-view-wrapper, pleine largeur) :
+                // on passe la couleur en variable CSS et c'est ImageNode.vue qui
+                // pose l'outline sur le conteneur image réel (.image-layout).
                 decorations.push(
                   Decoration.node(from, to, {
                     class: 'seo-highlight',
-                    style: `outline: 3px solid ${highlightColor}; outline-offset: 2px;`,
+                    style: `--seo-highlight-color: ${highlightColor};`,
                   })
                 )
               } else {
