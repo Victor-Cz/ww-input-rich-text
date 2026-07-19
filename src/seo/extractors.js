@@ -33,13 +33,17 @@ export function extractModel(doc) {
         if (typeName === 'table') tableCount++;
 
         if (IMAGE_TYPES.has(typeName)) {
-            images.push({
-                from: pos,
-                to: pos + node.nodeSize,
-                src: node.attrs?.src || '',
-                alt: (node.attrs?.alt || '').trim(),
-                node: true,
-            });
+            const src = (node.attrs?.src || '').trim();
+            // Une image sans URL n'est pas rendue : on la considère absente.
+            if (src) {
+                images.push({
+                    from: pos,
+                    to: pos + node.nodeSize,
+                    src,
+                    alt: (node.attrs?.alt || '').trim(),
+                    node: true,
+                });
+            }
             return false;
         }
 
@@ -61,6 +65,10 @@ export function extractModel(doc) {
             }
             return !child.isText;
         });
+
+        // Un titre sans contenu n'est pas un titre : on l'ignore (n'entre ni
+        // dans la hiérarchie, ni comme frontière de section).
+        if (typeName === 'heading' && !text.trim()) return false;
 
         blocks.push({
             type: typeName,
