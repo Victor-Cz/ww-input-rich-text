@@ -50,14 +50,11 @@ export const SeoHighlighter = Extension.create({
               if (to <= from) continue
 
               if (range.node) {
-                // Plage couvrant un nœud atomique (image…). Le border-radius fait
-                // suivre à l'outline les coins arrondis de la carte image (≈ 12px
-                // + 2px d'offset), au lieu d'un rectangle à angles vifs qui laisse
-                // un écart aux coins.
+                // Plage couvrant un nœud atomique (image…)
                 decorations.push(
                   Decoration.node(from, to, {
                     class: 'seo-highlight',
-                    style: `outline: 3px solid ${highlightColor}; outline-offset: 2px; border-radius: 14px;`,
+                    style: `outline: 3px solid ${highlightColor}; outline-offset: 2px;`,
                   })
                 )
               } else {
