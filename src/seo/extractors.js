@@ -165,10 +165,10 @@ export function mapOffsetToPos(block, offset) {
  * Occurrences d'une des phrases-clés dans un bloc → plages doc.
  * `phrases` = [principal, ...synonymes].
  */
-export function findPhrasesInBlock(block, phrases) {
+export function findPhrasesInBlock(block, phrases, opts = {}) {
     const ranges = [];
     for (const phrase of phrases || []) {
-        for (const match of findPhraseMatches(block.text, phrase)) {
+        for (const match of findPhraseMatches(block.text, phrase, opts)) {
             ranges.push({
                 from: mapOffsetToPos(block, match.start),
                 to: mapOffsetToPos(block, match.end),
@@ -179,11 +179,11 @@ export function findPhrasesInBlock(block, phrases) {
 }
 
 /** Occurrences dans tous les blocs texte du modèle. */
-export function findPhrasesInModel(model, phrases) {
+export function findPhrasesInModel(model, phrases, opts = {}) {
     const ranges = [];
     for (const block of model.blocks) {
         if (block.isCode) continue;
-        ranges.push(...findPhrasesInBlock(block, phrases));
+        ranges.push(...findPhrasesInBlock(block, phrases, opts));
     }
     return dedupeRanges(ranges).sort((a, b) => a.from - b.from);
 }

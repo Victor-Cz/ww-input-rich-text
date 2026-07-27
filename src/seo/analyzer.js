@@ -26,7 +26,10 @@ export function analyzeSeo(doc, rawOptions = {}) {
     const model = extractModel(doc);
 
     const phrases = options.keyword ? [options.keyword, ...options.synonyms] : [];
-    const context = { model, options, phrases, wordLists };
+    // Options de matching des mots-clés, partagées par tous les checks. En mode
+    // « lemmatiseur complet », les mots vides sont ignorés des deux côtés.
+    const matchOptions = { stopWords: wordLists.stopWords, fullLemma: options.fullLemma };
+    const context = { model, options, phrases, wordLists, matchOptions };
 
     const checks = [
         ...structureChecks(context),
@@ -84,7 +87,7 @@ export function analyzeSeo(doc, rawOptions = {}) {
             };
         }),
         checks: exposedChecks,
-        stats: buildStats(model, options, phrases),
+        stats: buildStats(model, options, phrases, matchOptions),
     };
 
     return { result, rangesMap };
@@ -105,6 +108,8 @@ function normalizeOptions(raw) {
         uiLang: raw.uiLang === 'fr' || raw.uiLang === 'en' ? raw.uiLang : lang,
         wordLists: raw.wordLists && typeof raw.wordLists === 'object' ? raw.wordLists : null,
         expectH1: !!raw.expectH1,
+        // Matching « requête outil SEO » : ignore mots vides et accords des deux côtés
+        fullLemma: !!raw.fullLemma,
     };
 }
 
@@ -119,7 +124,7 @@ function cleanStringArray(value) {
     return value.map(item => String(item ?? '').trim()).filter(Boolean);
 }
 
-function buildStats(model, options, phrases) {
+function buildStats(model, options, phrases, matchOptions) {
     const headings = { h1: 0, h2: 0, h3: 0, h4: 0, h5: 0, h6: 0 };
     for (const heading of model.headings) {
         const key = `h${heading.level}`;
@@ -127,7 +132,7 @@ function buildStats(model, options, phrases) {
     }
 
     const { external, internal } = classifyLinks(model.links, options.siteDomain);
-    const keywordOccurrences = phrases.length ? findPhrasesInModel(model, phrases).length : 0;
+    const keywordOccurrences = phrases.length ? findPhrasesInModel(model, phrases, matchOptions).length : 0;
 
     return {
         wordCount: model.wordCount,

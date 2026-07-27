@@ -26,17 +26,29 @@ contenu, immédiate quand une entrée SEO change.
 | `seoLang` | Select | `en` (défaut) ou `fr` — langue d'analyse (listes de mots, seuils, heuristiques) |
 | `seoUiLang` | Select | Langue des textes exposés (titles, descriptions, messages) — suit `seoLang` par défaut |
 | `seoExpectH1` | OnOff | Le H1 est-il écrit dans l'éditeur (off si la page le fournit) |
+| `seoFullLemmatizer` | OnOff (bindable) | Mode « requête outil SEO » : ignore mots vides et accords des deux côtés et autorise des mots vides entre les mots de contenu, pour qu'une requête brute (`comparatif solution vérification identité`) matche sa forme naturelle (`comparatif des solutions de vérification d'identité`). Off = matching strict (tokens contigus) |
 | `seoHighlightColor` | Color | Couleur par défaut du surlignage (`highlightSeoCheck`) ; l'argument `Color` de l'action la surcharge par appel |
 | `seoWordLists` | Object (binding) | Surcharge des listes : `{ stopWords, genericAnchors, powerWords, sentimentWords, transitionWords, complexWords }` |
 
 Les arrays acceptent aussi une chaîne séparée par des virgules. Le matching des
 mots-clés tolère casse, accents et **variations fléchies / lemmatisées** :
-racinisation légère fr/en (pluriels, féminins, conjugaisons courantes,
-`-al`/`-aux`) — ainsi « chaussures », « optimisé » ou « chevaux » comptent
-comme « chaussure », « optimiser », « cheval ». Ce n'est pas un lemmatiseur
-complet ; quelques sur-racinisations sont assumées (ex. « national » ≈
-« nation »), et le redoublement de consonne anglais (run/running) n'est pas
-géré.
+racinisation légère fr/en (pluriels, féminins, `-al`/`-aux`, participes `-é`,
+présent `-e`) — ainsi « chaussures », « chevaux » ou « optimisé » comptent comme
+« chaussure », « cheval », « optimiser ». Ce n'est pas un lemmatiseur complet :
+les terminaisons verbales ambiguës (`-ons`, `-ent`, `-ais`, `-ait`) sont
+volontairement ignorées car elles collisionnent avec des noms courants
+(soluti**ons**, docum**ent**s) — priorité à l'alignement singulier/pluriel des
+noms, cas dominant en SEO ; quelques sur-racinisations sont assumées
+(« national » ≈ « nation »), et le redoublement de consonne anglais (run/running)
+n'est pas géré.
+
+Avec **`seoFullLemmatizer`** activé, le matching passe en mode « requête outil
+SEO » : les mots vides (articles, prépositions, accords) sont ignorés **des deux
+côtés** et peuvent s'intercaler entre les mots de contenu. Une requête normalisée
+issue d'un outil de mots-clés (`comparatif solution vérification identité`) est
+alors reconnue dans sa réalisation naturelle (`comparatif des solutions de
+vérification d'identité`) — la cible reste la même, seule la surface change. Un
+mot de contenu **étranger** intercalé rompt toujours le match.
 
 ## Scoring
 

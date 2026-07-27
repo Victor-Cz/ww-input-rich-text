@@ -4,11 +4,11 @@ import { contentWords, findPhraseMatches, includesAnyPhrase } from '../textUtils
 // Catégorie "images" — mot-clé requis uniquement pour keywordInImageAlt.
 
 export function imagesChecks(context) {
-    const { model, phrases, wordLists } = context;
+    const { model, phrases, wordLists, matchOptions } = context;
     return [
         imagePresence(model),
         imageAlt(model),
-        keywordInImageAlt(model, phrases, wordLists.stopWords),
+        keywordInImageAlt(model, phrases, wordLists.stopWords, matchOptions),
     ];
 }
 
@@ -29,15 +29,15 @@ function imagePresence(model) {
 // na sans mot-clé ou sans image. value : nb d'images dont l'alt matche.
 // 100 : mot-clé dans ≥ 1 alt · 50 (warning) : des alt existent mais sans le
 // mot-clé · 0 (bad) : aucune image n'a d'alt
-function keywordInImageAlt(model, phrases, stopWords) {
+function keywordInImageAlt(model, phrases, stopWords, matchOptions) {
     if (!phrases.length || !model.images.length) return notApplicable('keywordInImageAlt', 'images', 0);
 
     const words = contentWords(phrases[0], stopWords);
     const matched = model.images.filter(image => {
         if (!image.alt) return false;
-        if (includesAnyPhrase(image.alt, phrases)) return true;
+        if (includesAnyPhrase(image.alt, phrases, matchOptions)) return true;
         if (!words.length) return false;
-        const found = words.filter(word => findPhraseMatches(image.alt, word).length > 0);
+        const found = words.filter(word => findPhraseMatches(image.alt, word, matchOptions).length > 0);
         return found.length / words.length >= 0.5;
     });
 

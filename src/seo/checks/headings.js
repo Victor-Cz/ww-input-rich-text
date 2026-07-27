@@ -7,12 +7,12 @@ import { contentWords, findPhraseMatches, includesAnyPhrase } from '../textUtils
 // hiérarchie des niveaux — et subheadingDistribution) reste en catégorie "structure".
 
 export function headingsChecks(context) {
-    const { model, phrases, wordLists } = context;
+    const { model, phrases, wordLists, matchOptions } = context;
     return [
         headingLength(model),
-        keywordInH1(model, phrases, wordLists.stopWords),
-        keywordInSubheadings(model, phrases),
-        secondaryInSubheadings(model, context.options.secondaryKeywords),
+        keywordInH1(model, phrases, wordLists.stopWords, matchOptions),
+        keywordInSubheadings(model, phrases, matchOptions),
+        secondaryInSubheadings(model, context.options.secondaryKeywords, matchOptions),
     ];
 }
 
@@ -34,21 +34,21 @@ function headingLength(model) {
 // Mot-clé dans le titre H1 : phrase complète → 100 ; mots dispersés →
 // proportionnel (max 60) ; absent → 0 (le H1 est surligné pour le localiser).
 // na sans mot-clé ou sans H1. value : 'full' | 'scattered' | 'missing'
-function keywordInH1(model, phrases, stopWords) {
+function keywordInH1(model, phrases, stopWords, matchOptions) {
     if (!phrases.length) return notApplicable('keywordInH1', 'headings');
     const h1 = model.headings.find(heading => heading.level === 1);
     if (!h1) return notApplicable('keywordInH1', 'headings');
 
-    const fullMatches = findPhrasesInBlock(h1, phrases);
+    const fullMatches = findPhrasesInBlock(h1, phrases, matchOptions);
     if (fullMatches.length) {
         return makeCheck('keywordInH1', 'headings', 100, 'full', fullMatches);
     }
 
     const words = contentWords(phrases[0], stopWords);
-    const found = words.filter(word => findPhraseMatches(h1.text, word).length > 0);
+    const found = words.filter(word => findPhraseMatches(h1.text, word, matchOptions).length > 0);
     if (found.length) {
         const score = (found.length / words.length) * 60;
-        return makeCheck('keywordInH1', 'headings', score, 'scattered', findPhrasesInBlock(h1, found));
+        return makeCheck('keywordInH1', 'headings', score, 'scattered', findPhrasesInBlock(h1, found, matchOptions));
     }
     return makeCheck('keywordInH1', 'headings', 0, 'missing', [{ from: h1.from, to: h1.to }]);
 }
@@ -56,12 +56,12 @@ function keywordInH1(model, phrases, stopWords) {
 // Zone optimale 30-75 % des H2/H3 avec le mot-clé → 100 ; proportionnel en
 // dessous ; au-delà, sur-optimisation : décroît doucement (plancher 50).
 // na sans mot-clé ou sans sous-titre. value : % de sous-titres avec le mot-clé.
-function keywordInSubheadings(model, phrases) {
+function keywordInSubheadings(model, phrases, matchOptions) {
     if (!phrases.length) return notApplicable('keywordInSubheadings', 'headings');
     const subheadings = model.headings.filter(heading => heading.level === 2 || heading.level === 3);
     if (!subheadings.length) return notApplicable('keywordInSubheadings', 'headings', 0);
 
-    const matched = subheadings.filter(heading => includesAnyPhrase(heading.text, phrases));
+    const matched = subheadings.filter(heading => includesAnyPhrase(heading.text, phrases, matchOptions));
     const percent = Math.round((matched.length / subheadings.length) * 100);
     let score;
     if (percent < 30) score = ratioScore(percent, 30);

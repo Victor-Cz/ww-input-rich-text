@@ -5,17 +5,20 @@ import { contentWords, findPhraseMatches, normalizeText, splitWords } from '../t
 // les entrées correspondantes sont fournies. Pas de plages (hors éditeur).
 
 export function metaChecks(context) {
-    const { options, phrases, wordLists } = context;
-    return [...metaTitleChecks(options, phrases, wordLists), ...metaDescriptionChecks(options, phrases)];
+    const { options, phrases, wordLists, matchOptions } = context;
+    return [
+        ...metaTitleChecks(options, phrases, wordLists, matchOptions),
+        ...metaDescriptionChecks(options, phrases, matchOptions),
+    ];
 }
 
-function metaTitleChecks(options, phrases, wordLists) {
+function metaTitleChecks(options, phrases, wordLists, matchOptions) {
     const title = (options.metaTitle || '').trim();
     if (!title) {
         return ['metaTitleKeyword', 'metaTitleLength', 'metaTitleAttractiveness'].map(id => notApplicable(id, 'meta'));
     }
     return [
-        metaTitleKeyword(title, phrases, wordLists.stopWords),
+        metaTitleKeyword(title, phrases, wordLists.stopWords, matchOptions),
         metaTitleLength(title),
         metaTitleAttractiveness(title, wordLists),
     ];
@@ -24,10 +27,10 @@ function metaTitleChecks(options, phrases, wordLists) {
 // Présence ET position en un seul check : match exact dans la 1re moitié → 100 ;
 // exact mais tardif → 70 ; mots dispersés → proportionnel (tous → 60) ; absent → 0.
 // value : 'start' | 'late' | 'scattered' | 'missing'
-function metaTitleKeyword(title, phrases, stopWords) {
+function metaTitleKeyword(title, phrases, stopWords, matchOptions) {
     if (!phrases.length) return notApplicable('metaTitleKeyword', 'meta');
 
-    const matches = phrases.flatMap(phrase => findPhraseMatches(title, phrase));
+    const matches = phrases.flatMap(phrase => findPhraseMatches(title, phrase, matchOptions));
     if (matches.length) {
         const firstStart = Math.min(...matches.map(match => match.start));
         const inFirstHalf = firstStart <= title.length / 2;
@@ -37,7 +40,7 @@ function metaTitleKeyword(title, phrases, stopWords) {
     }
 
     const words = contentWords(phrases[0], stopWords);
-    const found = words.filter(word => findPhraseMatches(title, word).length > 0);
+    const found = words.filter(word => findPhraseMatches(title, word, matchOptions).length > 0);
     if (!words.length || !found.length) return makeCheck('metaTitleKeyword', 'meta', 0, 'missing');
     return makeCheck('metaTitleKeyword', 'meta', (found.length / words.length) * 60, 'scattered');
 }
@@ -68,7 +71,7 @@ function metaTitleAttractiveness(title, wordLists) {
     return makeCheck('metaTitleAttractiveness', 'meta', ratioScore(count, 2), count);
 }
 
-function metaDescriptionChecks(options, phrases) {
+function metaDescriptionChecks(options, phrases, matchOptions) {
     const description = (options.metaDescription || '').trim();
     if (!description) {
         return ['metaDescriptionLength', 'metaDescriptionKeyword'].map(id => notApplicable(id, 'meta'));
@@ -85,7 +88,7 @@ function metaDescriptionChecks(options, phrases) {
 
     if (!phrases.length) return [lengthCheck, notApplicable('metaDescriptionKeyword', 'meta')];
 
-    const occurrences = phrases.reduce((sum, phrase) => sum + findPhraseMatches(description, phrase).length, 0);
+    const occurrences = phrases.reduce((sum, phrase) => sum + findPhraseMatches(description, phrase, matchOptions).length, 0);
     // 1-2 occurrences → 100 ; absent → 0 ; -40 par occurrence au-delà de 2
     let keywordScore;
     if (occurrences === 0) keywordScore = 0;

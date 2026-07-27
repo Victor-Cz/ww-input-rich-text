@@ -134,6 +134,7 @@ export default {
                 'seoLang',
                 'seoUiLang',
                 'seoExpectH1',
+                'seoFullLemmatizer',
                 'seoHighlightColor',
                 'seoWordLists',
             ],
@@ -863,6 +864,21 @@ export default {
             bindingValidation: {
                 type: 'boolean',
                 tooltip: 'Turn on if the H1 title is written inside the editor (off when the page provides it).',
+            },
+            /* wwEditor:end */
+        },
+        seoFullLemmatizer: {
+            section: 'settings',
+            label: { en: 'SEO: full lemmatizer', fr: 'SEO : lemmatiseur complet' },
+            type: 'OnOff',
+            defaultValue: false,
+            bindable: true,
+            hidden: content => !content.enableSeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'boolean',
+                tooltip:
+                    'Match keyword-tool queries against their natural form: ignore stop words (articles, prepositions) and agreement on both sides, and allow stop words between content words. E.g. the raw query "comparatif solution verification identite" matches "comparatif des solutions de vérification d\'identité".',
             },
             /* wwEditor:end */
         },

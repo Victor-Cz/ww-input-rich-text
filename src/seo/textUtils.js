@@ -59,10 +59,16 @@ const MIN_STEM = 3;
 
 // Terminaisons fléchies, de la plus longue à la plus courte (une seule est
 // retirée, la plus longue applicable). Formes désaccentuées (é → e, ée → ee…).
+// On couvre pluriels, féminins, -al/-aux, participes (-é) et présent (-e), plus
+// les terminaisons anglaises. On EXCLUT volontairement les terminaisons verbales
+// ambiguës (-ons, -ent, -ais, -ait) : elles collisionnent avec des noms très
+// courants (soluti[ons], docum[ent]s, pal[ais]) et casseraient l'alignement
+// singulier/pluriel des noms — de loin le cas dominant en SEO. Conséquence
+// assumée : les formes conjuguées « optimisons / optimisent » ne se ramènent pas
+// à « optimiser » (mais « optimise » et « optimisé » oui).
 const INFLECTIONS = [
-    'aient', 'erent', 'irent',
     'ales', 'eaux',
-    'aux', 'als', 'ons', 'ent', 'ait', 'ais', 'ing', 'ies', 'ied', 'ees',
+    'aux', 'als', 'ing', 'ies', 'ied', 'ees',
     'al', 'er', 'ir', 'ez', 'ed', 'es', 'ee',
     's', 'x', 'e', 'y',
 ];
@@ -81,27 +87,41 @@ export function stemWord(word) {
 
 const TOKEN_REGEX = /[\p{L}\p{N}]+/gu;
 
-/** Racines des mots d'une phrase-clé (ordre conservé). */
-function stemPhrase(phrase) {
-    return (normalizeText(phrase).match(TOKEN_REGEX) || []).map(stemWord);
+/** Tokens d'un texte avec racine et positions [start, end) dans le texte. */
+function tokenizeStems(normalized) {
+    const tokens = [];
+    for (const match of normalized.matchAll(TOKEN_REGEX)) {
+        tokens.push({ raw: match[0], start: match.index, end: match.index + match[0].length, stem: stemWord(match[0]) });
+    }
+    return tokens;
 }
 
 /**
  * Trouve toutes les occurrences d'une phrase-clé dans un texte, en comparant
  * les racines (tolérance casse, accents, et variations fléchies / lemmatisées).
- * Une occurrence = une suite de tokens contigus dont les racines égalent, dans
- * l'ordre, celles de la phrase-clé. Retourne des index [start, end) dans le
- * texte d'origine (normalizeText préserve la longueur 1:1).
+ * Retourne des index [start, end) dans le texte d'origine (normalizeText
+ * préserve la longueur 1:1).
+ *
+ * `opts.fullLemma` (avec `opts.stopWords`) active le mode « requête outil SEO » :
+ * les mots vides (articles, prépositions, accords) sont ignorés des DEUX côtés,
+ * et des mots vides peuvent s'intercaler entre les mots de contenu. Ainsi la
+ * requête brute « comparatif solution verification identite » matche sa forme
+ * naturelle « comparatif des solutions de vérification d'identité ». Sinon
+ * (défaut), on exige une suite de tokens strictement contigus.
  */
-export function findPhraseMatches(text, phrase) {
-    const stems = stemPhrase(phrase);
+export function findPhraseMatches(text, phrase, opts = {}) {
+    const stopSet = opts.fullLemma
+        ? new Set((opts.stopWords || []).map(word => normalizeText(word)))
+        : null;
+
+    const phraseTokens = normalizeText(phrase).match(TOKEN_REGEX) || [];
+    const stems = (stopSet ? phraseTokens.filter(word => !stopSet.has(word)) : phraseTokens).map(stemWord);
     if (!stems.length) return [];
 
-    const normalized = normalizeText(text);
-    const tokens = [];
-    for (const match of normalized.matchAll(TOKEN_REGEX)) {
-        tokens.push({ start: match.index, end: match.index + match[0].length, stem: stemWord(match[0]) });
-    }
+    let tokens = tokenizeStems(normalizeText(text));
+    // Mode complet : on matche sur la sous-suite des mots de contenu (les mots
+    // vides intercalés sont sautés mais restent inclus dans la plage surlignée).
+    if (stopSet) tokens = tokens.filter(token => !stopSet.has(token.raw));
 
     const matches = [];
     const n = stems.length;
@@ -119,8 +139,8 @@ export function findPhraseMatches(text, phrase) {
 }
 
 /** Au moins une occurrence d'une des phrases dans le texte. */
-export function includesAnyPhrase(text, phrases) {
-    return (phrases || []).some(phrase => findPhraseMatches(text, phrase).length > 0);
+export function includesAnyPhrase(text, phrases, opts = {}) {
+    return (phrases || []).some(phrase => findPhraseMatches(text, phrase, opts).length > 0);
 }
 
 /**
@@ -144,8 +164,7 @@ export function countSyllables(word, lang) {
 export function splitSentences(text) {
     const sentences = [];
     const regex = /[^.!?…]+[.!?…]*[\s ]*/g;
-    let match;
-    while ((match = regex.exec(String(text))) !== null) {
+    for (const match of String(text).matchAll(regex)) {
         const raw = match[0];
         const trimmed = raw.trim();
         if (!trimmed || !/[\p{L}\p{N}]/u.test(trimmed)) continue;
