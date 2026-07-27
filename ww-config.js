@@ -73,7 +73,7 @@ export default {
             'debounceDelay',
             'autofocus',
             ['useImageTemplates', 'useImageLayout'],
-            ['useLinkTemplates', 'useLinkLayoutPopover', 'forceLinkPopoverDisplay'],
+            ['useLinkTemplates', 'useLinkLayoutPopover', 'forceLinkPopoverDisplay', 'seoSiteDomain'],
             [
                 'enableMention',
                 'mentionChar',
@@ -130,7 +130,6 @@ export default {
                 'seoSecondaryKeywords',
                 'seoMetaTitle',
                 'seoMetaDescription',
-                'seoSiteDomain',
                 'seoLang',
                 'seoUiLang',
                 'seoExpectH1',
@@ -787,15 +786,14 @@ export default {
         },
         seoSiteDomain: {
             section: 'settings',
-            label: { en: 'SEO: site domain', fr: 'SEO : domaine du site' },
+            label: { en: 'Site domain', fr: 'Domaine du site' },
             type: 'Text',
             defaultValue: '',
             bindable: true,
-            hidden: content => !content.enableSeoAnalysis,
             /* wwEditor:start */
             bindingValidation: {
                 type: 'string',
-                tooltip: 'Your site domain or full URL (e.g. "example.com" or "https://www.example.com/page") to tell internal links from external ones. Relative URLs count as internal.',
+                tooltip: 'Your site domain or full URL (e.g. "example.com" or "https://www.example.com/page") to tell internal links from external ones. Relative URLs count as internal. Used by the SEO link checks AND to render internal links as plain links (no target/rel) while external ones get target="_blank" rel="noopener noreferrer".',
             },
             /* wwEditor:end */
         },

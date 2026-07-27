@@ -1,5 +1,6 @@
 import { makeCheck, notApplicable, ratioScore } from '../result.js';
 import { includesAnyPhrase, normalizeText } from '../textUtils.js';
+import { extractDomain, normalizeDomain } from '../../utils/linkDomain.js';
 
 // Catégorie "links" — aucun mot-clé requis.
 
@@ -55,24 +56,6 @@ export function classifyLinks(links, siteDomain) {
         }
     }
     return { external, internal, empty, all: links };
-}
-
-// Accepte un domaine nu ou une URL complète (https://www.monsite.com/page)
-function normalizeDomain(domain) {
-    if (!domain) return null;
-    return String(domain)
-        .trim()
-        .toLowerCase()
-        .replace(/^https?:\/\//, '')
-        .replace(/^www\./, '')
-        .split('/')[0]
-        .split(':')[0] || null;
-}
-
-function extractDomain(href) {
-    const match = /^https?:\/\/([^/]+)/i.exec(href);
-    if (!match) return null;
-    return match[1].toLowerCase().replace(/^www\./, '');
 }
 
 // Nombre de liens sortants vs attendu : 1 par ~1000 mots (minimum 1).

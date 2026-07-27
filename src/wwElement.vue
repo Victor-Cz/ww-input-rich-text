@@ -237,7 +237,6 @@ import StarterKit from '@tiptap/starter-kit';
 import Mention from '@tiptap/extension-mention';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
-import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import Image from '@tiptap/extension-image';
@@ -265,6 +264,7 @@ import { SeoHighlighter } from './extensions/SeoHighlighter.js';
 import { TextSuggestion } from './extensions/TextSuggestion.js';
 import { TextStrike } from './extensions/TextStrike.js';
 import { CustomImage } from './extensions/CustomImage.js';
+import { SeoLink } from './extensions/SeoLink.js';
 import { sanitizeLinkUrl, sanitizeImageSrc, safeOpenUrl, isDangerousUrl } from './utils/sanitizeUrl.js';
 
 function extractMentions(acc, currentNode) {
@@ -952,7 +952,7 @@ export default {
                 // Vérifier les imports d'extensions
                 console.log('[Editor] Checking extension imports:', {
                     StarterKit: !!StarterKit,
-                    Link: !!Link,
+                    SeoLink: !!SeoLink,
                     TextStyle: !!TextStyle,
                     Color: !!Color,
                     Underline: !!Underline,
@@ -974,7 +974,7 @@ export default {
                 // Identifier quelle extension est undefined
                 const undefinedExtensions = [];
                 if (!StarterKit) undefinedExtensions.push('StarterKit');
-                if (!Link) undefinedExtensions.push('Link');
+                if (!SeoLink) undefinedExtensions.push('SeoLink');
                 if (!TextStyle) undefinedExtensions.push('TextStyle');
                 if (!Color) undefinedExtensions.push('Color');
                 if (!Underline) undefinedExtensions.push('Underline');
@@ -1004,10 +1004,11 @@ export default {
                     StarterKit.configure({
                         history: this.isCollaborating ? false : true,
                     }),
-                    Link.configure({
-                        HTMLAttributes: {
-                            rel: 'noopener noreferrer',
-                        },
+                    SeoLink.configure({
+                        // target/rel sont calculés par lien (interne = lien normal,
+                        // externe = _blank + noopener noreferrer). Le domaine est
+                        // bindable : on le lit au rendu via un getter.
+                        siteDomain: () => this.content.seoSiteDomain,
                         openOnClick: false, // On gère l'ouverture manuellement avec Cmd/Ctrl+clic
                         // Protection injection (XSS) : ne jamais auto-linker ni accepter
                         // une URL utilisant un protocole dangereux (javascript:, data:, ...).
