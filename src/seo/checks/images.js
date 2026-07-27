@@ -12,13 +12,13 @@ export function imagesChecks(context) {
     ];
 }
 
-// Nombre d'images vs attendu : 1 image par ~1000 mots (minimum 1).
+// Nombre d'images vs attendu : 1 image par ~750 mots (minimum 1).
 // Score proportionnel : 2 images pour 4 attendues → 50. value : nombre d'images.
 // messageKey 'none' quand il n'y a réellement aucune image (le statut 'bad'
 // couvre aussi « trop peu d'images » avec 1+ image sur un texte long).
 function imagePresence(model) {
     const count = model.images.length;
-    const expected = Math.max(1, Math.floor(model.wordCount / 1000));
+    const expected = Math.max(1, Math.floor(model.wordCount / 750));
     const check = makeCheck('imagePresence', 'images', ratioScore(count, expected), count);
     check.target = expected;
     if (count === 0) check.messageKey = 'none';
