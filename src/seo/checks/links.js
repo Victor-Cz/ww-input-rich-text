@@ -86,10 +86,10 @@ function outboundLinks({ external }, wordCount) {
     return check;
 }
 
-// Nombre de liens internes vs attendu : 1 par ~500 mots (minimum 1).
+// Nombre de liens internes vs attendu : 1 par ~1000 mots (minimum 1).
 // Score proportionnel. value : nb de liens internes · target : nb visé.
 function internalLinks({ internal }, wordCount) {
-    const expected = Math.max(1, Math.floor(wordCount / 500));
+    const expected = Math.max(1, Math.floor(wordCount / 1000));
     const check = makeCheck('internalLinks', 'links', ratioScore(internal.length, expected),
         internal.length, toRanges(internal));
     check.target = expected;

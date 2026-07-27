@@ -166,8 +166,8 @@ export default {
     },
     internalLinks: {
         title: 'Liens internes',
-        description: 'Vérifie le nombre de liens vers d’autres pages du site : environ un par 500 mots (minimum un).',
-        objective: '≥ 1 lien interne par ~500 mots',
+        description: 'Vérifie le nombre de liens vers d’autres pages du site : environ un par 1000 mots (minimum un).',
+        objective: '≥ 1 lien interne par ~1000 mots',
         messages: {
             good: 'Le texte contient {value} lien(s) interne(s), c’est suffisant.',
             warning: '{value} lien(s) interne(s) pour ce volume de texte : visez-en {target}.',

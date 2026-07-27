@@ -166,8 +166,8 @@ export default {
     },
     internalLinks: {
         title: 'Internal links',
-        description: 'Checks the number of links to other pages of the site: about one per 500 words (minimum one).',
-        objective: '≥ 1 internal link per ~500 words',
+        description: 'Checks the number of links to other pages of the site: about one per 1000 words (minimum one).',
+        objective: '≥ 1 internal link per ~1000 words',
         messages: {
             good: 'The text contains {value} internal link(s), that is sufficient.',
             warning: '{value} internal link(s) for this amount of text: aim for {target}.',
