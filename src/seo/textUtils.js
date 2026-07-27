@@ -49,34 +49,71 @@ export function contentWords(phrase, stopWords) {
     return splitWords(normalizeText(phrase)).filter(word => !stopSet.has(word));
 }
 
-/**
- * Construit une RegExp qui matche une phrase-clé dans un texte normalisé :
- * - mots séparés par espaces/tirets/apostrophes,
- * - tolérance pluriels simples fr/en (s, x, es) sur chaque mot,
- * - bornée par des non-lettres (pas de match au milieu d'un mot).
- */
-export function buildPhraseRegex(phrase) {
-    const words = splitWords(normalizeText(phrase));
-    if (!words.length) return null;
-    const body = words.map(word => `${escapeRegExp(word)}(?:es|s|x)?`).join(`[\\s\\u00A0''\\-]+`);
-    return new RegExp(`(^|[^\\p{L}\\p{N}])(${body})(?=[^\\p{L}\\p{N}]|$)`, 'giu');
+// Racinisation morphologique légère (fr + en). But : ramener les variations
+// fléchies d'un mot (pluriels, féminins, conjugaisons courantes) à une racine
+// commune, pour qu'elles comptent comme le mot-clé. Ce n'est PAS un lemmatiseur
+// complet — on vise la tolérance, pas l'exactitude linguistique : quelques
+// sur-racinisations (ex. « national » → « nation ») sont acceptées.
+// Le texte est déjà normalisé (minuscules, sans accent) avant racinisation.
+const MIN_STEM = 3;
+
+// Terminaisons fléchies, de la plus longue à la plus courte (une seule est
+// retirée, la plus longue applicable). Formes désaccentuées (é → e, ée → ee…).
+const INFLECTIONS = [
+    'aient', 'erent', 'irent',
+    'ales', 'eaux',
+    'aux', 'als', 'ons', 'ent', 'ait', 'ais', 'ing', 'ies', 'ied', 'ees',
+    'al', 'er', 'ir', 'ez', 'ed', 'es', 'ee',
+    's', 'x', 'e', 'y',
+];
+
+/** Racine d'un mot déjà normalisé : retire une terminaison fléchie si la racine
+ *  restante garde au moins MIN_STEM caractères. */
+export function stemWord(word) {
+    if (word.length <= MIN_STEM) return word;
+    for (const suffix of INFLECTIONS) {
+        if (word.length - suffix.length >= MIN_STEM && word.endsWith(suffix)) {
+            return word.slice(0, word.length - suffix.length);
+        }
+    }
+    return word;
+}
+
+const TOKEN_REGEX = /[\p{L}\p{N}]+/gu;
+
+/** Racines des mots d'une phrase-clé (ordre conservé). */
+function stemPhrase(phrase) {
+    return (normalizeText(phrase).match(TOKEN_REGEX) || []).map(stemWord);
 }
 
 /**
- * Trouve toutes les occurrences d'une phrase-clé dans un texte.
- * Retourne des index [start, end) dans le texte d'origine.
+ * Trouve toutes les occurrences d'une phrase-clé dans un texte, en comparant
+ * les racines (tolérance casse, accents, et variations fléchies / lemmatisées).
+ * Une occurrence = une suite de tokens contigus dont les racines égalent, dans
+ * l'ordre, celles de la phrase-clé. Retourne des index [start, end) dans le
+ * texte d'origine (normalizeText préserve la longueur 1:1).
  */
 export function findPhraseMatches(text, phrase) {
-    const regex = buildPhraseRegex(phrase);
-    if (!regex) return [];
+    const stems = stemPhrase(phrase);
+    if (!stems.length) return [];
+
     const normalized = normalizeText(text);
+    const tokens = [];
+    for (const match of normalized.matchAll(TOKEN_REGEX)) {
+        tokens.push({ start: match.index, end: match.index + match[0].length, stem: stemWord(match[0]) });
+    }
+
     const matches = [];
-    let match;
-    while ((match = regex.exec(normalized)) !== null) {
-        const start = match.index + match[1].length;
-        matches.push({ start, end: start + match[2].length });
-        // Éviter une boucle infinie sur un match vide
-        if (regex.lastIndex === match.index) regex.lastIndex++;
+    const n = stems.length;
+    for (let i = 0; i + n <= tokens.length; i++) {
+        let ok = true;
+        for (let j = 0; j < n; j++) {
+            if (tokens[i + j].stem !== stems[j]) {
+                ok = false;
+                break;
+            }
+        }
+        if (ok) matches.push({ start: tokens[i].start, end: tokens[i + n - 1].end });
     }
     return matches;
 }

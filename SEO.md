@@ -30,7 +30,13 @@ contenu, immédiate quand une entrée SEO change.
 | `seoWordLists` | Object (binding) | Surcharge des listes : `{ stopWords, genericAnchors, powerWords, sentimentWords, transitionWords, complexWords }` |
 
 Les arrays acceptent aussi une chaîne séparée par des virgules. Le matching des
-mots-clés tolère casse, accents et pluriels simples (s/x/es).
+mots-clés tolère casse, accents et **variations fléchies / lemmatisées** :
+racinisation légère fr/en (pluriels, féminins, conjugaisons courantes,
+`-al`/`-aux`) — ainsi « chaussures », « optimisé » ou « chevaux » comptent
+comme « chaussure », « optimiser », « cheval ». Ce n'est pas un lemmatiseur
+complet ; quelques sur-racinisations sont assumées (ex. « national » ≈
+« nation »), et le redoublement de consonne anglais (run/running) n'est pas
+géré.
 
 ## Scoring
 
