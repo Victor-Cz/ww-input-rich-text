@@ -196,6 +196,17 @@
                 <wwElement class="ww-rich-text__menu" v-else-if="content.customMenu"
                     v-bind="content.customMenuElement" />
 
+                <!-- Indicateur de section visible (fil d'Ariane des titres). Rendu
+                     dès qu'il y a un sommaire, même sans section active :
+                     apparaître/disparaître au scroll décalerait le texte. -->
+                <div class="ww-rich-text__outline" v-if="showOutlineIndicator && outlineItems.length"
+                    :style="outlineIndicatorStyles">
+                    <template v-for="(entry, entryIndex) in currentHeadingPath" :key="entry.id">
+                        <span class="ww-rich-text__outline-separator" v-if="entryIndex">›</span>
+                        <span class="ww-rich-text__outline-entry">{{ entry.text }}</span>
+                    </template>
+                </div>
+
                 <editor-content class="ww-rich-text__input" :editor="richEditor" :style="richStyles" />
 
                 <!-- Link Popover pour afficher/modifier les liens -->
@@ -266,6 +277,7 @@ import { TextStrike } from './extensions/TextStrike.js';
 import { CustomImage } from './extensions/CustomImage.js';
 import { SeoLink } from './extensions/SeoLink.js';
 import { sanitizeLinkUrl, sanitizeImageSrc, safeOpenUrl, isDangerousUrl } from './utils/sanitizeUrl.js';
+import { buildOutline, resolveOutlineLevels, toPublicOutline, toPublicHeading } from './utils/outline.js';
 
 function extractMentions(acc, currentNode) {
     if (currentNode.type === 'mention') {
@@ -365,6 +377,22 @@ export default {
             readonly: true,
         });
 
+        const { value: outline, setValue: _setOutline } = wwLib.wwVariable.useComponentVariable({
+            uid: props.uid,
+            name: 'outline',
+            type: 'array',
+            defaultValue: [],
+            readonly: true,
+        });
+
+        const { value: currentHeading, setValue: _setCurrentHeading } = wwLib.wwVariable.useComponentVariable({
+            uid: props.uid,
+            name: 'currentHeading',
+            type: 'object',
+            defaultValue: null,
+            readonly: true,
+        });
+
         const { value: history, setValue: _setHistory } = wwLib.wwVariable.useComponentVariable({
             uid: props.uid,
             name: 'history',
@@ -383,6 +411,8 @@ export default {
         const setCollaborationStatus = (...args) => { if (!_isDestroyed) _setCollaborationStatus(...args); };
         const setSeo = (...args) => { if (!_isDestroyed) _setSeo(...args); };
         const setHistory = (...args) => { if (!_isDestroyed) _setHistory(...args); };
+        const setOutline = (...args) => { if (!_isDestroyed) _setOutline(...args); };
+        const setCurrentHeading = (...args) => { if (!_isDestroyed) _setCurrentHeading(...args); };
 
 
         /* wwEditor:start */
@@ -434,6 +464,10 @@ export default {
             setSeo,
             history,
             setHistory,
+            outline,
+            setOutline,
+            currentHeading,
+            setCurrentHeading,
             randomUid,
             /* wwEditor:start */
             createElement,
@@ -447,6 +481,9 @@ export default {
         loading: false,
         pendingSteps: [], // Accumulateur de diffs
         seoHighlightVisible: false, // reflété dans seo.highlighting
+        outlineItems: [], // sommaire courant (avec positions doc, usage interne)
+        activeOutlineIndex: -1, // titre visible au scroll (-1 = au-dessus du premier)
+        activeHeadingSignature: '', // index:id:texte du titre courant, pour détecter un vrai changement
     }),
 
     watch: {
@@ -616,6 +653,22 @@ export default {
             if (this.richEditor && this.richEditor.view && this.richEditor.view.dom) {
                 this.richEditor.view.dom.setAttribute('spellcheck', (newValue ?? true) ? 'true' : 'false');
             }
+        },
+        // Sommaire : activation/désactivation à chaud
+        outlineEnabled(enabled) {
+            if (enabled) {
+                this.attachOutlineListeners();
+                this.updateOutline();
+            } else {
+                this.detachOutlineListeners();
+                this.resetOutline();
+            }
+        },
+        outlineLevels() {
+            if (this.outlineEnabled) this.updateOutline();
+        },
+        outlineOffset() {
+            if (this.outlineEnabled) this.updateActiveHeading();
         },
         // Analyse SEO : recalcul immédiat quand une entrée change, nettoyage quand désactivée
         seoOptions: {
@@ -913,6 +966,32 @@ export default {
         delay() {
             return wwLib.wwUtils.getLengthUnit(this.content.debounceDelay)[0];
         },
+        // --- Sommaire (outline) ---
+        outlineEnabled() {
+            return !!this.content.enableOutline;
+        },
+        outlineLevels() {
+            return resolveOutlineLevels(this.content.outlineLevels);
+        },
+        // Décalage de la ligne de détection : un en-tête fixe au-dessus de
+        // l'éditeur masquerait sinon le titre au moment où il devient actif.
+        outlineOffset() {
+            const offset = Number(this.content.outlineOffset);
+            return Number.isFinite(offset) ? offset : 0;
+        },
+        showOutlineIndicator() {
+            return this.outlineEnabled && !!this.content.outlineIndicator;
+        },
+        currentHeadingPath() {
+            const item = this.outlineItems[this.activeOutlineIndex];
+            return item ? item.path : [];
+        },
+        outlineIndicatorStyles() {
+            return {
+                color: this.content.outlineIndicatorColor || 'rgba(0, 0, 0, 0.6)',
+                backgroundColor: this.content.outlineIndicatorBgColor || 'transparent',
+            };
+        },
         seoOptions() {
             if (!this.content.enableSeoAnalysis) return null;
             return {
@@ -1143,6 +1222,8 @@ export default {
                         this.pendingSteps = [];
                         this.setPendingChangesCount(0);
                         this.scheduleSeoAnalysis(true);
+                        // Débouncé : `this.richEditor` n'est pas encore assigné ici
+                        this.scheduleOutlineUpdate();
                     },
                     onUpdate: ({ transaction }) => {
                         if (this.isDestroying) return;
@@ -1213,6 +1294,7 @@ export default {
             }
             this.setMentions(this.richEditor.getJSON().content.reduce(extractMentions, []));
             this.scheduleSeoAnalysis();
+            this.scheduleOutlineUpdate();
         },
         setLink(url) {
             if (this.richEditor.isActive('link')) {
@@ -1650,6 +1732,200 @@ export default {
                 // Position introuvable dans le DOM : le surlignage reste appliqué
             }
         },
+
+        // --- Sommaire (outline) et section visible ---
+
+        // Le sommaire suit le contenu : débouncé pendant la frappe, immédiat à
+        // la création de l'éditeur et au changement de configuration.
+        scheduleOutlineUpdate() {
+            if (!this.outlineEnabled || this.isDestroying) return;
+            if (this.outlineDebounce) clearTimeout(this.outlineDebounce);
+            this.outlineDebounce = setTimeout(() => {
+                this.outlineDebounce = null;
+                this.updateOutline();
+            }, 300);
+        },
+
+        updateOutline() {
+            if (!this.outlineEnabled || !this.richEditor || this.isDestroying) return;
+            this.outlineItems = buildOutline(this.richEditor.state.doc, this.outlineLevels);
+            // Des titres ont pu disparaître : l'index actif est ramené dans les
+            // bornes, sa fraîcheur est assurée par updateActiveHeading (la
+            // signature du titre courant a changé s'il a été supprimé/renommé).
+            this.activeOutlineIndex = Math.min(this.activeOutlineIndex, this.outlineItems.length - 1);
+            this.publishOutline();
+            // Les titres ont pu bouger : la section visible est remesurée dans le DOM
+            this.updateActiveHeading();
+        },
+
+        resetOutline() {
+            if (this.outlineDebounce) {
+                clearTimeout(this.outlineDebounce);
+                this.outlineDebounce = null;
+            }
+            this.outlineItems = [];
+            this.activeOutlineIndex = -1;
+            this.activeHeadingSignature = '';
+            this.setOutline([]);
+            this.setCurrentHeading(null);
+        },
+
+        publishOutline() {
+            this.setOutline(toPublicOutline(this.outlineItems, this.activeOutlineIndex));
+        },
+
+        // Ligne de référence : le haut de la zone de texte visible. Quand le
+        // texte défile dans l'éditeur, c'est le haut de l'éditeur ; quand c'est
+        // la page qui défile, l'éditeur sort par le haut → on retombe sur le
+        // haut du viewport.
+        getOutlineRefTop() {
+            const dom = this.richEditor?.view?.dom;
+            if (!dom) return this.outlineOffset;
+            return Math.max(dom.getBoundingClientRect().top, 0) + this.outlineOffset;
+        },
+
+        getHeadingElement(item) {
+            if (!item || !this.richEditor) return null;
+            try {
+                const dom = this.richEditor.view.nodeDOM(item.from);
+                return dom?.nodeType === Node.ELEMENT_NODE ? dom : null;
+            } catch {
+                // Position hors document (frappe entre deux recalculs)
+                return null;
+            }
+        },
+
+        // Le conteneur qui défile réellement : l'éditeur lui-même, un wrapper
+        // scrollable, ou la page (null).
+        getOutlineScrollElement() {
+            const win = this.$el?.ownerDocument?.defaultView;
+            let element = this.richEditor?.view?.dom;
+            while (win && element && element !== win.document.body) {
+                const overflowY = win.getComputedStyle(element).overflowY;
+                if (/(auto|scroll|overlay)/.test(overflowY) && element.scrollHeight > element.clientHeight + 1) {
+                    return element;
+                }
+                element = element.parentElement;
+            }
+            return null;
+        },
+
+        // La section visible = le dernier titre passé au-dessus de la ligne de
+        // référence. Les titres sont en ordre doc : on s'arrête au premier qui
+        // est encore en dessous.
+        updateActiveHeading() {
+            if (!this.outlineEnabled || !this.richEditor || this.isDestroying) return;
+            if (!this.outlineItems.length) {
+                this.setActiveOutlineIndex(-1);
+                return;
+            }
+            const refTop = this.getOutlineRefTop();
+            let active = -1;
+            for (const item of this.outlineItems) {
+                const element = this.getHeadingElement(item);
+                if (!element) continue;
+                // 1px de tolérance : le scroll produit des positions sous-pixel
+                if (element.getBoundingClientRect().top - refTop > 1) break;
+                active = item.index;
+            }
+            this.setActiveOutlineIndex(active);
+        },
+
+        setActiveOutlineIndex(index) {
+            const item = index >= 0 ? this.outlineItems[index] || null : null;
+            // La signature couvre le renommage et la suppression : à index égal,
+            // le titre courant peut avoir changé entre deux recalculs.
+            const signature = item ? `${item.index}:${item.id}:${item.text}` : '';
+            if (signature === this.activeHeadingSignature && index === this.activeOutlineIndex) return;
+            this.activeOutlineIndex = index;
+            this.activeHeadingSignature = signature;
+            const heading = toPublicHeading(item);
+            this.setCurrentHeading(heading);
+            // `active` change dans le sommaire exposé (pratique pour styliser la TOC)
+            this.publishOutline();
+            this.$emit('trigger-event', {
+                name: 'heading:change',
+                event: heading || { id: '', index: -1, level: 0, text: '', path: [] },
+            });
+        },
+
+        attachOutlineListeners() {
+            const document_ = this.$el?.ownerDocument;
+            const win = document_?.defaultView;
+            if (!document_ || !win || this.outlineListenersAttached) return;
+
+            this.onOutlineScroll = () => {
+                if (this.outlineFrame) return;
+                this.outlineFrame = win.requestAnimationFrame(() => {
+                    this.outlineFrame = null;
+                    this.updateActiveHeading();
+                });
+            };
+            // Capture : les événements scroll ne remontent pas, mais descendent
+            // en capture — un seul écouteur couvre le défilement interne de
+            // l'éditeur comme celui de la page ou d'un wrapper intermédiaire.
+            document_.addEventListener('scroll', this.onOutlineScroll, { capture: true, passive: true });
+            win.addEventListener('resize', this.onOutlineScroll, { passive: true });
+            // Cibles mémorisées : au démontage, this.$el peut déjà avoir disparu
+            this.outlineListenersAttached = { document_, win };
+        },
+
+        detachOutlineListeners() {
+            const attached = this.outlineListenersAttached;
+            if (attached?.win && this.outlineFrame) {
+                attached.win.cancelAnimationFrame(this.outlineFrame);
+                this.outlineFrame = null;
+            }
+            if (!attached || !this.onOutlineScroll) return;
+            attached.document_.removeEventListener('scroll', this.onOutlineScroll, { capture: true });
+            attached.win.removeEventListener('resize', this.onOutlineScroll);
+            this.onOutlineScroll = null;
+            this.outlineListenersAttached = null;
+        },
+
+        // Cible acceptée : id du titre, index, ou texte exact.
+        findOutlineItem(target) {
+            if (target === null || target === undefined || target === '') return null;
+            if (typeof target === 'number') return this.outlineItems[target] || null;
+            const key = String(target).trim();
+            const byId = this.outlineItems.find(item => item.id === key);
+            if (byId) return byId;
+            if (/^\d+$/.test(key)) return this.outlineItems[Number(key)] || null;
+            const lower = key.toLowerCase();
+            return this.outlineItems.find(item => item.text.toLowerCase() === lower) || null;
+        },
+
+        scrollToHeading(target, focus = false) {
+            if (!this.richEditor) return false;
+            const item = this.findOutlineItem(target);
+            if (!item) return false;
+
+            // Le focus place d'abord le curseur (ProseMirror ramène la position
+            // dans le viewport) ; le scroll ci-dessous ne fait plus qu'aligner.
+            if (focus && this.isEditable) this.richEditor.chain().focus(item.from + 1).run();
+
+            const element = this.getHeadingElement(item);
+            if (!element) return false;
+            const delta = element.getBoundingClientRect().top - this.getOutlineRefTop();
+            const scrollElement = this.getOutlineScrollElement();
+            if (scrollElement) scrollElement.scrollBy({ top: delta, behavior: 'smooth' });
+            else this.$el?.ownerDocument?.defaultView?.scrollBy({ top: delta, behavior: 'smooth' });
+            return true;
+        },
+
+        scrollToNextHeading() {
+            return this.scrollToHeading(this.activeOutlineIndex + 1);
+        },
+
+        scrollToPreviousHeading() {
+            // On repart du titre courant : à mi-section, « précédent » remonte
+            // à celui qui vient d'être dépassé.
+            return this.scrollToHeading(Math.max(this.activeOutlineIndex - 1, 0));
+        },
+
+        getOutline() {
+            return toPublicOutline(this.outlineItems, this.activeOutlineIndex);
+        },
     },
     mounted() {
         console.log('[Editor] Component mounted, checking collaboration config:', {
@@ -1677,6 +1953,10 @@ export default {
             console.log('[Editor] Loading editor without collaboration');
             this.loadEditor();
         }
+
+        // Suivi de la section visible (écouteurs en capture : indépendants de
+        // l'instance d'éditeur, ils survivent à un rechargement de celle-ci)
+        if (this.outlineEnabled) this.attachOutlineListeners();
     },
     beforeUnmount() {
         this.isDestroying = true;
@@ -1692,6 +1972,13 @@ export default {
             clearTimeout(this.seoDebounce);
             this.seoDebounce = null;
         }
+
+        // Nettoyer le suivi du sommaire
+        if (this.outlineDebounce) {
+            clearTimeout(this.outlineDebounce);
+            this.outlineDebounce = null;
+        }
+        this.detachOutlineListeners();
 
         // Nettoyer la collaboration
         this.destroyCollaboration();
@@ -1792,6 +2079,38 @@ export default {
                 color: white;
                 background-color: var(--menu-color);
             }
+        }
+    }
+
+    /* Indicateur de section visible : reste en haut de l'éditeur quand le texte
+       défile à l'intérieur, colle au viewport quand c'est la page qui défile */
+    &__outline {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 24px;
+        padding: 4px 12px;
+        font-size: 13px;
+        line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+
+        &-entry {
+            overflow: hidden;
+            text-overflow: ellipsis;
+
+            &:last-child {
+                flex: 0 1 auto;
+                font-weight: 600;
+            }
+        }
+
+        &-separator {
+            flex: 0 0 auto;
+            opacity: 0.5;
         }
     }
 

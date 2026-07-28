@@ -29,6 +29,7 @@ export default {
             'menuColor',
             'editorPadding',
             'editorMaxWidth',
+            ['outlineIndicatorColor', 'outlineIndicatorBgColor'],
             [
                 'selectedTag',
                 'h1',
@@ -123,6 +124,7 @@ export default {
                 'parameterAiMenuPlaceholders',
                 'parameterAiMenuCustomTypes',
             ],
+            ['enableOutline', 'outlineLevels', 'outlineOffset', 'outlineIndicator'],
             [
                 'enableSeoAnalysis',
                 'seoKeyword',
@@ -152,6 +154,11 @@ export default {
             name: 'seo:change',
             label: { en: 'On SEO score change', fr: 'Au changement du score SEO' },
             event: { score: 0, grade: '', scores: {} },
+        },
+        {
+            name: 'heading:change',
+            label: { en: 'On visible heading change', fr: 'Au changement de section visible' },
+            event: { id: '', index: 0, level: 2, text: '', path: [] },
         },
         {
             name: 'ai-prompt',
@@ -608,6 +615,41 @@ export default {
             label: 'Close Current Link Popover',
             action: 'closeCurrentLinkPopover',
         },
+        // Outline actions
+        {
+            label: { en: 'Scroll to heading', fr: 'Aller au titre' },
+            action: 'scrollToHeading',
+            args: [
+                {
+                    name: 'Heading (id, index or text)',
+                    type: 'Text',
+                    options: {
+                        bindable: true,
+                    },
+                },
+                {
+                    name: 'Place cursor in the heading',
+                    type: 'OnOff',
+                    optional: true,
+                },
+            ],
+            returnType: 'Boolean',
+        },
+        {
+            label: { en: 'Scroll to next heading', fr: 'Aller au titre suivant' },
+            action: 'scrollToNextHeading',
+            returnType: 'Boolean',
+        },
+        {
+            label: { en: 'Scroll to previous heading', fr: 'Aller au titre précédent' },
+            action: 'scrollToPreviousHeading',
+            returnType: 'Boolean',
+        },
+        {
+            label: { en: 'Get outline', fr: 'Obtenir le sommaire' },
+            action: 'getOutline',
+            returnType: 'Array',
+        },
         // SEO actions
         {
             label: 'Highlight SEO check',
@@ -698,6 +740,93 @@ export default {
             type: 'Textarea',
             defaultValue: 'Type here...',
             bindable: true,
+        },
+        // --- Outline / navigation par titres (extension activable) ---
+        enableOutline: {
+            section: 'settings',
+            label: { en: 'Headings outline', fr: 'Sommaire des titres' },
+            type: 'OnOff',
+            defaultValue: false,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'boolean',
+                tooltip:
+                    'Track headings: exposes an `outline` variable (the table of contents) and a `currentHeading` variable updated while scrolling, plus scroll-to-heading actions.',
+            },
+            /* wwEditor:end */
+        },
+        outlineLevels: {
+            section: 'settings',
+            label: { en: 'Outline: levels', fr: 'Sommaire : niveaux' },
+            type: 'TextSelect',
+            options: {
+                options: [
+                    { value: 'h2', label: { en: 'H2 only', fr: 'H2 uniquement' } },
+                    { value: 'h2h3', label: { en: 'H2 + H3' } },
+                    { value: 'h1h2h3', label: { en: 'H1 + H2 + H3' } },
+                    { value: 'all', label: { en: 'All headings', fr: 'Tous les titres' } },
+                ],
+            },
+            defaultValue: 'h2h3',
+            bindable: true,
+            hidden: content => !content.enableOutline,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'string',
+                tooltip: 'Heading levels kept in the outline ("h2", "h2h3", "h1h2h3" or "all").',
+            },
+            /* wwEditor:end */
+        },
+        outlineOffset: {
+            section: 'settings',
+            label: { en: 'Outline: detection offset (px)', fr: 'Sommaire : décalage de détection (px)' },
+            type: 'Number',
+            options: {
+                min: -200,
+                max: 400,
+                step: 1,
+            },
+            defaultValue: 0,
+            bindable: true,
+            hidden: content => !content.enableOutline,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'number',
+                tooltip:
+                    'Moves the line at which a heading becomes the visible section (and where "scroll to heading" lands it). Increase it when a fixed header covers the top of the text.',
+            },
+            /* wwEditor:end */
+        },
+        outlineIndicator: {
+            section: 'settings',
+            label: { en: 'Outline: show current section', fr: 'Sommaire : afficher la section courante' },
+            type: 'OnOff',
+            defaultValue: false,
+            bindable: true,
+            hidden: content => !content.enableOutline,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'boolean',
+                tooltip:
+                    'Built-in breadcrumb pinned above the text showing the visible section (H2 › H3). Leave off to build your own UI from the `currentHeading` variable.',
+            },
+            /* wwEditor:end */
+        },
+        outlineIndicatorColor: {
+            label: { en: 'Current section color', fr: 'Couleur de la section courante' },
+            type: 'Color',
+            defaultValue: 'rgba(0, 0, 0, 0.6)',
+            bindable: true,
+            responsive: true,
+            hidden: content => !content.enableOutline || !content.outlineIndicator,
+        },
+        outlineIndicatorBgColor: {
+            label: { en: 'Current section background', fr: 'Fond de la section courante' },
+            type: 'Color',
+            defaultValue: 'transparent',
+            bindable: true,
+            responsive: true,
+            hidden: content => !content.enableOutline || !content.outlineIndicator,
         },
         // --- SEO analysis (extension activable) ---
         enableSeoAnalysis: {

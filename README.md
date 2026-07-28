@@ -18,3 +18,4 @@ Before release, you can check build error by running `npm run build --name=my-el
 
 - [AI.md](AI.md) — AI menu (custom modification types, placeholders, triggers)
 - [SEO.md](SEO.md) — SEO analysis extension (exposed `seo` variable, checks, highlight actions)
+- [OUTLINE.md](OUTLINE.md) — Headings outline (exposed `outline` / `currentHeading` variables, scroll tracking, navigation actions)
