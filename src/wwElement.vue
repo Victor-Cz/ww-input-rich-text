@@ -1085,8 +1085,8 @@ export default {
                     }),
                     SeoLink.configure({
                         // target/rel sont calculés par lien (interne = lien normal,
-                        // externe = _blank + noopener noreferrer). Le domaine est
-                        // bindable : on le lit au rendu via un getter.
+                        // externe = _blank + noopener noreferrer nofollow). Le domaine
+                        // est bindable : on le lit au rendu via un getter.
                         siteDomain: () => this.content.seoSiteDomain,
                         openOnClick: false, // On gère l'ouverture manuellement avec Cmd/Ctrl+clic
                         // Protection injection (XSS) : ne jamais auto-linker ni accepter

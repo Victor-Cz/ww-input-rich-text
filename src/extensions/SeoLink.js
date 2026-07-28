@@ -4,7 +4,8 @@
  * Tiptap's default is `target="_blank" rel="noopener noreferrer nofollow"` on
  * EVERY link. On internal links that is harmful: `nofollow` blocks the internal
  * PageRank flow (the very thing the internal-links SEO check rewards) and
- * `_blank` breaks in-site navigation.
+ * `_blank` breaks in-site navigation. External links keep Tiptap's attributes,
+ * `target="_blank" rel="noopener noreferrer nofollow"`.
  *
  * Since `target`/`rel` are mark attributes stored in the HTML, a config change
  * alone would only fix new links — legacy content would keep its `nofollow`
@@ -26,7 +27,7 @@ export const SeoLink = Link.extend({
             // so reading it at render time keeps it in sync without a watcher).
             siteDomain: '',
             externalTarget: '_blank',
-            externalRel: 'noopener noreferrer',
+            externalRel: 'noopener noreferrer nofollow',
         };
     },
 
@@ -44,9 +45,6 @@ export const SeoLink = Link.extend({
             delete attributes.rel;
         } else {
             attributes.target = externalTarget;
-            // No `nofollow` by default: an editorial link to a quality source is
-            // a positive signal. Reserve nofollow/sponsored for paid, affiliate
-            // or untrusted links by overriding `externalRel`.
             attributes.rel = externalRel;
         }
         return rendered;

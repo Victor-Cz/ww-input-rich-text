@@ -922,7 +922,7 @@ export default {
             /* wwEditor:start */
             bindingValidation: {
                 type: 'string',
-                tooltip: 'Your site domain or full URL (e.g. "example.com" or "https://www.example.com/page") to tell internal links from external ones. Relative URLs count as internal. Used by the SEO link checks AND to render internal links as plain links (no target/rel) while external ones get target="_blank" rel="noopener noreferrer".',
+                tooltip: 'Your site domain or full URL (e.g. "example.com" or "https://www.example.com/page") to tell internal links from external ones. Relative URLs count as internal. Used by the SEO link checks AND to render internal links as plain links (no target/rel) while external ones get target="_blank" rel="noopener noreferrer nofollow".',
             },
             /* wwEditor:end */
         },
