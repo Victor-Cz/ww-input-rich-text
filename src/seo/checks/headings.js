@@ -68,7 +68,7 @@ function keywordInSubheadings(model, phrases, matchOptions) {
     else if (percent <= 75) score = 100;
     else score = Math.max(50, 100 - (percent - 75) * 2);
     // Surligner les occurrences du mot-clé dans les sous-titres, pas le sous-titre entier
-    const ranges = matched.flatMap(heading => findPhrasesInBlock(heading, phrases));
+    const ranges = matched.flatMap(heading => findPhrasesInBlock(heading, phrases, matchOptions));
     const check = makeCheck('keywordInSubheadings', 'headings', score, percent, ranges);
     // 'bad' couvre « aucun » (0 %) ET « trop peu » (1-29 %) : message dédié au 0 %
     if (matched.length === 0) check.messageKey = 'none';
@@ -77,20 +77,20 @@ function keywordInSubheadings(model, phrases, matchOptions) {
 
 // Cible : ≥ 50 % des mots-clés secondaires dans au moins un sous-titre — proportionnel.
 // na sans secondaires ou sans sous-titre. value : % de secondaires couverts.
-function secondaryInSubheadings(model, secondaries) {
+function secondaryInSubheadings(model, secondaries, matchOptions) {
     if (!secondaries.length) return notApplicable('secondaryInSubheadings', 'headings');
     const subheadings = model.headings.filter(heading => heading.level >= 2);
     if (!subheadings.length) return notApplicable('secondaryInSubheadings', 'headings', 0);
 
     const covered = secondaries.filter(keyword =>
-        subheadings.some(heading => includesAnyPhrase(heading.text, [keyword]))
+        subheadings.some(heading => includesAnyPhrase(heading.text, [keyword], matchOptions))
     );
     const percent = Math.round((covered.length / secondaries.length) * 100);
     const score = ratioScore(percent, 50);
 
     // Surligner les occurrences des mots-clés secondaires dans les sous-titres,
     // pas le sous-titre entier
-    const ranges = subheadings.flatMap(heading => findPhrasesInBlock(heading, covered));
+    const ranges = subheadings.flatMap(heading => findPhrasesInBlock(heading, covered, matchOptions));
     const check = makeCheck('secondaryInSubheadings', 'headings', score, percent, ranges);
     if (covered.length === 0) check.messageKey = 'none';
     return check;
