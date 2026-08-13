@@ -189,21 +189,38 @@ function firstWord(sentence) {
     return splitWords(normalizeText(sentence.text))[0] || null;
 }
 
-/**
- * Toutes les occurrences d'un des mots/groupes de la liste dans un texte,
- * bornées par des non-lettres. Retourne des offsets [start, end) dans le texte
- * d'origine. Tolère les variantes d'apostrophe (' vs ') et d'espace.
- */
-function findListMatches(text, words) {
-    const cleaned = (words || [])
+// La regex d'une liste (grosse alternance) est coûteuse à construire : mémoïsée
+// par identité du tableau — appelée pour chaque phrase du document, elle était
+// recompilée à chaque appel.
+const LIST_REGEX_CACHE = new WeakMap();
+
+function getListRegex(words) {
+    if (!Array.isArray(words) || !words.length) return null;
+    if (LIST_REGEX_CACHE.has(words)) return LIST_REGEX_CACHE.get(words);
+    const cleaned = words
         .map(word =>
             escapeRegExp(normalizeText(word).trim())
                 .replace(/['']/g, `[''']`)
                 .replace(/ +/g, `[\\s\\u00A0]+`)
         )
         .filter(Boolean);
-    if (!cleaned.length) return [];
-    const regex = new RegExp(`(^|[^\\p{L}])(${cleaned.join('|')})(?=[^\\p{L}]|$)`, 'giu');
+    const regex = cleaned.length
+        ? new RegExp(`(^|[^\\p{L}])(${cleaned.join('|')})(?=[^\\p{L}]|$)`, 'giu')
+        : null;
+    LIST_REGEX_CACHE.set(words, regex);
+    return regex;
+}
+
+/**
+ * Toutes les occurrences d'un des mots/groupes de la liste dans un texte,
+ * bornées par des non-lettres. Retourne des offsets [start, end) dans le texte
+ * d'origine. Tolère les variantes d'apostrophe (' vs ') et d'espace.
+ */
+function findListMatches(text, words) {
+    const regex = getListRegex(words);
+    if (!regex) return [];
+    // Regex partagée (flag g) : repartir du début à chaque appel
+    regex.lastIndex = 0;
     const normalized = normalizeText(text);
     const matches = [];
     for (let match = regex.exec(normalized); match !== null; match = regex.exec(normalized)) {

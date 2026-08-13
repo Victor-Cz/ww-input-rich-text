@@ -670,7 +670,10 @@ export default {
         outlineOffset() {
             if (this.outlineEnabled) this.updateActiveHeading();
         },
-        // Analyse SEO : recalcul immédiat quand une entrée change, nettoyage quand désactivée
+        // Analyse SEO : recalcul quand une entrée change, nettoyage quand désactivée.
+        // La computed retourne un objet neuf à chaque réévaluation de `content` :
+        // sans la garde par valeur, le watcher (deep) relancerait une analyse
+        // complète à chaque remplacement de `content`, même sans changement réel.
         seoOptions: {
             deep: true,
             handler(options) {
@@ -679,6 +682,7 @@ export default {
                         clearTimeout(this.seoDebounce);
                         this.seoDebounce = null;
                     }
+                    this.lastSeoOptionsKey = null;
                     this.seoRangesMap = null;
                     this.activeSeoHighlight = null;
                     this.seoHighlightVisible = false;
@@ -686,7 +690,13 @@ export default {
                     if (this.richEditor) this.richEditor.commands.clearSeoHighlights();
                     return;
                 }
-                this.scheduleSeoAnalysis(true);
+                const key = JSON.stringify(options);
+                if (key === this.lastSeoOptionsKey) return;
+                this.lastSeoOptionsKey = key;
+                // Débouncé : une option bindée peut changer à chaque frappe
+                // (ex. meta title lié à une variable) — une analyse synchrone
+                // immédiate ici bloquerait la saisie.
+                this.scheduleSeoAnalysis();
             },
         },
     },
@@ -1645,6 +1655,9 @@ export default {
                 const { analyzeSeo } = await this.seoAnalyzerPromise;
                 if (!this.content.enableSeoAnalysis || !this.richEditor || this.isDestroying) return;
 
+                // Garder la garde du watcher seoOptions en phase : cette analyse
+                // couvre déjà les options courantes, inutile d'en relancer une.
+                this.lastSeoOptionsKey = JSON.stringify(this.seoOptions);
                 const previous = this.seo;
                 const { result, rangesMap } = analyzeSeo(this.richEditor.state.doc, this.seoOptions || {});
                 this.seoRangesMap = rangesMap;
@@ -1698,8 +1711,10 @@ export default {
                 this.seoHighlightVisible = true;
             } else {
                 // Pas de mode actif, ou plus d'occurrence (corrigé) : rien de surligné,
-                // mais le mode reste armé si de nouvelles occurrences apparaissent
-                this.richEditor.commands.clearSeoHighlights();
+                // mais le mode reste armé si de nouvelles occurrences apparaissent.
+                // Ne dispatcher la transaction de nettoyage que si un surlignage
+                // était réellement affiché (évite un re-render à chaque analyse).
+                if (this.seoHighlightVisible) this.richEditor.commands.clearSeoHighlights();
                 this.seoHighlightVisible = false;
             }
         },

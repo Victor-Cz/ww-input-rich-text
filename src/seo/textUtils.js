@@ -7,8 +7,15 @@
 function normalizeChar(char) {
     const decomposed = char.normalize('NFD');
     const base = decomposed[0] || char;
-    return base.toLowerCase();
+    const normalized = base.toLowerCase();
+    return normalized.length === char.length ? normalized : char.toLowerCase();
 }
+
+// normalize('NFD') + toLowerCase par caractère est coûteux et le résultat est
+// une fonction pure du caractère : mémoïsé (l'alphabet réel d'un document est
+// petit, le plafond n'est là que pour borner les cas pathologiques).
+const CHAR_CACHE = new Map();
+const CHAR_CACHE_MAX = 5000;
 
 /**
  * Normalise un texte caractère par caractère (même longueur que l'entrée),
@@ -19,8 +26,12 @@ export function normalizeText(text) {
     for (const char of String(text)) {
         // `for...of` itère par code point ; les caractères hors BMP (émojis)
         // comptent pour 2 unités UTF-16, on préserve la longueur UTF-16.
-        const normalized = normalizeChar(char);
-        result += normalized.length === char.length ? normalized : char.toLowerCase();
+        let normalized = CHAR_CACHE.get(char);
+        if (normalized === undefined) {
+            normalized = normalizeChar(char);
+            if (CHAR_CACHE.size < CHAR_CACHE_MAX) CHAR_CACHE.set(char, normalized);
+        }
+        result += normalized;
     }
     return result;
 }
@@ -96,6 +107,37 @@ function tokenizeStems(normalized) {
     return tokens;
 }
 
+// Une analyse appelle findPhraseMatches pour chaque couple bloc × phrase-clé :
+// le même texte de bloc serait re-normalisé et re-tokenisé des dizaines de fois
+// par passe. Mémoïsé par texte (vidé au plafond : les textes évoluent à la frappe).
+const TOKENIZE_CACHE = new Map();
+const TOKENIZE_CACHE_MAX = 500;
+
+function tokenizeCached(text) {
+    let tokens = TOKENIZE_CACHE.get(text);
+    if (tokens === undefined) {
+        tokens = tokenizeStems(normalizeText(text));
+        if (TOKENIZE_CACHE.size >= TOKENIZE_CACHE_MAX) TOKENIZE_CACHE.clear();
+        TOKENIZE_CACHE.set(text, tokens);
+    }
+    return tokens;
+}
+
+// Set des mots vides normalisés, mémoïsé par identité du tableau (stable au
+// sein d'une analyse : construit une fois au lieu d'une fois par appel).
+const STOP_SET_CACHE = new WeakMap();
+const EMPTY_STOP_SET = new Set();
+
+function getStopSet(stopWords) {
+    if (!Array.isArray(stopWords) || !stopWords.length) return EMPTY_STOP_SET;
+    let set = STOP_SET_CACHE.get(stopWords);
+    if (!set) {
+        set = new Set(stopWords.map(word => normalizeText(word)));
+        STOP_SET_CACHE.set(stopWords, set);
+    }
+    return set;
+}
+
 /**
  * Trouve toutes les occurrences d'une phrase-clé dans un texte, en comparant
  * les racines (tolérance casse, accents, et variations fléchies / lemmatisées).
@@ -110,15 +152,14 @@ function tokenizeStems(normalized) {
  * (défaut), on exige une suite de tokens strictement contigus.
  */
 export function findPhraseMatches(text, phrase, opts = {}) {
-    const stopSet = opts.fullLemma
-        ? new Set((opts.stopWords || []).map(word => normalizeText(word)))
-        : null;
+    const stopSet = opts.fullLemma ? getStopSet(opts.stopWords) : null;
 
-    const phraseTokens = normalizeText(phrase).match(TOKEN_REGEX) || [];
-    const stems = (stopSet ? phraseTokens.filter(word => !stopSet.has(word)) : phraseTokens).map(stemWord);
+    const phraseTokens = tokenizeCached(phrase);
+    const stems = (stopSet ? phraseTokens.filter(token => !stopSet.has(token.raw)) : phraseTokens)
+        .map(token => token.stem);
     if (!stems.length) return [];
 
-    let tokens = tokenizeStems(normalizeText(text));
+    let tokens = tokenizeCached(text);
     // Mode complet : on matche sur la sous-suite des mots de contenu (les mots
     // vides intercalés sont sautés mais restent inclus dans la plage surlignée).
     if (stopSet) tokens = tokens.filter(token => !stopSet.has(token.raw));

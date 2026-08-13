@@ -7,7 +7,8 @@ import { contentWords, findPhraseMatches } from '../textUtils.js';
 // avec tolérance casse / accents / pluriels simples (voir textUtils).
 
 export function keywordChecks(context) {
-    const { model, phrases, wordLists, matchOptions } = context;
+    // `occurrences` : calculées une fois dans analyzeSeo (partagées avec stats)
+    const { model, phrases, wordLists, matchOptions, occurrences } = context;
     const secondaryKeywordsCheck = secondaryKeywords(model, context.options.secondaryKeywords, matchOptions);
     if (!phrases.length) {
         return [
@@ -17,7 +18,6 @@ export function keywordChecks(context) {
         ];
     }
 
-    const occurrences = findPhrasesInModel(model, phrases, matchOptions);
     return [
         keyphraseLength(context.options.keyword, wordLists.stopWords),
         keywordInIntroduction(model, phrases, wordLists.stopWords, matchOptions),

@@ -105,11 +105,31 @@ const EN = {
 
 const LISTS = { fr: FR, en: EN };
 
+// Mémoïsation : conserver l'identité des tableaux d'une analyse à l'autre, pour
+// que les caches en aval (regex de liste, set de mots vides — des WeakMap sur
+// ces tableaux) survivent entre deux analyses au lieu d'être reconstruits.
+const NO_OVERRIDES_CACHE = {}; // lang → result
+const OVERRIDES_CACHE = new WeakMap(); // overrides → { lang → result }
+
 /**
  * Retourne les listes de mots pour une langue, fusionnées avec les
  * surcharges utilisateur (une liste fournie remplace la liste par défaut).
  */
 export function getWordLists(lang, overrides) {
+    if (!overrides) {
+        if (!NO_OVERRIDES_CACHE[lang]) NO_OVERRIDES_CACHE[lang] = buildWordLists(lang, null);
+        return NO_OVERRIDES_CACHE[lang];
+    }
+    let byLang = OVERRIDES_CACHE.get(overrides);
+    if (!byLang) {
+        byLang = {};
+        OVERRIDES_CACHE.set(overrides, byLang);
+    }
+    if (!byLang[lang]) byLang[lang] = buildWordLists(lang, overrides);
+    return byLang[lang];
+}
+
+function buildWordLists(lang, overrides) {
     const base = LISTS[lang] || LISTS.en;
     const result = {};
     for (const key of ['stopWords', 'genericAnchors', 'powerWords', 'sentimentWords', 'transitionWords', 'complexWords']) {

@@ -29,7 +29,10 @@ export function analyzeSeo(doc, rawOptions = {}) {
     // Options de matching des mots-clés, partagées par tous les checks. En mode
     // « lemmatiseur complet », les mots vides sont ignorés des deux côtés.
     const matchOptions = { stopWords: wordLists.stopWords, fullLemma: options.fullLemma };
-    const context = { model, options, phrases, wordLists, matchOptions };
+    // Occurrences du mot-clé (+ synonymes) dans tout le document : calculées une
+    // seule fois, partagées entre les checks keyword et les stats.
+    const occurrences = phrases.length ? findPhrasesInModel(model, phrases, matchOptions) : [];
+    const context = { model, options, phrases, wordLists, matchOptions, occurrences };
 
     const checks = [
         ...structureChecks(context),
@@ -87,7 +90,7 @@ export function analyzeSeo(doc, rawOptions = {}) {
             };
         }),
         checks: exposedChecks,
-        stats: buildStats(model, options, phrases, matchOptions),
+        stats: buildStats(model, options, occurrences),
     };
 
     return { result, rangesMap };
@@ -124,7 +127,7 @@ function cleanStringArray(value) {
     return value.map(item => String(item ?? '').trim()).filter(Boolean);
 }
 
-function buildStats(model, options, phrases, matchOptions) {
+function buildStats(model, options, occurrences) {
     const headings = { h1: 0, h2: 0, h3: 0, h4: 0, h5: 0, h6: 0 };
     for (const heading of model.headings) {
         const key = `h${heading.level}`;
@@ -132,7 +135,7 @@ function buildStats(model, options, phrases, matchOptions) {
     }
 
     const { external, internal } = classifyLinks(model.links, options.siteDomain);
-    const keywordOccurrences = phrases.length ? findPhrasesInModel(model, phrases, matchOptions).length : 0;
+    const keywordOccurrences = occurrences.length;
 
     return {
         wordCount: model.wordCount,
