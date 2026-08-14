@@ -710,7 +710,15 @@ export default {
         },
         editorStates() {
             if (!this.richEditor) return {};
+            const { from, to, empty } = this.richEditor.state.selection;
+            const selectedText = empty ? '' : this.richEditor.state.doc.textBetween(from, to, ' ', ' ');
+            const selectedTrimmed = selectedText.trim();
             return {
+                selected: {
+                    text: selectedText,
+                    wordCount: selectedTrimmed ? selectedTrimmed.split(/\s+/).length : 0,
+                    charCount: selectedText.length,
+                },
                 textType: Object.keys(TAGS_MAP).find(key => TAGS_MAP[key] === this.currentTextType),
                 textColor: this.currentColor,
                 bold: this.richEditor.isActive('bold'),

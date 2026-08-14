@@ -85,7 +85,7 @@ A versatile rich text editor enabling text content creation with formatting opti
 ***Exposed Variables:***
 - value: string - Current editor content (path: variables['current_element_uid-value'])
 - mentions: array - List of mentions in content (path: variables['current_element_uid-mentions'])
-- states: object - Editor states (text formatting, alignment, etc) (path: variables['current_element_uid-states'])
+- states: object - Editor states (text formatting, alignment, etc) + `selected` object describing the current selection: `{ text, wordCount, charCount }` (charCount includes spaces; all values are 0/empty when the selection is collapsed) (path: variables['current_element_uid-states'])
 
 # Menu AI - Types de modification personnalisés
 
