@@ -1765,7 +1765,15 @@ export default {
         // Le sommaire suit le contenu : débouncé pendant la frappe, immédiat à
         // la création de l'éditeur et au changement de configuration.
         scheduleOutlineUpdate() {
-            if (!this.outlineEnabled || this.isDestroying) return;
+            // TODO(diagnostic outline) : logs temporaires, à retirer une fois le
+            // problème d'exposition résolu.
+            if (!this.outlineEnabled || this.isDestroying) {
+                console.log('[Outline] update ignoré :', {
+                    enableOutline: this.content.enableOutline,
+                    isDestroying: !!this.isDestroying,
+                });
+                return;
+            }
             if (this.outlineDebounce) clearTimeout(this.outlineDebounce);
             this.outlineDebounce = setTimeout(() => {
                 this.outlineDebounce = null;
@@ -1774,8 +1782,23 @@ export default {
         },
 
         updateOutline() {
-            if (!this.outlineEnabled || !this.richEditor || this.isDestroying) return;
+            if (!this.outlineEnabled || !this.richEditor || this.isDestroying) {
+                // TODO(diagnostic outline) : log temporaire
+                console.log('[Outline] recalcul ignoré :', {
+                    enableOutline: this.content.enableOutline,
+                    hasEditor: !!this.richEditor,
+                    isDestroying: !!this.isDestroying,
+                });
+                return;
+            }
             this.outlineItems = buildOutline(this.richEditor.state.doc, this.outlineLevels);
+            // TODO(diagnostic outline) : log temporaire
+            console.log('[Outline] recalculé :', {
+                levels: this.outlineLevels,
+                items: this.outlineItems.length,
+                titres: this.outlineItems.map(i => `h${i.level} ${i.text}`),
+                docSize: this.richEditor.state.doc.content.size,
+            });
             // Des titres ont pu disparaître : l'index actif est ramené dans les
             // bornes, sa fraîcheur est assurée par updateActiveHeading (la
             // signature du titre courant a changé s'il a été supprimé/renommé).
@@ -1798,7 +1821,10 @@ export default {
         },
 
         publishOutline() {
-            this.setOutline(toPublicOutline(this.outlineItems, this.activeOutlineIndex));
+            const published = toPublicOutline(this.outlineItems, this.activeOutlineIndex);
+            // TODO(diagnostic outline) : log temporaire
+            console.log('[Outline] publié dans la variable `outline` :', published.length, 'items', published);
+            this.setOutline(published);
         },
 
         // Ligne de référence : le haut de la zone de texte visible. Quand le
