@@ -491,6 +491,10 @@ export default {
             if (!this.shouldEnableCollaboration && value !== this.getContent()) {
                 this.richEditor.chain().setContent(value).setMeta('addToHistory', false).run();
                 this.setValue(value);
+                // setContent pose la meta `preventUpdate` : onUpdate ne sera pas
+                // appelé, les analyses dérivées du document sont resynchronisées ici.
+                this.scheduleOutlineUpdate();
+                this.scheduleSeoAnalysis();
             }
             this.$emit('trigger-event', { name: 'initValueChange', event: { value } });
 
@@ -502,7 +506,13 @@ export default {
         },
         variableValue(value, oldValue) {
             if (this.shouldEnableCollaboration) return;
-            if (value !== this.getContent()) this.richEditor.chain().setContent(value).setMeta('addToHistory', false).run();
+            if (value !== this.getContent()) {
+                this.richEditor.chain().setContent(value).setMeta('addToHistory', false).run();
+                // setContent pose la meta `preventUpdate` : onUpdate ne sera pas
+                // appelé, les analyses dérivées du document sont resynchronisées ici.
+                this.scheduleOutlineUpdate();
+                this.scheduleSeoAnalysis();
+            }
             // If format changed
             if (value !== this.getContent()) this.setValue(this.getContent());
         },
