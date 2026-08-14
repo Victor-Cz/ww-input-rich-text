@@ -491,10 +491,6 @@ export default {
             if (!this.shouldEnableCollaboration && value !== this.getContent()) {
                 this.richEditor.chain().setContent(value).setMeta('addToHistory', false).run();
                 this.setValue(value);
-                // setContent pose la meta `preventUpdate` : onUpdate ne sera pas
-                // appelé, les analyses dérivées du document sont resynchronisées ici.
-                this.scheduleOutlineUpdate();
-                this.scheduleSeoAnalysis();
             }
             this.$emit('trigger-event', { name: 'initValueChange', event: { value } });
 
@@ -508,10 +504,6 @@ export default {
             if (this.shouldEnableCollaboration) return;
             if (value !== this.getContent()) {
                 this.richEditor.chain().setContent(value).setMeta('addToHistory', false).run();
-                // setContent pose la meta `preventUpdate` : onUpdate ne sera pas
-                // appelé, les analyses dérivées du document sont resynchronisées ici.
-                this.scheduleOutlineUpdate();
-                this.scheduleSeoAnalysis();
             }
             // If format changed
             if (value !== this.getContent()) this.setValue(this.getContent());
@@ -1257,6 +1249,17 @@ export default {
                         // Appeler la fonction handleOnUpdate existante
                         this.handleOnUpdate();
                     },
+                    // Contrairement à onUpdate, onTransaction est appelé pour TOUTE
+                    // modification du document, y compris setContent (contenu bindé)
+                    // qui pose la meta `preventUpdate`. C'est ici — et uniquement ici —
+                    // que l'état dérivé du document (sommaire, mentions, analyse SEO)
+                    // est resynchronisé, quel que soit le chemin d'entrée du contenu.
+                    onTransaction: ({ editor, transaction }) => {
+                        if (this.isDestroying || !transaction.docChanged) return;
+                        this.setMentions(editor.getJSON().content.reduce(extractMentions, []));
+                        this.scheduleOutlineUpdate();
+                        this.scheduleSeoAnalysis();
+                    },
                     editorProps: {
                         attributes: {
                             spellcheck: (this.content.enableSpellcheck ?? true) ? 'true' : 'false',
@@ -1312,9 +1315,8 @@ export default {
             } else {
                 this.$emit('trigger-event', { name: 'change', event: { value: this.variableValue } });
             }
-            this.setMentions(this.richEditor.getJSON().content.reduce(extractMentions, []));
-            this.scheduleSeoAnalysis();
-            this.scheduleOutlineUpdate();
+            // Sommaire, mentions et analyse SEO sont resynchronisés par le hook
+            // onTransaction de l'éditeur (couvre aussi les chemins sans onUpdate).
         },
         setLink(url) {
             if (this.richEditor.isActive('link')) {
@@ -1949,6 +1951,9 @@ export default {
         },
 
         getOutline() {
+            // Recalcul à la demande : le résultat est fiable même si aucune
+            // resynchronisation planifiée n'a encore abouti.
+            if (this.outlineEnabled && this.richEditor) this.updateOutline();
             return toPublicOutline(this.outlineItems, this.activeOutlineIndex);
         },
     },
