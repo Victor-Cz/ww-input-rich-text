@@ -502,9 +502,7 @@ export default {
         },
         variableValue(value, oldValue) {
             if (this.shouldEnableCollaboration) return;
-            if (value !== this.getContent()) {
-                this.richEditor.chain().setContent(value).setMeta('addToHistory', false).run();
-            }
+            if (value !== this.getContent()) this.richEditor.chain().setContent(value).setMeta('addToHistory', false).run();
             // If format changed
             if (value !== this.getContent()) this.setValue(this.getContent());
         },
@@ -1765,15 +1763,7 @@ export default {
         // Le sommaire suit le contenu : débouncé pendant la frappe, immédiat à
         // la création de l'éditeur et au changement de configuration.
         scheduleOutlineUpdate() {
-            // TODO(diagnostic outline) : logs temporaires, à retirer une fois le
-            // problème d'exposition résolu.
-            if (!this.outlineEnabled || this.isDestroying) {
-                console.log('[Outline] update ignoré :', {
-                    enableOutline: this.content.enableOutline,
-                    isDestroying: !!this.isDestroying,
-                });
-                return;
-            }
+            if (!this.outlineEnabled || this.isDestroying) return;
             if (this.outlineDebounce) clearTimeout(this.outlineDebounce);
             this.outlineDebounce = setTimeout(() => {
                 this.outlineDebounce = null;
@@ -1782,23 +1772,8 @@ export default {
         },
 
         updateOutline() {
-            if (!this.outlineEnabled || !this.richEditor || this.isDestroying) {
-                // TODO(diagnostic outline) : log temporaire
-                console.log('[Outline] recalcul ignoré :', {
-                    enableOutline: this.content.enableOutline,
-                    hasEditor: !!this.richEditor,
-                    isDestroying: !!this.isDestroying,
-                });
-                return;
-            }
+            if (!this.outlineEnabled || !this.richEditor || this.isDestroying) return;
             this.outlineItems = buildOutline(this.richEditor.state.doc, this.outlineLevels);
-            // TODO(diagnostic outline) : log temporaire
-            console.log('[Outline] recalculé :', {
-                levels: this.outlineLevels,
-                items: this.outlineItems.length,
-                titres: this.outlineItems.map(i => `h${i.level} ${i.text}`),
-                docSize: this.richEditor.state.doc.content.size,
-            });
             // Des titres ont pu disparaître : l'index actif est ramené dans les
             // bornes, sa fraîcheur est assurée par updateActiveHeading (la
             // signature du titre courant a changé s'il a été supprimé/renommé).
@@ -1821,10 +1796,7 @@ export default {
         },
 
         publishOutline() {
-            const published = toPublicOutline(this.outlineItems, this.activeOutlineIndex);
-            // TODO(diagnostic outline) : log temporaire
-            console.log('[Outline] publié dans la variable `outline` :', published.length, 'items', published);
-            this.setOutline(published);
+            this.setOutline(toPublicOutline(this.outlineItems, this.activeOutlineIndex));
         },
 
         // Ligne de référence : le haut de la zone de texte visible. Quand le
@@ -1977,9 +1949,6 @@ export default {
         },
 
         getOutline() {
-            // Recalcul à la demande : le résultat est fiable même si aucune
-            // resynchronisation planifiée n'a encore abouti.
-            if (this.outlineEnabled && this.richEditor) this.updateOutline();
             return toPublicOutline(this.outlineItems, this.activeOutlineIndex);
         },
     },
