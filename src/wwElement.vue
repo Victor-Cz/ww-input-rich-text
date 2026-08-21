@@ -217,7 +217,7 @@
                      CSS fourni) : le conteneur — et le menu qu'il abrite —
                      reste entièrement sous le contrôle de l'utilisateur -->
                 <teleport v-if="shouldEnableCollaboration && timelineTargetEl" :to="timelineTargetEl">
-                    <version-timeline v-show="versionHistory.active"
+                    <version-timeline v-show="versionHistory.active" ref="teleportedTimeline"
                         class="ww-rich-text__menu-timeline -teleported"
                         :versions="versionHistory.versions"
                         :selected-id="versionHistory.selectedId"
@@ -567,6 +567,8 @@ export default {
         epochBinaryCache: {},
         // Conteneur externe de la frise (résolu depuis timelineContainerSelector)
         timelineTargetEl: null,
+        // Surveillance de l'attache de la frise pendant l'historique
+        timelineTargetTimer: null,
         pendingSteps: [], // Accumulateur de diffs
         seoHighlightVisible: false, // reflété dans seo.highlighting
         outlineItems: [], // sommaire courant (avec positions doc, usage interne)
@@ -1850,8 +1852,8 @@ export default {
         },
 
         // Résout le conteneur externe de la frise (peut apparaître après le
-        // montage : re-tenté à chaque ouverture de l'historique)
-        resolveTimelineTarget() {
+        // montage : surveillé tant que l'historique est actif)
+        resolveTimelineTarget(quiet = false) {
             const selector = (this.content.timelineContainerSelector || '').trim();
             if (!selector) {
                 this.timelineTargetEl = null;
@@ -1863,18 +1865,41 @@ export default {
             } catch {
                 this.timelineTargetEl = null;
             }
-            if (!this.timelineTargetEl) {
+            if (!this.timelineTargetEl && !quiet) {
                 console.warn(`[Versions] Timeline container not found: ${selector}`);
             }
         },
 
-        // Le conteneur peut apparaître après nous : réessayer quelques fois
-        async resolveTimelineTargetWithRetry(attempts = 6) {
-            for (let i = 0; i < attempts; i++) {
-                this.resolveTimelineTarget();
-                const wanted = (this.content.timelineContainerSelector || '').trim();
-                if (this.timelineTargetEl || !wanted) return;
-                await new Promise(resolve => setTimeout(resolve, 250));
+        // WeWeb peut re-rendre le conteneur après nous : soit le nœud est
+        // remplacé, soit il est conservé mais ses enfants — dont la frise
+        // téléportée — sont éjectés. Tant que l'historique est actif, on
+        // vérifie l'attache réelle et on force un remontage si besoin.
+        startTimelineTargetWatch() {
+            this.stopTimelineTargetWatch();
+            this.resolveTimelineTarget();
+            this.timelineTargetTimer = setInterval(() => this.ensureTimelineAttached(), 500);
+        },
+
+        stopTimelineTargetWatch() {
+            if (this.timelineTargetTimer) {
+                clearInterval(this.timelineTargetTimer);
+                this.timelineTargetTimer = null;
+            }
+        },
+
+        ensureTimelineAttached() {
+            const wanted = (this.content.timelineContainerSelector || '').trim();
+            if (!wanted) return;
+            const target = this.timelineTargetEl;
+            const timelineEl = this.$refs.teleportedTimeline?.$el;
+            const targetGone = !target || !target.isConnected;
+            const timelineGone =
+                !targetGone && (!timelineEl || !timelineEl.isConnected || !target.contains(timelineEl));
+            if (targetGone || timelineGone) {
+                // Démontage puis remontage complet du teleport : la frise
+                // remontée se recentre elle-même sur la sélection
+                this.timelineTargetEl = null;
+                this.$nextTick(() => this.resolveTimelineTarget(true));
             }
         },
 
@@ -1883,7 +1908,7 @@ export default {
                 console.warn('[Versions] History requires active collaboration');
                 return false;
             }
-            this.resolveTimelineTargetWithRetry();
+            this.startTimelineTargetWatch();
             const vh = this.versionHistory;
             vh.active = true;
             vh.loadingList = true;
@@ -1914,6 +1939,7 @@ export default {
         },
 
         closeVersionHistory() {
+            this.stopTimelineTargetWatch();
             const vh = this.versionHistory;
             vh.active = false;
             vh.selectedId = null;
@@ -2481,6 +2507,9 @@ export default {
             this.outlineDebounce = null;
         }
         this.detachOutlineListeners();
+
+        // Arrêter la surveillance de l'attache de la frise
+        this.stopTimelineTargetWatch();
 
         // Nettoyer la collaboration
         this.destroyCollaboration();

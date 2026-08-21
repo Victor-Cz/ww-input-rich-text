@@ -101,6 +101,10 @@ export default {
             this.resizeObserver = new ResizeObserver(() => this.centerSelected());
             if (this.$refs.scroller) this.resizeObserver.observe(this.$refs.scroller);
         }
+        // Remontage à chaud (conteneur re-résolu après une éjection par
+        // WeWeb) : aucun watcher ne se redéclenchera, se caler tout de
+        // suite sur la sélection, sans animation
+        this.$nextTick(() => this.centerSelected(true));
     },
     methods: {
         // Bosse autour de la sélection : la barre principale et ses voisines
@@ -259,13 +263,19 @@ export default {
             return el.offsetLeft + el.offsetWidth / 2 - scroller.clientWidth / 2;
         },
         // Amène la version sélectionnée sous le sélecteur central
-        centerSelected() {
+        // (instant : saut direct sans animation, pour un montage/remontage)
+        centerSelected(instant = false) {
             if (!this.selectedId) return;
             const scroller = this.$refs.scroller;
             const el = scroller?.querySelector(`[data-version-id="${this.selectedId}"]`);
             if (!el) return;
             const target = this.centerOffsetOf(el);
-            if (target !== null) this.animateScrollTo(target);
+            if (target === null) return;
+            if (instant) {
+                scroller.scrollLeft = Math.max(0, Math.min(target, scroller.scrollWidth - scroller.clientWidth));
+                return;
+            }
+            this.animateScrollTo(target);
         },
         // Défilement (drag/trackpad) : la barre au centre est toujours la
         // sélection ; surlignage immédiat, puis au repos la sélection est
