@@ -3,7 +3,6 @@
         '-readonly': isReadonly,
         editing: isEditing,
         'version-preview': isVersionPreview,
-        'version-diff-github': isVersionPreview && content.versionDiffDisplay === 'github',
     }" data-capture
         @wheel="onEditorWheel" :style="{
         '--primary-color': content.parameterAiMenuPrimaryColor ?? '#007bff',
@@ -2594,62 +2593,37 @@ export default {
     }
 }
 
-/* ===== Aperçu de version — affichage « diff GitHub » =====
-   Lignes teintées pleine largeur + gouttière avec marqueurs +/−,
-   mots modifiés en surbrillance plus soutenue à l'intérieur des lignes. */
-.ww-rich-text.version-diff-github .ProseMirror {
-    padding-left: 36px;
+/* ===== Aperçu de version — bulle d'attribution au survol =====
+   Bulle CSS instantanée (le title natif est peu fiable dans l'éditeur). */
+.ww-rich-text .ProseMirror ychange {
+    border-radius: 2px;
 }
 
-.ww-rich-text.version-diff-github .ProseMirror :is(p, h1, h2, h3, h4, h5, h6, li, blockquote, pre) {
+.ww-rich-text .ProseMirror ychange[data-ychange-label] {
     position: relative;
-    border-radius: 2px;
 }
 
-/* Lignes contenant des retraits (ou nœuds retirés) */
-.ww-rich-text.version-diff-github .ProseMirror :is(p, h1, h2, h3, h4, h5, h6, li, blockquote, pre):has(ychange[data-ychange-type='removed']),
-.ww-rich-text.version-diff-github .ProseMirror :is(p, h1, h2, h3, h4, h5, h6, li, blockquote, pre)[data-ychange-type='removed'] {
-    background-color: rgba(220, 38, 38, 0.08) !important;
-    box-shadow: inset 3px 0 0 #dc2626;
-    padding-left: 8px;
-}
-
-.ww-rich-text.version-diff-github .ProseMirror :is(p, h1, h2, h3, h4, h5, h6, li, blockquote, pre):has(ychange[data-ychange-type='removed'])::before,
-.ww-rich-text.version-diff-github .ProseMirror :is(p, h1, h2, h3, h4, h5, h6, li, blockquote, pre)[data-ychange-type='removed']::before {
-    content: '−';
+.ww-rich-text .ProseMirror ychange[data-ychange-label]:hover::after,
+.ww-rich-text .ProseMirror [data-ychange-type][data-ychange-label]:not(:has(ychange)):hover::after {
+    content: attr(data-ychange-label);
     position: absolute;
-    left: -26px;
-    color: #dc2626;
-    font-weight: 700;
-    font-family: monospace;
+    top: -1.9em;
+    left: 0;
+    background: #1f2937;
+    color: #fff;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: normal;
+    text-decoration: none;
+    padding: 2px 6px;
+    border-radius: 3px 3px 3px 0;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 100;
 }
 
-/* Lignes contenant des ajouts (priorité sur le rouge pour les lignes mixtes) */
-.ww-rich-text.version-diff-github .ProseMirror :is(p, h1, h2, h3, h4, h5, h6, li, blockquote, pre):has(ychange[data-ychange-type='added']),
-.ww-rich-text.version-diff-github .ProseMirror :is(p, h1, h2, h3, h4, h5, h6, li, blockquote, pre)[data-ychange-type='added'] {
-    background-color: rgba(22, 163, 74, 0.09) !important;
-    box-shadow: inset 3px 0 0 #16a34a;
-    padding-left: 8px;
-}
-
-.ww-rich-text.version-diff-github .ProseMirror :is(p, h1, h2, h3, h4, h5, h6, li, blockquote, pre):has(ychange[data-ychange-type='added'])::before,
-.ww-rich-text.version-diff-github .ProseMirror :is(p, h1, h2, h3, h4, h5, h6, li, blockquote, pre)[data-ychange-type='added']::before {
-    content: '+';
-    position: absolute;
-    left: -26px;
-    color: #16a34a;
-    font-weight: 700;
-    font-family: monospace;
-}
-
-/* Mots modifiés : surbrillance plus soutenue que la teinte de ligne */
-.ww-rich-text.version-diff-github .ProseMirror ychange[data-ychange-type='added'] {
-    background-color: rgba(22, 163, 74, 0.28) !important;
-    border-radius: 2px;
-}
-
-.ww-rich-text.version-diff-github .ProseMirror ychange[data-ychange-type='removed'] {
-    background-color: rgba(220, 38, 38, 0.28) !important;
-    border-radius: 2px;
+.ww-rich-text .ProseMirror [data-ychange-type][data-ychange-label] {
+    position: relative;
 }
 </style>

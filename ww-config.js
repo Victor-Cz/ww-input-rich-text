@@ -57,7 +57,6 @@ export default {
                 'userName',
                 'userId',
                 'versionDiffColorMode',
-                'versionDiffDisplay',
                 'versionDiffAuthors',
                 'autoConnect',
                 'saveMode',
@@ -3148,27 +3147,6 @@ export default {
             propertyHelp: {
                 tooltip:
                     'How added/removed content is highlighted in version compare. In both modes, hovering shows the author in a tooltip.',
-            },
-            /* wwEditor:end */
-        },
-        versionDiffDisplay: {
-            section: 'settings',
-            label: { en: 'Version diff display', fr: 'Affichage des diffs de version' },
-            type: 'TextSelect',
-            options: {
-                options: [
-                    { value: 'inline', label: { en: 'Inline (annotations in text)', fr: 'Fluide (annotations dans le texte)' } },
-                    { value: 'github', label: { en: 'GitHub style (tinted lines + gutter)', fr: 'Style GitHub (lignes teintées + gouttière)' } },
-                ],
-            },
-            defaultValue: 'inline',
-            bindable: true,
-            hidden: content => !content.enableCollaboration,
-            /* eslint-disable-next-line */
-            /* wwEditor:start */
-            propertyHelp: {
-                tooltip:
-                    'GitHub style adds full-width line tints with +/− gutter markers during version compare (pure CSS, no editor reload)',
             },
             /* wwEditor:end */
         },
