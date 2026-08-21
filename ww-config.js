@@ -571,6 +571,35 @@ export default {
             ],
         },
         {
+            label: { en: 'Collab: Show archive version compare', fr: 'Collab: Comparer des versions archivées' },
+            action: 'showArchiveVersionCompare',
+            args: [
+                {
+                    name: 'Epoch binary (ydoc_epochs.binary_data)',
+                    type: 'Text',
+                    options: {
+                        bindable: true,
+                    },
+                },
+                {
+                    name: 'Snapshot (newer state, empty = end of epoch)',
+                    type: 'Text',
+                    optional: true,
+                    options: {
+                        bindable: true,
+                    },
+                },
+                {
+                    name: 'Previous snapshot (reference state)',
+                    type: 'Text',
+                    optional: true,
+                    options: {
+                        bindable: true,
+                    },
+                },
+            ],
+        },
+        {
             label: { en: 'Collab: Hide version preview', fr: 'Collab: Quitter l’aperçu de version' },
             action: 'hideVersionPreview',
         },

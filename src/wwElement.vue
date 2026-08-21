@@ -1633,9 +1633,10 @@ export default {
                     return Y.decodeSnapshot(Uint8Array.from(atob(b64), c => c.charCodeAt(0)));
                 };
                 const view = this.richEditor.view;
+                const compareDoc = this.getCompareDoc();
                 view.dispatch(
                     view.state.tr.setMeta(ySyncPluginKey, {
-                        snapshot: snapshot ? decode(snapshot) : Y.snapshot(this.ydoc),
+                        snapshot: snapshot ? decode(snapshot) : Y.snapshot(compareDoc),
                         prevSnapshot: prevSnapshot ? decode(prevSnapshot) : Y.emptySnapshot,
                     })
                 );
@@ -1656,8 +1657,55 @@ export default {
             }
         },
 
+        /**
+         * Diff annoté d'une version appartenant à une époque ARCHIVÉE :
+         * charge temporairement l'archive de l'époque à la place du document
+         * vivant, puis applique la comparaison dessus (attribution comprise —
+         * elle est stockée dans l'archive elle-même).
+         * @param {string} epochBinary - binaire base64 de l'époque
+         *   (colonne ydoc_epochs.binary_data, lisible via Supabase)
+         * @param {string|null} snapshot - version affichée (null = fin de l'époque)
+         * @param {string|null} prevSnapshot - version de référence
+         */
+        showArchiveVersionCompare(epochBinary, snapshot = null, prevSnapshot = null) {
+            if (!this.shouldEnableCollaboration || !epochBinary) {
+                console.warn('[Versions] Archive compare requires active collaboration and an epoch binary');
+                return false;
+            }
+            try {
+                this.enterArchivePreview(epochBinary);
+                this.loadEditor();
+                const ok = this.showVersionCompare(snapshot, prevSnapshot);
+                if (!ok) {
+                    this.exitArchivePreview();
+                    this.loadEditor();
+                }
+                return ok;
+            } catch (e) {
+                console.error('[Versions] Archive compare failed:', e);
+                this.exitArchivePreview();
+                this.loadEditor();
+                this.$emit('trigger-event', {
+                    name: 'collab:error',
+                    event: {
+                        error: 'archive-version-compare',
+                        message: e.message,
+                        timestamp: new Date().toISOString(),
+                    },
+                });
+                return false;
+            }
+        },
+
         hideVersionPreview() {
             if (!this.richEditor) return;
+            // Sortie d'un aperçu d'archive : rebrancher l'éditeur sur le
+            // document vivant
+            if (this.isArchivePreview()) {
+                this.exitArchivePreview();
+                this.loadEditor();
+                return;
+            }
             const binding = ySyncPluginKey.getState(this.richEditor.view.state)?.binding;
             if (binding) binding.unrenderSnapshot();
             this.richEditor.setEditable(this.isEditable);

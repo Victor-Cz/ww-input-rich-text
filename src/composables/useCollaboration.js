@@ -27,6 +27,11 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     let permanentUserDataInstance = null;
     let currentEpoch = null;
 
+    // Aperçu d'archive : document d'une époque passée chargé temporairement
+    // à la place du document vivant, pour le diff annoté des vieilles versions
+    let archiveDocInstance = null;
+    let archivePermanentUserData = null;
+
     // État local du statut de collaboration (pour éviter les problèmes de closure)
     let currentStatus = {
         connected: false,
@@ -526,6 +531,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             ydocInstance = null;
         }
 
+        exitArchivePreview();
         permanentUserDataInstance = null;
         currentEpoch = null;
         isCollaborating.value = false;
@@ -648,10 +654,13 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
 
         const extensions = [
             Collaboration.configure({
-                document: doc,
+                // En aperçu d'archive, l'éditeur est branché sur le document
+                // archivé (lecture seule) au lieu du document vivant
+                document: archiveDocInstance || doc,
                 field: 'default',
                 ySyncOptions: {
-                    permanentUserData: permanentUserDataInstance,
+                    permanentUserData:
+                        archivePermanentUserData || permanentUserDataInstance,
                     colors: ychangeColors,
                     colorMapping: ychangeColorMapping,
                 },
@@ -661,8 +670,9 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             YChangeNodeAttrs.configure(ychangeOptions),
         ];
 
-        // Ajouter CollaborationCursor
-        if (prov) {
+        // Ajouter CollaborationCursor (pas en aperçu d'archive : les curseurs
+        // temps réel appartiennent au document vivant)
+        if (prov && !archiveDocInstance) {
             extensions.push(
                 CollaborationCursor.configure({
                     provider: prov,
@@ -736,6 +746,33 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     const getEpoch = () => currentEpoch;
     const getPermanentUserData = () => permanentUserDataInstance;
 
+    // ===== Aperçu d'archive (diff annoté des époques passées) =====
+
+    const enterArchivePreview = base64Binary => {
+        exitArchivePreview();
+        const binary = Uint8Array.from(atob(base64Binary), c => c.charCodeAt(0));
+        archiveDocInstance = new Y.Doc({ gc: false });
+        Y.applyUpdate(archiveDocInstance, binary);
+        // L'attribution (PermanentUserData) est stockée dans le document
+        // archivé lui-même : on la relit telle quelle
+        archivePermanentUserData = new Y.PermanentUserData(archiveDocInstance);
+        return archiveDocInstance;
+    };
+
+    const exitArchivePreview = () => {
+        if (archiveDocInstance) {
+            archiveDocInstance.destroy();
+            archiveDocInstance = null;
+            archivePermanentUserData = null;
+        }
+    };
+
+    const isArchivePreview = () => !!archiveDocInstance;
+
+    // Document sur lequel opèrent les comparaisons de versions :
+    // l'archive quand un aperçu d'archive est actif, sinon le doc vivant
+    const getCompareDoc = () => archiveDocInstance || ydocInstance;
+
     // Cleanup automatique
     onBeforeUnmount(() => {
         if (provider.value) {
@@ -770,5 +807,9 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         sendCreateVersionSignal,
         getEpoch,
         getPermanentUserData,
+        enterArchivePreview,
+        exitArchivePreview,
+        isArchivePreview,
+        getCompareDoc,
     };
 }
