@@ -45,6 +45,8 @@ export default {
         resizeObserver: null,
         // Molette à crans : accumulation puis pas d'une barre (effet detent)
         wheelAccumulator: 0,
+        // Animation de défilement maison (décélération douce en fin de course)
+        scrollAnimId: null,
     }),
     computed: {
         activeId() {
@@ -153,23 +155,55 @@ export default {
                 this.stepSelection(direction);
             }
         },
+        // Défilement animé maison : décélération douce (ease-out cubique),
+        // re-ciblable en cours de route sans à-coup
+        animateScrollTo(target, duration = 380) {
+            const scroller = this.$refs.scroller;
+            if (!scroller) return;
+            if (this.scrollAnimId) cancelAnimationFrame(this.scrollAnimId);
+            const from = scroller.scrollLeft;
+            const clamped = Math.max(0, Math.min(target, scroller.scrollWidth - scroller.clientWidth));
+            if (Math.abs(clamped - from) < 0.5) return;
+            const start = performance.now();
+            this.suppressScrollSelect = true;
+            const step = now => {
+                const s = this.$refs.scroller;
+                if (!s) {
+                    this.scrollAnimId = null;
+                    this.suppressScrollSelect = false;
+                    return;
+                }
+                const t = Math.min(1, (now - start) / duration);
+                const eased = 1 - (1 - t) ** 3;
+                s.scrollLeft = from + (clamped - from) * eased;
+                if (t < 1) {
+                    this.scrollAnimId = requestAnimationFrame(step);
+                } else {
+                    this.scrollAnimId = null;
+                    setTimeout(() => {
+                        this.suppressScrollSelect = false;
+                    }, 60);
+                }
+            };
+            this.scrollAnimId = requestAnimationFrame(step);
+        },
+        centerOffsetOf(el) {
+            const scroller = this.$refs.scroller;
+            if (!scroller || !el) return null;
+            return el.offsetLeft + el.offsetWidth / 2 - scroller.clientWidth / 2;
+        },
         // Amène la version sélectionnée sous le sélecteur central
         centerSelected() {
             if (!this.selectedId) return;
             const scroller = this.$refs.scroller;
             const el = scroller?.querySelector(`[data-version-id="${this.selectedId}"]`);
             if (!el) return;
-            this.suppressScrollSelect = true;
-            const target = el.offsetLeft + el.offsetWidth / 2 - scroller.clientWidth / 2;
-            scroller.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
-            clearTimeout(this.scrollTimer);
-            this.scrollTimer = setTimeout(() => {
-                this.suppressScrollSelect = false;
-            }, 400);
+            const target = this.centerOffsetOf(el);
+            if (target !== null) this.animateScrollTo(target);
         },
         // Défilement (drag/trackpad) : la barre au centre est toujours la
-        // sélection ; surlignage immédiat, sélection réelle (rendu du diff)
-        // confirmée dès que le scroll se pose
+        // sélection ; surlignage immédiat, puis au repos la sélection est
+        // confirmée et la frise se cale doucement sur la barre
         onScroll() {
             if (this.suppressScrollSelect) return;
             const nearest = this.nearestToCenter();
@@ -183,11 +217,21 @@ export default {
                     this.fromScroll = true;
                     this.$emit('select', version);
                 }
+                // Posé de fin de course : caler la barre exactement au centre
+                const scroller = this.$refs.scroller;
+                const el = version
+                    ? scroller?.querySelector(`[data-version-id="${version.id}"]`)
+                    : null;
+                if (el) {
+                    const target = this.centerOffsetOf(el);
+                    if (target !== null) this.animateScrollTo(target, 300);
+                }
             }, 100);
         },
     },
     beforeUnmount() {
         clearTimeout(this.scrollTimer);
+        if (this.scrollAnimId) cancelAnimationFrame(this.scrollAnimId);
         if (this.resizeObserver) this.resizeObserver.disconnect();
     },
 };
