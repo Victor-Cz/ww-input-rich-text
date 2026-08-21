@@ -123,6 +123,15 @@ export default {
             this.provisionalId = null;
             this.$emit('select', v);
         },
+        // Position horizontale d'une barre dans le repère du scroller.
+        // offsetLeft est inutilisable ici : il est relatif au premier ancêtre
+        // positionné, c'est-à-dire au groupe d'époque (position: relative pour
+        // son séparateur), pas au scroller
+        barLeftInScroller(el) {
+            const scroller = this.$refs.scroller;
+            if (!scroller || !el) return null;
+            return el.getBoundingClientRect().left - scroller.getBoundingClientRect().left + scroller.scrollLeft;
+        },
         nearestToCenter() {
             const scroller = this.$refs.scroller;
             if (!scroller) return null;
@@ -130,7 +139,7 @@ export default {
             let bestId = null;
             let bestDist = Infinity;
             for (const el of scroller.querySelectorAll('[data-version-id]')) {
-                const dist = Math.abs(el.offsetLeft + el.offsetWidth / 2 - center);
+                const dist = Math.abs(this.barLeftInScroller(el) + el.offsetWidth / 2 - center);
                 if (dist < bestDist) {
                     bestDist = dist;
                     bestId = el.getAttribute('data-version-id');
@@ -147,7 +156,7 @@ export default {
             const center = scroller.scrollLeft + scroller.clientWidth / 2;
             const bars = [];
             for (const el of scroller.querySelectorAll('[data-version-id]')) {
-                bars.push({ id: el.getAttribute('data-version-id'), center: el.offsetLeft + el.offsetWidth / 2 });
+                bars.push({ id: el.getAttribute('data-version-id'), center: this.barLeftInScroller(el) + el.offsetWidth / 2 });
             }
             if (!bars.length) return null;
             let best = null;
@@ -173,7 +182,7 @@ export default {
         barPitch() {
             const els = this.$refs.scroller?.querySelectorAll('[data-version-id]');
             if (!els || els.length < 2) return 9;
-            return Math.max(4, els[1].offsetLeft - els[0].offsetLeft);
+            return Math.max(4, this.barLeftInScroller(els[1]) - this.barLeftInScroller(els[0]));
         },
         // Molette : gain calibré sur le pas des barres (un cran de souris
         // ≈ une barre) + lissage inertiel vers la cible. La sélection suit
@@ -260,7 +269,7 @@ export default {
         centerOffsetOf(el) {
             const scroller = this.$refs.scroller;
             if (!scroller || !el) return null;
-            return el.offsetLeft + el.offsetWidth / 2 - scroller.clientWidth / 2;
+            return this.barLeftInScroller(el) + el.offsetWidth / 2 - scroller.clientWidth / 2;
         },
         // Amène la version sélectionnée sous le sélecteur central
         // (instant : saut direct sans animation, pour un montage/remontage)
