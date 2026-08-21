@@ -1,5 +1,5 @@
 <template>
-    <div class="version-timeline">
+    <div class="version-timeline" :style="{ '--vt-selected-color': selectedColor || '#111827' }">
         <div class="version-timeline__scroller" ref="scroller"
             @scroll.passive="onScroll" @wheel.prevent.stop="onWheel">
             <div class="version-timeline__track" ref="track">
@@ -32,6 +32,8 @@ export default {
         versions: { type: Array, default: () => [] },
         selectedId: { type: String, default: null },
         loading: { type: Boolean, default: false },
+        // Couleur de la barre sélectionnée (config WeWeb)
+        selectedColor: { type: String, default: '#111827' },
     },
     emits: ['select'],
     data: () => ({
@@ -360,7 +362,7 @@ export default {
     &.-selected .version-timeline__tick {
         width: 3px;
         height: 32px;
-        background: #111827;
+        background: var(--vt-selected-color, #111827);
     }
 }
 

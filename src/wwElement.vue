@@ -209,6 +209,7 @@
                     :versions="versionHistory.versions"
                     :selected-id="versionHistory.selectedId"
                     :loading="versionHistory.loadingList"
+                    :selected-color="content.timelineSelectedColor"
                     @select="selectTimelineVersion" />
                 </div>
 
@@ -221,6 +222,7 @@
                         :versions="versionHistory.versions"
                         :selected-id="versionHistory.selectedId"
                         :loading="versionHistory.loadingList"
+                        :selected-color="content.timelineSelectedColor"
                         @select="selectTimelineVersion" />
                 </teleport>
 

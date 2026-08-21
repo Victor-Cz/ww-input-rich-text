@@ -68,6 +68,7 @@ export default {
                 'versionDiffColorMode',
                 'versionDiffAuthors',
                 'timelineContainerSelector',
+                'timelineSelectedColor',
                 'epochLoadButtonText',
             ],
             'formInfobox',
@@ -3278,6 +3279,14 @@ export default {
                     "Sélecteur CSS d'un conteneur de votre page (ex: une classe posée sur votre box de menu) : la frise y est rendue à la place du slot interne. Combinez avec la variable isVersionPreview pour masquer vos éléments de menu pendant l'historique.",
             },
             /* wwEditor:end */
+        },
+        timelineSelectedColor: {
+            section: 'settings',
+            label: { en: 'Timeline selected bar color', fr: 'Couleur de la barre sélectionnée' },
+            type: 'Color',
+            defaultValue: '#111827',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
         },
         epochLoadButtonText: {
             section: 'settings',
