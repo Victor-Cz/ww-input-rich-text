@@ -209,7 +209,6 @@
                     :versions="versionHistory.versions"
                     :selected-id="versionHistory.selectedId"
                     :loading="versionHistory.loadingList"
-                    :locale="timelineLocale"
                     @select="selectTimelineVersion" />
                 </div>
 
@@ -222,7 +221,6 @@
                         :versions="versionHistory.versions"
                         :selected-id="versionHistory.selectedId"
                         :loading="versionHistory.loadingList"
-                        :locale="timelineLocale"
                         @select="selectTimelineVersion" />
                 </teleport>
 
@@ -460,6 +458,16 @@ export default {
             readonly: true,
         });
 
+        // Version sélectionnée dans la frise (id, numéro, date, auteur…),
+        // à afficher librement dans l'UI (ex: la date dans le menu)
+        const { value: currentVersion, setValue: _setCurrentVersion } = wwLib.wwVariable.useComponentVariable({
+            uid: props.uid,
+            name: 'currentVersion',
+            type: 'object',
+            defaultValue: null,
+            readonly: true,
+        });
+
         // Wrap setters to silently ignore calls after variable cleanup
         let _isDestroyed = false;
         onBeforeUnmount(() => { _isDestroyed = true; });
@@ -473,6 +481,7 @@ export default {
         const setOutline = (...args) => { if (!_isDestroyed) _setOutline(...args); };
         const setCurrentHeading = (...args) => { if (!_isDestroyed) _setCurrentHeading(...args); };
         const setIsVersionPreview = (...args) => { if (!_isDestroyed) _setIsVersionPreview(...args); };
+        const setCurrentVersion = (...args) => { if (!_isDestroyed) _setCurrentVersion(...args); };
 
 
         /* wwEditor:start */
@@ -530,6 +539,8 @@ export default {
             setCurrentHeading,
             isVersionPreview,
             setIsVersionPreview,
+            currentVersion,
+            setCurrentVersion,
             randomUid,
             /* wwEditor:start */
             createElement,
@@ -815,14 +826,6 @@ export default {
         },
     },
     computed: {
-        // Langue du site pour le formatage des dates de la frise
-        timelineLocale() {
-            try {
-                return wwLib.wwLang?.lang || navigator.language || '';
-            } catch {
-                return '';
-            }
-        },
         isEditing() {
             /* wwEditor:start */
             return this.wwEditorState.editMode === wwLib.wwEditorHelper.EDIT_MODES.EDITION;
@@ -1875,6 +1878,7 @@ export default {
             vh.selectedId = null;
             vh.loadedArchiveEpoch = null;
             vh.epochOverlay = { visible: false, targetEpoch: null, loading: false, pendingVersion: null };
+            this.setCurrentVersion(null);
             this.hideVersionPreview();
         },
 
@@ -1918,6 +1922,16 @@ export default {
 
         markTimelineSelection(version) {
             this.versionHistory.selectedId = version.id;
+            this.setCurrentVersion({
+                id: version.id,
+                versionNumber: version.version_number,
+                epoch: version.epoch,
+                source: version.source ?? null,
+                label: version.label ?? null,
+                createdAt: version.created_at ?? null,
+                createdBy: version.created_by ?? null,
+                createdByName: version.created_by_name ?? null,
+            });
             this.$emit('trigger-event', {
                 name: 'version-history:select',
                 event: {

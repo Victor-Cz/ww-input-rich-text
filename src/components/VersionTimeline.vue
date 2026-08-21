@@ -1,11 +1,7 @@
 <template>
     <div class="version-timeline">
-        <!-- Date de la barre survolée, dans le creux formé par les barres -->
-        <div v-if="hoveredDateLabel" class="version-timeline__date"
-            :style="{ left: `${dateLeft}px` }">{{ hoveredDateLabel }}</div>
-
         <div class="version-timeline__scroller" ref="scroller"
-            @scroll.passive="onScroll" @wheel.prevent.stop="onWheel" @mouseleave="clearHover">
+            @scroll.passive="onScroll" @wheel.prevent.stop="onWheel">
             <div class="version-timeline__track" ref="track">
                 <div class="version-timeline__content" ref="content">
                     <div v-if="loading" class="version-timeline__loading">…</div>
@@ -14,10 +10,8 @@
                             <div class="version-timeline__versions">
                                 <button v-for="v in group.versions" :key="v.id" type="button"
                                     class="version-timeline__version"
-                                    :class="{ '-selected': v.id === activeId }"
+                                    :class="tickClass(v)"
                                     :data-version-id="v.id"
-                                    @mouseenter="onHoverVersion(v, $event)"
-                                    @mouseleave="scheduleClearHover"
                                     @click="onClickVersion(v)">
                                     <span class="version-timeline__tick"></span>
                                 </button>
@@ -38,8 +32,6 @@ export default {
         versions: { type: Array, default: () => [] },
         selectedId: { type: String, default: null },
         loading: { type: Boolean, default: false },
-        // Langue du site pour le formatage des dates
-        locale: { type: String, default: '' },
     },
     emits: ['select'],
     data: () => ({
@@ -51,27 +43,25 @@ export default {
         // La sélection vient du scroll : ne pas re-centrer (effet élastique)
         fromScroll: false,
         resizeObserver: null,
-        rafId: null,
         // Molette à crans : accumulation puis pas d'une barre (effet detent)
         wheelAccumulator: 0,
-        // Barre survolée : creux local + date affichée au-dessus
-        hoveredId: null,
-        dateLeft: 0,
-        hoverClearTimer: null,
     }),
     computed: {
         activeId() {
             return this.provisionalId || this.selectedId;
         },
-        hoveredDateLabel() {
-            if (!this.hoveredId) return '';
-            const hovered = this.versions.find(v => v.id === this.hoveredId);
-            return hovered ? this.formatDate(hovered.created_at) : '';
-        },
         // Affichage chronologique : de la plus ancienne (gauche) à la plus
         // récente (droite)
         displayVersions() {
             return [...this.versions].reverse();
+        },
+        displayIndexById() {
+            const map = new Map();
+            this.displayVersions.forEach((v, i) => map.set(v.id, i));
+            return map;
+        },
+        activeIndex() {
+            return this.activeId ? (this.displayIndexById.get(this.activeId) ?? -1) : -1;
         },
         // Groupes consécutifs par époque (séparateur visuel uniquement)
         groups() {
@@ -94,68 +84,31 @@ export default {
             this.centerSelected();
         },
         versions() {
-            this.$nextTick(() => {
-                this.centerSelected();
-                this.scheduleTickHeights();
-            });
+            this.$nextTick(() => this.centerSelected());
         },
     },
     mounted() {
-        this.scheduleTickHeights();
         if (typeof ResizeObserver !== 'undefined') {
-            this.resizeObserver = new ResizeObserver(() => {
-                this.centerSelected();
-                this.scheduleTickHeights();
-            });
+            this.resizeObserver = new ResizeObserver(() => this.centerSelected());
             if (this.$refs.scroller) this.resizeObserver.observe(this.$refs.scroller);
         }
     },
     methods: {
-        formatDate(iso) {
-            if (!iso) return '';
-            const d = new Date(iso);
-            if (Number.isNaN(d.getTime())) return '';
-            const locale = this.locale || undefined;
-            try {
-                const date = d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' });
-                const time = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-                return `${date} ${time}`;
-            } catch {
-                return d.toLocaleString();
-            }
+        // Bosse autour de la sélection : la barre principale et ses voisines
+        // sont agrandies (par classes, tout le rendu est en CSS)
+        tickClass(v) {
+            if (this.activeIndex === -1) return null;
+            const idx = this.displayIndexById.get(v.id);
+            if (idx === undefined) return null;
+            const dist = Math.abs(idx - this.activeIndex);
+            if (dist === 0) return '-selected';
+            if (dist === 1) return '-near1';
+            if (dist === 2) return '-near2';
+            return null;
         },
         onClickVersion(v) {
             this.provisionalId = null;
             this.$emit('select', v);
-        },
-        // Survol d'une barre : creux local autour d'elle + date au-dessus
-        onHoverVersion(v, event) {
-            clearTimeout(this.hoverClearTimer);
-            this.hoveredId = v.id;
-            const root = this.$el;
-            const el = event.currentTarget;
-            if (root && el) {
-                const rootRect = root.getBoundingClientRect();
-                const elRect = el.getBoundingClientRect();
-                const center = elRect.left + elRect.width / 2 - rootRect.left;
-                // Garder la date dans les limites du composant
-                this.dateLeft = Math.max(34, Math.min(rootRect.width - 34, center));
-            }
-            this.scheduleTickHeights();
-        },
-        clearHover() {
-            clearTimeout(this.hoverClearTimer);
-            this.hoveredId = null;
-            this.scheduleTickHeights();
-        },
-        // Sortie d'une barre : petit délai pour ne pas clignoter en passant
-        // à la barre voisine, mais retrait fiable si on ne survole plus rien
-        scheduleClearHover() {
-            clearTimeout(this.hoverClearTimer);
-            this.hoverClearTimer = setTimeout(() => {
-                this.hoveredId = null;
-                this.scheduleTickHeights();
-            }, 80);
         },
         nearestToCenter() {
             const scroller = this.$refs.scroller;
@@ -171,45 +124,6 @@ export default {
                 }
             }
             return bestId ? this.versions.find(v => v.id === bestId) || null : null;
-        },
-        // Creux progressif : les barres rétrécissent à l'approche du centre
-        // (alignées en bas) pour laisser la place à la date au-dessus
-        scheduleTickHeights() {
-            if (this.rafId) return;
-            this.rafId = requestAnimationFrame(() => {
-                this.rafId = null;
-                this.updateTickHeights();
-            });
-        },
-        // Creux local autour de la barre survolée (barres alignées en bas),
-        // pour laisser passer la date au-dessus. Sans survol : hauteur pleine.
-        updateTickHeights() {
-            const scroller = this.$refs.scroller;
-            if (!scroller) return;
-            const buttons = scroller.querySelectorAll('[data-version-id]');
-            if (!this.hoveredId) {
-                for (const el of buttons) {
-                    const tick = el.firstElementChild;
-                    if (tick) tick.style.height = '';
-                }
-                return;
-            }
-            const hoveredEl = scroller.querySelector(`[data-version-id="${this.hoveredId}"]`);
-            if (!hoveredEl) return;
-            const center = hoveredEl.offsetLeft + hoveredEl.offsetWidth / 2;
-            const radius = 70;
-            const minFactor = 0.55;
-            for (const el of buttons) {
-                const dist = Math.abs(el.offsetLeft + el.offsetWidth / 2 - center);
-                const t = Math.min(1, dist / radius);
-                // smoothstep : dérivée nulle aux deux bouts, creux sans cassure
-                const eased = t * t * (3 - 2 * t);
-                const factor = minFactor + (1 - minFactor) * eased;
-                // La barre sélectionnée garde son supplément de hauteur
-                const baseHeight = el.classList.contains('-selected') ? 30 : 26;
-                const tick = el.firstElementChild;
-                if (tick) tick.style.height = `${(baseHeight * factor).toFixed(1)}px`;
-            }
         },
         // Pas d'une barre dans l'ordre chronologique affiché (effet detent)
         stepSelection(direction) {
@@ -253,11 +167,10 @@ export default {
                 this.suppressScrollSelect = false;
             }, 400);
         },
-        // Défilement : la barre au centre est toujours la sélection ; le
-        // surlignage et le creux suivent chaque frame, la sélection réelle
-        // (rendu du diff) est confirmée dès que le scroll se pose
+        // Défilement (drag/trackpad) : la barre au centre est toujours la
+        // sélection ; surlignage immédiat, sélection réelle (rendu du diff)
+        // confirmée dès que le scroll se pose
         onScroll() {
-            this.scheduleTickHeights();
             if (this.suppressScrollSelect) return;
             const nearest = this.nearestToCenter();
             if (nearest) this.provisionalId = nearest.id;
@@ -275,8 +188,6 @@ export default {
     },
     beforeUnmount() {
         clearTimeout(this.scrollTimer);
-        clearTimeout(this.hoverClearTimer);
-        if (this.rafId) cancelAnimationFrame(this.rafId);
         if (this.resizeObserver) this.resizeObserver.disconnect();
     },
 };
@@ -287,19 +198,6 @@ export default {
     position: relative;
     height: 100%;
     overflow: hidden;
-}
-
-.version-timeline__date {
-    position: absolute;
-    top: 2px;
-    transform: translateX(-50%);
-    font-size: 10px;
-    font-weight: 600;
-    color: #4f46e5;
-    white-space: nowrap;
-    user-select: none;
-    pointer-events: none;
-    z-index: 2;
 }
 
 .version-timeline__scroller {
@@ -328,8 +226,6 @@ export default {
     padding-right: 50%;
 }
 
-/* Barres centrées verticalement : la date se superpose en absolu,
-   aucun espace ne lui est réservé */
 .version-timeline__content {
     display: inline-flex;
     align-items: center;
@@ -363,7 +259,7 @@ export default {
 .version-timeline__versions {
     display: flex;
     align-items: flex-end;
-    height: 30px;
+    height: 32px;
     gap: 1px;
 }
 
@@ -377,22 +273,33 @@ export default {
     border: none;
     cursor: pointer;
 
+    /* Légère pousse au survol */
     &:hover .version-timeline__tick {
+        height: 24px;
         background: #9ca3af;
+    }
+
+    /* Bosse autour de la sélection : voisines agrandies en dégradé */
+    &.-near2 .version-timeline__tick {
+        height: 23px;
+    }
+
+    &.-near1 .version-timeline__tick {
+        height: 26px;
     }
 
     &.-selected .version-timeline__tick {
         width: 3px;
-        height: 30px;
+        height: 32px;
         background: #4f46e5;
     }
 }
 
 .version-timeline__tick {
     width: 2px;
-    height: 26px;
+    height: 20px;
     background: #d1d5db;
     border-radius: 2px;
-    transition: background 0.12s ease, width 0.12s ease, height 0.1s ease-out;
+    transition: background 0.15s ease, width 0.15s ease, height 0.18s ease;
 }
 </style>
