@@ -1706,35 +1706,46 @@ export default {
          * @param {string|null} snapshot - état AFFICHÉ (base64 de la colonne
          *   ydoc_versions.snapshot). null/vide = état actuel du document.
          * @param {string|null} prevSnapshot - état de RÉFÉRENCE, plus ancien.
-         *   null/vide = LA DERNIÈRE VERSION du document (récupérée
-         *   automatiquement) — « qu'est-ce qui a changé depuis ? ».
+         *   null/vide = la version qui PRÉCÈDE celle affichée dans
+         *   l'historique — le même diff que la sélection dans la frise.
          */
         async showVersionCompare(snapshot = null, prevSnapshot = null) {
             let reference = prevSnapshot;
             if (!reference) {
                 try {
-                    reference = await this.getLatestVersionSnapshot();
+                    reference = await this.getDefaultCompareReference(snapshot);
                 } catch (e) {
-                    console.warn('[Versions] Could not fetch latest version as reference:', e);
+                    console.warn('[Versions] Could not fetch default compare reference:', e);
                     reference = null;
                 }
             }
             return this.renderVersionCompare(snapshot, reference);
         },
 
-        // Snapshot de la dernière version de l'époque courante (référence par
-        // défaut du compare) — depuis l'historique chargé, sinon via l'API
-        async getLatestVersionSnapshot() {
+        // Historique de versions (trié desc) : celui déjà chargé, sinon l'API
+        async getVersionList() {
             const vh = this.versionHistory;
-            if (vh.versions.length) {
-                const latest = vh.versions[0];
-                return latest.epoch === vh.liveEpoch ? latest.snapshot : null;
-            }
+            if (vh.versions.length) return { versions: vh.versions, liveEpoch: vh.liveEpoch };
             const res = await this.collabApiFetch(
                 `/documents/${encodeURIComponent(this.collabConfig.documentId)}/versions`
             );
-            const latest = (res.versions || [])[0];
-            return latest && latest.epoch === (res.currentEpoch ?? null) ? latest.snapshot : null;
+            return { versions: res.versions || [], liveEpoch: res.currentEpoch ?? null };
+        },
+
+        // Référence par défaut du compare : la version qui précède celle
+        // affichée (retrouvée par son snapshot, sinon la dernière), dans la
+        // même époque — pour rendre le même diff que la frise. Sans
+        // prédécesseur, tout apparaît en ajout, comme dans la frise.
+        async getDefaultCompareReference(snapshot = null) {
+            const { versions, liveEpoch } = await this.getVersionList();
+            if (!versions.length) return null;
+            let idx = snapshot ? versions.findIndex(v => v.snapshot === snapshot) : 0;
+            if (idx === -1) idx = 0;
+            const shown = versions[idx];
+            // Le compare ne porte que sur l'époque du document affiché
+            if (!snapshot && shown.epoch !== liveEpoch) return null;
+            const prev = versions[idx + 1];
+            return prev && prev.epoch === shown.epoch ? prev.snapshot : null;
         },
 
         /**
