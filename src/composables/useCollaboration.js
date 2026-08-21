@@ -3,6 +3,7 @@ import { HocuspocusProvider } from '@hocuspocus/provider';
 import * as Y from 'yjs';
 import Collaboration from '@tiptap/extension-collaboration';
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
+import { YChangeMark, YChangeNodeAttrs } from '../extensions/YChange.js';
 
 /**
  * Composable pour gérer la collaboration Hocuspocus/Yjs dans l'éditeur Tiptap
@@ -21,6 +22,11 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     const isCollaborating = ref(false);
     const connectionAttempts = ref(0);
 
+    // Versionnage : attribution par utilisateur (Y.PermanentUserData) et
+    // époque courante du document (compaction côté serveur)
+    let permanentUserDataInstance = null;
+    let currentEpoch = null;
+
     // État local du statut de collaboration (pour éviter les problèmes de closure)
     let currentStatus = {
         connected: false,
@@ -32,12 +38,25 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         connectionId: null,
         users: [],
         userCount: 0,
+        epoch: null,
+        staleEpoch: false,
     };
 
     // Helper pour mettre à jour le statut
     const updateStatus = updates => {
         currentStatus = { ...currentStatus, ...updates };
         setCollaborationStatus(currentStatus);
+    };
+
+    // Mémorise l'époque courante et la propage aux paramètres de reconnexion :
+    // si le serveur compacte le document pendant une coupure, la reconnexion
+    // avec une époque périmée sera rejetée (stale-epoch) au lieu de fusionner
+    // un état local obsolète (ce qui dupliquerait tout le contenu)
+    const setEpoch = epoch => {
+        currentEpoch = epoch;
+        const wsParams = provider.value?.configuration?.websocketProvider?.configuration?.parameters;
+        if (wsParams) wsParams.epoch = epoch;
+        updateStatus({ epoch });
     };
 
     // Configuration de collaboration
@@ -135,6 +154,13 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 synced: true,
                 syncing: false,
             });
+
+            // Demander l'époque courante au serveur (versionnage/compaction)
+            try {
+                provider.value.sendStateless(JSON.stringify({ action: 'get-epoch' }));
+            } catch (e) {
+                console.warn('[Collaboration] Failed to request epoch:', e);
+            }
 
             emit('trigger-event', {
                 name: 'collab:synced',
@@ -280,9 +306,61 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                             },
                         });
                     }
+                } else if (data.action === 'epoch') {
+                    setEpoch(data.epoch);
+                } else if (data.action === 'version-created') {
+                    emit('trigger-event', {
+                        name: 'collab:version-created',
+                        event: {
+                            created: !!data.created,
+                            versionNumber: data.versionNumber ?? null,
+                            label: data.label ?? null,
+                            error: data.error ?? null,
+                            timestamp: new Date().toISOString(),
+                        },
+                    });
+                } else if (data.action === 'content-replaced') {
+                    emit('trigger-event', {
+                        name: 'collab:content-replaced',
+                        event: {
+                            documentName: data.documentName ?? null,
+                            timestamp: new Date().toISOString(),
+                        },
+                    });
                 }
             } catch (e) {
                 console.warn('[Collaboration] Failed to parse stateless message:', e);
+            }
+        });
+
+        // Rejet d'authentification — cas particulier : époque périmée.
+        // L'état Yjs local appartient à une époque compactée côté serveur,
+        // il faut repartir d'un document vierge (via le watcher staleEpoch
+        // du composant, qui ré-initialise la collaboration ET l'éditeur).
+        provider.value.on('authenticationFailed', ({ reason }) => {
+            const message = typeof reason === 'string' ? reason : reason?.message || '';
+            if (message.includes('stale-epoch')) {
+                console.warn('[Collaboration] Stale epoch detected, local state must be reset:', message);
+                emit('trigger-event', {
+                    name: 'collab:stale-epoch',
+                    event: {
+                        documentId: collabConfig.value.documentId,
+                        epoch: currentEpoch,
+                        timestamp: new Date().toISOString(),
+                    },
+                });
+                currentEpoch = null;
+                updateStatus({ staleEpoch: true, error: 'stale-epoch' });
+            } else {
+                updateStatus({ error: message || 'authentication failed' });
+                emit('trigger-event', {
+                    name: 'collab:error',
+                    event: {
+                        error: 'authentication-failed',
+                        message,
+                        timestamp: new Date().toISOString(),
+                    },
+                });
             }
         });
     };
@@ -297,8 +375,19 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         }
 
         try {
-            // Créer le document Yjs et le stocker directement
-            ydocInstance = new Y.Doc();
+            // Créer le document Yjs et le stocker directement.
+            // gc: false — conserve l'historique localement, indispensable pour
+            // rendre les snapshots de versions dans l'éditeur (compare mode)
+            ydocInstance = new Y.Doc({ gc: false });
+
+            // Attribution durable par utilisateur (qui a écrit quoi) pour la
+            // comparaison de versions — stockée dans le document lui-même
+            permanentUserDataInstance = new Y.PermanentUserData(ydocInstance);
+            permanentUserDataInstance.setUserMapping(
+                ydocInstance,
+                ydocInstance.clientID,
+                collabConfig.value.userName || 'Anonymous'
+            );
 
             // Nettoyer l'URL WebSocket (enlever les slashes finaux)
             const cleanBaseUrl = collabConfig.value.websocketUrl.replace(/\/+$/, '');
@@ -367,6 +456,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             ydocInstance = null;
         }
 
+        permanentUserDataInstance = null;
+        currentEpoch = null;
         isCollaborating.value = false;
         connectionAttempts.value = 0;
 
@@ -381,6 +472,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             connectionId: null,
             users: [],
             userCount: 0,
+            epoch: null,
+            staleEpoch: false,
         };
         setCollaborationStatus(currentStatus);
     };
@@ -457,12 +550,30 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             return [];
         }
 
-        // Tester d'abord uniquement avec Collaboration pour isoler le problème
+        // Palette d'attribution pour la comparaison de versions
+        // (fond léger + couleur franche par utilisateur)
+        const ychangeColors = [
+            { light: '#6B46C126', dark: '#6B46C1' },
+            { light: '#DC262626', dark: '#DC2626' },
+            { light: '#0284C726', dark: '#0284C7' },
+            { light: '#16A34A26', dark: '#16A34A' },
+            { light: '#EA580C26', dark: '#EA580C' },
+            { light: '#DB277726', dark: '#DB2777' },
+        ];
+
         const extensions = [
             Collaboration.configure({
                 document: doc,
                 field: 'default',
+                ySyncOptions: {
+                    permanentUserData: permanentUserDataInstance,
+                    colors: ychangeColors,
+                    colorMapping: new Map(),
+                },
             }),
+            // Schéma + rendu des annotations de versions (snapshot compare)
+            YChangeMark,
+            YChangeNodeAttrs,
         ];
 
         // Ajouter CollaborationCursor
@@ -517,6 +628,26 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         return false;
     };
 
+    // Demander au serveur de créer une version nommée du document
+    // Réponse : message stateless { action: "version-created", ... }
+    const sendCreateVersionSignal = (label = null) => {
+        if (provider.value && provider.value.isConnected) {
+            provider.value.sendStateless(
+                JSON.stringify({
+                    action: 'create-version',
+                    payload: { label },
+                })
+            );
+            console.log('[Collaboration] Create-version signal sent', { label });
+            return true;
+        }
+        console.warn('[Collaboration] Cannot send create-version signal: provider not connected');
+        return false;
+    };
+
+    const getEpoch = () => currentEpoch;
+    const getPermanentUserData = () => permanentUserDataInstance;
+
     // Cleanup automatique
     onBeforeUnmount(() => {
         if (provider.value) {
@@ -547,5 +678,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         updateUserName,
         getRandomColor,
         sendSaveSignal,
+        sendCreateVersionSignal,
+        getEpoch,
+        getPermanentUserData,
     };
 }

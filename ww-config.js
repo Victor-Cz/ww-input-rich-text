@@ -251,6 +251,34 @@ export default {
                 saveId: '',
             },
         },
+        {
+            name: 'collab:version-created',
+            label: { en: 'On version created', fr: 'Version créée' },
+            event: {
+                created: true,
+                versionNumber: 0,
+                label: '',
+                error: '',
+                timestamp: '',
+            },
+        },
+        {
+            name: 'collab:content-replaced',
+            label: { en: 'On content replaced by server', fr: 'Contenu remplacé par le serveur' },
+            event: {
+                documentName: '',
+                timestamp: '',
+            },
+        },
+        {
+            name: 'collab:stale-epoch',
+            label: { en: 'On stale epoch (local state reset)', fr: 'Époque périmée (état local réinitialisé)' },
+            event: {
+                documentId: '',
+                epoch: 0,
+                timestamp: '',
+            },
+        },
         // Image Layout events
         {
             name: 'image:added',
@@ -502,6 +530,45 @@ export default {
                     },
                 },
             ],
+        },
+        {
+            label: { en: 'Collab: Create version', fr: 'Collab: Créer une version' },
+            action: 'createVersion',
+            args: [
+                {
+                    name: 'Label',
+                    type: 'Text',
+                    optional: true,
+                    options: {
+                        bindable: true,
+                    },
+                },
+            ],
+        },
+        {
+            label: { en: 'Collab: Show version compare', fr: 'Collab: Comparer des versions' },
+            action: 'showVersionCompare',
+            args: [
+                {
+                    name: 'Snapshot',
+                    type: 'Text',
+                    options: {
+                        bindable: true,
+                    },
+                },
+                {
+                    name: 'Previous snapshot',
+                    type: 'Text',
+                    optional: true,
+                    options: {
+                        bindable: true,
+                    },
+                },
+            ],
+        },
+        {
+            label: { en: 'Collab: Hide version preview', fr: 'Collab: Quitter l’aperçu de version' },
+            action: 'hideVersionPreview',
         },
         // Image Layout actions
         {

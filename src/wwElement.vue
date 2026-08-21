@@ -262,6 +262,8 @@ import TableCell from '@tiptap/extension-table-cell';
 
 import { computed, inject, provide, onBeforeUnmount } from 'vue';
 import suggestion from './suggestion.js';
+import * as Y from 'yjs';
+import { ySyncPluginKey } from 'y-prosemirror';
 import { useCollaboration } from './composables/useCollaboration.js';
 import * as ImageManager from './composables/useImageManager.js';
 import { Markdown } from 'tiptap-markdown';
@@ -635,6 +637,15 @@ export default {
         'collabConfig.userName'(newName, oldName) {
             if (newName !== oldName) {
                 this.updateUserName(newName);
+            }
+        },
+        // Époque périmée (document compacté côté serveur pendant une coupure) :
+        // l'état Yjs local est inutilisable, on repart d'un document vierge
+        'collaborationStatus.staleEpoch'(stale) {
+            if (stale && this.shouldEnableCollaboration) {
+                console.warn('[Collaboration] Reinitializing after stale epoch...');
+                this.initializeCollaboration();
+                this.loadEditor();
             }
         },
         'collabConfig.enabled'(enabled) {
@@ -1562,6 +1573,58 @@ export default {
 
         saveDocument(saveId = null) {
             this.sendSaveSignal(true, saveId);
+        },
+
+        // ===== Versionnage (snapshots Yjs) =====
+
+        createVersion(label = null) {
+            return this.sendCreateVersionSignal(label);
+        },
+
+        /**
+         * Affiche le document tel qu'il était à une version, avec les
+         * ajouts/suppressions annotés et attribués par utilisateur.
+         * @param {string} snapshot - snapshot base64 (colonne ydoc_versions.snapshot)
+         * @param {string|null} prevSnapshot - snapshot de la version précédente
+         *   pour une comparaison (null = afficher la version seule)
+         * Limite : la version doit appartenir à l'époque courante du document
+         * (sinon passer par l'endpoint REST /versions/:id/content côté WeWeb).
+         */
+        showVersionCompare(snapshot, prevSnapshot = null) {
+            if (!this.shouldEnableCollaboration || !this.richEditor) {
+                console.warn('[Versions] Compare requires active collaboration');
+                return false;
+            }
+            try {
+                const decode = b64 => Y.decodeSnapshot(Uint8Array.from(atob(b64), c => c.charCodeAt(0)));
+                const view = this.richEditor.view;
+                view.dispatch(
+                    view.state.tr.setMeta(ySyncPluginKey, {
+                        snapshot: decode(snapshot),
+                        prevSnapshot: prevSnapshot ? decode(prevSnapshot) : Y.emptySnapshot,
+                    })
+                );
+                this.richEditor.setEditable(false);
+                return true;
+            } catch (e) {
+                console.error('[Versions] Compare failed:', e);
+                this.$emit('trigger-event', {
+                    name: 'collab:error',
+                    event: {
+                        error: 'version-compare',
+                        message: e.message,
+                        timestamp: new Date().toISOString(),
+                    },
+                });
+                return false;
+            }
+        },
+
+        hideVersionPreview() {
+            if (!this.richEditor) return;
+            const binding = ySyncPluginKey.getState(this.richEditor.view.state)?.binding;
+            if (binding) binding.unrenderSnapshot();
+            this.richEditor.setEditable(this.isEditable);
         },
 
         // Image Layout actions
