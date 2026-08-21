@@ -15,17 +15,10 @@
         ...cssVariables
     }">
         <template v-if="richEditor">
-                <!-- Mode historique : la frise chronologique remplace le menu
-                     (transition rétraction/déploiement entre les deux) -->
-                <version-timeline v-if="shouldEnableCollaboration"
-                    :class="{ '-collapsed': !versionHistory.active }"
-                    :versions="versionHistory.versions"
-                    :selected-id="versionHistory.selectedId"
-                    :live-epoch="versionHistory.liveEpoch"
-                    :epoch-label="content.timelineEpochLabel || 'Époque'"
-                    :loading="versionHistory.loadingList"
-                    @select="selectTimelineVersion" />
-                <div class="ww-rich-text__menu-slot" :class="{ '-collapsed': versionHistory.active }">
+                <!-- Mode historique : la frise remplace le CONTENU du menu sans
+                     toucher au conteneur ni à sa position — elle se superpose
+                     dans la même boîte pendant que le menu s'estompe -->
+                <div class="ww-rich-text__menu-slot" :class="{ '-history': versionHistory.active }">
                 <div class="ww-rich-text__menu native-menu" v-if="!hideMenu && !content.customMenu" :style="menuStyles">
                     <!-- Texte type (normal, ...) -->
                     <select id="rich-size" v-model="currentTextType" :disabled="!isEditable" v-if="menu.textType">
@@ -210,6 +203,14 @@
                 </div>
                 <wwElement class="ww-rich-text__menu" v-else-if="content.customMenu"
                     v-bind="content.customMenuElement" />
+                <version-timeline v-if="shouldEnableCollaboration"
+                    class="ww-rich-text__menu-timeline"
+                    :versions="versionHistory.versions"
+                    :selected-id="versionHistory.selectedId"
+                    :live-epoch="versionHistory.liveEpoch"
+                    :epoch-label="content.timelineEpochLabel || 'Époque'"
+                    :loading="versionHistory.loadingList"
+                    @select="selectTimelineVersion" />
                 </div>
 
                 <!-- Indicateur de section visible (fil d'Ariane des titres). Rendu
@@ -2901,38 +2902,46 @@ export default {
     border-radius: 3px 3px 0 3px;
 }
 
-/* ===== Mode historique : transition menu ↔ frise chronologique ===== */
+/* ===== Mode historique : la frise se superpose au contenu du menu =====
+   Le conteneur du menu garde sa taille et sa position ; seul son contenu
+   s'estompe pendant que la frise apparaît dans la même boîte. */
 .ww-rich-text {
     position: relative;
 }
 
 .ww-rich-text__menu-slot {
-    max-height: 300px;
-    transition: max-height 0.3s ease, opacity 0.25s ease, transform 0.3s ease;
-    transform-origin: top;
+    position: relative;
 }
 
-.ww-rich-text__menu-slot.-collapsed {
-    max-height: 0;
-    overflow: hidden;
+/* Sans menu du tout, réserver la place de la frise en mode historique */
+.ww-rich-text__menu-slot.-history:not(:has(.ww-rich-text__menu)) {
+    min-height: 52px;
+}
+
+.ww-rich-text__menu-slot .ww-rich-text__menu {
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.ww-rich-text__menu-slot.-history .ww-rich-text__menu {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(-4px);
     pointer-events: none;
 }
 
-.ww-rich-text .version-timeline {
-    max-height: 90px;
-    transition: max-height 0.3s ease, opacity 0.25s ease, transform 0.3s ease;
-    transform-origin: top;
+.ww-rich-text__menu-timeline {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: translateY(4px);
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 5;
 }
 
-.ww-rich-text .version-timeline.-collapsed {
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    transform: translateY(-8px);
-    pointer-events: none;
-    border-bottom-width: 0;
+.ww-rich-text__menu-slot.-history .ww-rich-text__menu-timeline {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
 }
 
 /* ===== Overlay de chargement d'une époque archivée ===== */

@@ -3180,11 +3180,8 @@ export default {
             section: 'settings',
             options: {
                 icon: 'history',
-                title: { en: 'Versions', fr: 'Versions' },
-                content: {
-                    en: 'Version history, diff display and timeline',
-                    fr: 'Historique des versions, affichage des diffs et frise chronologique',
-                },
+                title: 'Versions',
+                content: 'Historique des versions, affichage des diffs et frise chronologique',
             },
             hidden: content => !content.enableCollaboration,
         },

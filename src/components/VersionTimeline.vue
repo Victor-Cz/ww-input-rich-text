@@ -12,12 +12,15 @@
                     <div class="version-timeline__versions">
                         <button v-for="v in group.versions" :key="v.id" type="button"
                             class="version-timeline__version"
-                            :class="{ '-selected': v.id === selectedId }"
+                            :class="{ '-selected': v.id === activeId }"
                             :data-version-id="v.id"
                             :title="tooltip(v)"
-                            @click="$emit('select', v)">
+                            @click="onClickVersion(v)">
                             <span class="version-timeline__tick"></span>
-                            <span class="version-timeline__date">{{ formatDate(v.created_at) }}</span>
+                            <!-- La date n'est affichée que sur la version active -->
+                            <span v-if="v.id === activeId" class="version-timeline__date">
+                                {{ formatDate(v.created_at) }}
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -41,8 +44,16 @@ export default {
     data: () => ({
         scrollTimer: null,
         suppressScrollSelect: false,
+        // Surlignage instantané pendant le scroll, avant que la sélection
+        // réelle (et le rendu du diff) ne soit confirmée
+        provisionalId: null,
+        // La sélection vient du scroll : ne pas re-centrer (effet élastique)
+        fromScroll: false,
     }),
     computed: {
+        activeId() {
+            return this.provisionalId || this.selectedId;
+        },
         // Groupes consécutifs par époque (l'ordre du tableau est préservé :
         // les plus récentes — et l'époque courante — à gauche)
         groups() {
@@ -57,6 +68,11 @@ export default {
     },
     watch: {
         selectedId() {
+            this.provisionalId = null;
+            if (this.fromScroll) {
+                this.fromScroll = false;
+                return;
+            }
             this.centerSelected();
         },
         versions() {
@@ -73,11 +89,15 @@ export default {
             return `${date} ${time}`;
         },
         tooltip(v) {
-            const parts = [`v${v.version_number}`];
+            const parts = [`v${v.version_number}`, this.formatDate(v.created_at)];
             if (v.label) parts.push(v.label);
             else if (v.source) parts.push(v.source);
             if (v.created_by_name) parts.push(v.created_by_name);
             return parts.join(' · ');
+        },
+        onClickVersion(v) {
+            this.provisionalId = null;
+            this.$emit('select', v);
         },
         contentFits() {
             const scroller = this.$refs.scroller;
@@ -85,7 +105,23 @@ export default {
             if (!scroller || !track) return true;
             return track.scrollWidth <= scroller.clientWidth + 1;
         },
-        // La sélection se centre dans la frise — sauf si tout tient déjà
+        nearestToCenter() {
+            const scroller = this.$refs.scroller;
+            if (!scroller) return null;
+            const center = scroller.scrollLeft + scroller.clientWidth / 2;
+            let bestId = null;
+            let bestDist = Infinity;
+            for (const el of scroller.querySelectorAll('[data-version-id]')) {
+                const dist = Math.abs(el.offsetLeft + el.offsetWidth / 2 - center);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    bestId = el.getAttribute('data-version-id');
+                }
+            }
+            return bestId ? this.versions.find(v => v.id === bestId) || null : null;
+        },
+        // La sélection se centre dans la frise — sauf si tout tient déjà,
+        // ou si elle provient du scroll de l'utilisateur
         centerSelected() {
             if (!this.selectedId || this.contentFits()) return;
             const scroller = this.$refs.scroller;
@@ -97,32 +133,24 @@ export default {
             clearTimeout(this.scrollTimer);
             this.scrollTimer = setTimeout(() => {
                 this.suppressScrollSelect = false;
-            }, 450);
+            }, 400);
         },
-        // Scroll manuel : la version la plus proche du centre devient la sélection
+        // Scroll manuel : surlignage immédiat de la version la plus proche du
+        // centre, sélection réelle confirmée dès que le scroll se pose
         onScroll() {
             if (this.suppressScrollSelect || this.contentFits()) return;
+            const nearest = this.nearestToCenter();
+            if (nearest) this.provisionalId = nearest.id;
             clearTimeout(this.scrollTimer);
             this.scrollTimer = setTimeout(() => {
                 if (this.suppressScrollSelect) return;
-                const scroller = this.$refs.scroller;
-                if (!scroller) return;
-                const center = scroller.scrollLeft + scroller.clientWidth / 2;
-                let best = null;
-                let bestDist = Infinity;
-                for (const el of scroller.querySelectorAll('[data-version-id]')) {
-                    const dist = Math.abs(el.offsetLeft + el.offsetWidth / 2 - center);
-                    if (dist < bestDist) {
-                        bestDist = dist;
-                        best = el;
-                    }
+                const version = this.nearestToCenter();
+                this.provisionalId = null;
+                if (version && version.id !== this.selectedId) {
+                    this.fromScroll = true;
+                    this.$emit('select', version);
                 }
-                if (!best) return;
-                const id = best.getAttribute('data-version-id');
-                if (id === this.selectedId) return;
-                const version = this.versions.find(v => v.id === id);
-                if (version) this.$emit('select', version);
-            }, 180);
+            }, 100);
         },
     },
     beforeUnmount() {
@@ -133,30 +161,38 @@ export default {
 
 <style lang="scss" scoped>
 .version-timeline {
+    height: 100%;
     overflow-x: auto;
     overflow-y: hidden;
-    border-bottom: 1px solid #e5e7eb;
     background: #fff;
-    scrollbar-width: thin;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
 
     &__track {
         display: inline-flex;
         align-items: stretch;
         min-width: 100%;
-        padding: 6px 12px 0;
+        height: 100%;
+        padding: 4px 12px 14px;
+        box-sizing: border-box;
     }
 
     &__loading {
-        padding: 14px;
+        align-self: center;
+        padding: 0 14px;
         color: #9ca3af;
     }
 
     &__epoch {
         display: flex;
         flex-direction: column;
+        justify-content: center;
         border-left: 2px solid #d1d5db;
         padding-left: 10px;
-        margin-right: 28px;
+        margin-right: 24px;
 
         &:first-child {
             border-left: none;
@@ -167,9 +203,10 @@ export default {
     &__epoch-header {
         display: flex;
         align-items: baseline;
-        gap: 6px;
+        gap: 5px;
         color: #9ca3af;
         user-select: none;
+        line-height: 1.1;
 
         &.-current {
             color: #111827;
@@ -177,64 +214,61 @@ export default {
     }
 
     &__epoch-number {
-        font-size: 20px;
+        font-size: 15px;
         font-weight: 700;
-        line-height: 1.2;
     }
 
     &__epoch-label {
-        font-size: 11px;
+        font-size: 10px;
     }
 
     &__versions {
         display: flex;
         align-items: flex-end;
-        gap: 2px;
-        padding: 4px 0 0;
+        gap: 1px;
+        padding-top: 3px;
     }
 
     &__version {
+        position: relative;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 3px;
-        padding: 2px 4px 6px;
+        padding: 2px 3px;
         background: none;
         border: none;
         cursor: pointer;
-        border-radius: 4px;
+        border-radius: 3px;
 
-        &:hover {
-            background: #f3f4f6;
+        &:hover .version-timeline__tick {
+            background: #9ca3af;
         }
 
-        &.-selected {
-            background: #eef2ff;
-
-            .version-timeline__tick {
-                background: #4f46e5;
-                height: 18px;
-            }
-
-            .version-timeline__date {
-                color: #4f46e5;
-                font-weight: 600;
-            }
+        &.-selected .version-timeline__tick {
+            background: #4f46e5;
+            height: 16px;
         }
     }
 
     &__tick {
         width: 2px;
-        height: 12px;
+        height: 11px;
         background: #d1d5db;
         border-radius: 1px;
+        transition: height 0.12s ease, background 0.12s ease;
     }
 
     &__date {
-        font-size: 10px;
-        color: #9ca3af;
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 9px;
+        font-weight: 600;
+        color: #4f46e5;
         white-space: nowrap;
         user-select: none;
+        pointer-events: none;
     }
 }
 </style>
