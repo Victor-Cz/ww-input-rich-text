@@ -45,6 +45,7 @@ export default {
         resizeObserver: null,
         // Molette à crans : accumulation puis pas d'une barre (effet detent)
         wheelAccumulator: 0,
+        lastWheelTime: 0,
         // Animation de défilement maison (décélération douce en fin de course)
         scrollAnimId: null,
     }),
@@ -147,6 +148,18 @@ export default {
             else if (event.deltaMode === 2) delta *= 100;
             // Changement de sens : repartir de zéro
             if (Math.sign(delta) !== Math.sign(this.wheelAccumulator)) this.wheelAccumulator = 0;
+
+            // Nouveau geste (après une pause) : premier cran immédiat,
+            // les suivants suivent le seuil pour garder le rythme
+            const now = performance.now();
+            const isNewGesture = now - this.lastWheelTime > 200;
+            this.lastWheelTime = now;
+            if (isNewGesture) {
+                this.wheelAccumulator = 0;
+                this.stepSelection(delta > 0 ? 1 : -1);
+                return;
+            }
+
             this.wheelAccumulator += delta;
             const threshold = 25;
             while (Math.abs(this.wheelAccumulator) >= threshold) {
