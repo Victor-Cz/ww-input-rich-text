@@ -360,7 +360,7 @@ export default {
     &.-selected .version-timeline__tick {
         width: 3px;
         height: 32px;
-        background: #4f46e5;
+        background: #111827;
     }
 }
 
