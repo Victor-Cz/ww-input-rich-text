@@ -224,12 +224,15 @@ export default {
         // en douceur pour l'amener au centre — le « clic » d'une molette de
         // réglage plutôt qu'un défilement libre
         onWheel(event) {
-            const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+            let delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
             if (!delta) return;
+            // Normaliser les unités : deltaMode 1 = lignes, 2 = pages
+            if (event.deltaMode === 1) delta *= 16;
+            else if (event.deltaMode === 2) delta *= 100;
             // Changement de sens : repartir de zéro
             if (Math.sign(delta) !== Math.sign(this.wheelAccumulator)) this.wheelAccumulator = 0;
             this.wheelAccumulator += delta;
-            const threshold = 50;
+            const threshold = 25;
             while (Math.abs(this.wheelAccumulator) >= threshold) {
                 const direction = this.wheelAccumulator > 0 ? 1 : -1;
                 this.wheelAccumulator -= direction * threshold;
@@ -355,17 +358,20 @@ export default {
     }
 }
 
+/* La rangée (hauteur de la plus grande barre) est centrée verticalement,
+   les barres s'y alignent en bas sur une ligne de base commune */
 .version-timeline__versions {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
+    height: 30px;
     gap: 1px;
 }
 
 .version-timeline__version {
     position: relative;
     display: flex;
-    align-items: center;
-    align-self: stretch;
+    align-items: flex-end;
+    height: 100%;
     padding: 0 3px;
     background: none;
     border: none;
