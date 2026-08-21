@@ -1735,7 +1735,7 @@ export default {
         // Référence par défaut du compare : la version qui précède celle
         // affichée (retrouvée par son snapshot, sinon la dernière), dans la
         // même époque — pour rendre le même diff que la frise. Sans
-        // prédécesseur, tout apparaît en ajout, comme dans la frise.
+        // prédécesseur, la version s'affiche sans annotations.
         async getDefaultCompareReference(snapshot = null) {
             const { versions, liveEpoch } = await this.getVersionList();
             if (!versions.length) return null;
@@ -1750,7 +1750,9 @@ export default {
 
         /**
          * Rendu du diff annoté (colorés par auteur) entre deux états.
-         * prevSnapshot null = document vide (tout apparaît comme ajouté).
+         * prevSnapshot null = comparaison de l'état à lui-même : rien n'est
+         * annoté — le contenu initial est « là », pas ajouté (cas de la
+         * toute première version, ou du début d'une époque).
          * Limite : versions de l'époque du document affiché uniquement.
          */
         renderVersionCompare(snapshot = null, prevSnapshot = null) {
@@ -1769,10 +1771,11 @@ export default {
                 };
                 const view = this.richEditor.view;
                 const compareDoc = this.getCompareDoc();
+                const shown = snapshot ? decode(snapshot) : Y.snapshot(compareDoc);
                 view.dispatch(
                     view.state.tr.setMeta(ySyncPluginKey, {
-                        snapshot: snapshot ? decode(snapshot) : Y.snapshot(compareDoc),
-                        prevSnapshot: prevSnapshot ? decode(prevSnapshot) : Y.emptySnapshot,
+                        snapshot: shown,
+                        prevSnapshot: prevSnapshot ? decode(prevSnapshot) : shown,
                     })
                 );
                 this.richEditor.setEditable(false);
