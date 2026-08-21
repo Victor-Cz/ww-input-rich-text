@@ -45,12 +45,6 @@ export default {
         // La sélection vient du scroll : ne pas re-centrer (effet élastique)
         fromScroll: false,
         resizeObserver: null,
-        // Molette à crans : accumulation puis pas d'une barre (effet detent)
-        wheelAccumulator: 0,
-        lastWheelTime: 0,
-        // Temps mort après un pas : avale les événements résiduels du même
-        // cran physique (le navigateur en découpe souvent plusieurs)
-        stepCooldownUntil: 0,
         // Animation de défilement maison (décélération douce en fin de course)
         scrollAnimId: null,
     }),
@@ -133,54 +127,16 @@ export default {
             }
             return bestId ? this.versions.find(v => v.id === bestId) || null : null;
         },
-        // Pas d'une barre dans l'ordre chronologique affiché (effet detent)
-        stepSelection(direction) {
-            const list = this.displayVersions;
-            if (!list.length) return;
-            const idx = list.findIndex(v => v.id === this.selectedId);
-            const nextIdx = idx === -1 ? list.length - 1 : Math.min(list.length - 1, Math.max(0, idx + direction));
-            const next = list[nextIdx];
-            if (next && next.id !== this.selectedId) this.$emit('select', next);
-        },
-        // Molette à crans : chaque cran avance d'UNE barre, la frise glisse
-        // en douceur pour l'amener au centre — le « clic » d'une molette de
-        // réglage plutôt qu'un défilement libre
+        // Molette : défilement direct de la frise (vertical → horizontal) ;
+        // la sélection suit la barre la plus proche du centre (onScroll)
         onWheel(event) {
             let delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
             if (!delta) return;
             // Normaliser les unités : deltaMode 1 = lignes, 2 = pages
             if (event.deltaMode === 1) delta *= 16;
             else if (event.deltaMode === 2) delta *= 100;
-            // Changement de sens : repartir de zéro
-            if (Math.sign(delta) !== Math.sign(this.wheelAccumulator)) this.wheelAccumulator = 0;
-
-            const now = performance.now();
-            const isNewGesture = now - this.lastWheelTime > 200;
-            this.lastWheelTime = now;
-
-            // Temps mort : ignorer les résidus du cran qui vient d'être pris
-            if (now < this.stepCooldownUntil) {
-                this.wheelAccumulator = 0;
-                return;
-            }
-
-            // Nouveau geste (après une pause) : premier cran immédiat,
-            // les suivants suivent le seuil pour garder le rythme
-            if (isNewGesture) {
-                this.wheelAccumulator = 0;
-                this.stepCooldownUntil = now + 140;
-                this.stepSelection(delta > 0 ? 1 : -1);
-                return;
-            }
-
-            this.wheelAccumulator += delta;
-            const threshold = 25;
-            if (Math.abs(this.wheelAccumulator) >= threshold) {
-                const direction = this.wheelAccumulator > 0 ? 1 : -1;
-                this.wheelAccumulator = 0;
-                this.stepCooldownUntil = now + 140;
-                this.stepSelection(direction);
-            }
+            const scroller = this.$refs.scroller;
+            if (scroller) scroller.scrollLeft += delta;
         },
         // Défilement animé maison : décélération douce (ease-out cubique),
         // re-ciblable en cours de route sans à-coup
