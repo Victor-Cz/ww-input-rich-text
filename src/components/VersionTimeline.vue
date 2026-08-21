@@ -155,7 +155,9 @@ export default {
                 this.suppressScrollSelect = false;
             }
 
-            const gain = this.barPitch() / 100;
+            // Plancher : quand les barres sont très rapprochées, un cran
+            // déplace au moins ~16px (sinon la frise devient trop « dure »)
+            const gain = Math.max(this.barPitch(), 16) / 100;
             const max = scroller.scrollWidth - scroller.clientWidth;
             const from = this.wheelTarget !== null ? this.wheelTarget : scroller.scrollLeft;
             this.wheelTarget = Math.max(0, Math.min(max, from + delta * gain));
