@@ -50,6 +50,7 @@ export default {
         ],
         customSettingsPropertiesOrder: [
             'enableCollaboration',
+            'collaborationInfobox',
             [
                 'websocketUrl',
                 'documentId',
@@ -84,6 +85,7 @@ export default {
             'autofocus',
             ['useImageTemplates', 'useImageLayout'],
             ['useLinkTemplates', 'useLinkLayoutPopover', 'forceLinkPopoverDisplay', 'seoSiteDomain'],
+            'mentionInfobox',
             [
                 'enableMention',
                 'mentionChar',
@@ -133,7 +135,9 @@ export default {
                 'parameterAiMenuPlaceholders',
                 'parameterAiMenuCustomTypes',
             ],
+            'outlineInfobox',
             ['enableOutline', 'outlineLevels', 'outlineOffset', 'outlineIndicator'],
+            'seoInfobox',
             [
                 'enableSeoAnalysis',
                 'seoKeyword',
@@ -3175,15 +3179,52 @@ export default {
             /* wwEditor:end */
         },
         /* wwEditor:start */
+        collaborationInfobox: {
+            type: 'InfoBox',
+            section: 'settings',
+            options: {
+                variant: 'info',
+                title: 'Collaboration',
+                content: 'Connexion au serveur de collaboration temps réel (Hocuspocus) et identité utilisateur.',
+            },
+            hidden: content => !content.enableCollaboration,
+        },
         versionsInfobox: {
             type: 'InfoBox',
             section: 'settings',
             options: {
-                icon: 'history',
+                variant: 'info',
                 title: 'Versions',
-                content: 'Historique des versions, affichage des diffs et frise chronologique',
+                content: 'Historique des versions, affichage des diffs et frise chronologique.',
             },
             hidden: content => !content.enableCollaboration,
+        },
+        mentionInfobox: {
+            type: 'InfoBox',
+            section: 'settings',
+            options: {
+                variant: 'info',
+                title: 'Mentions',
+                content: 'Mentions @utilisateur dans le texte, avec liste de suggestions.',
+            },
+        },
+        outlineInfobox: {
+            type: 'InfoBox',
+            section: 'settings',
+            options: {
+                variant: 'info',
+                title: 'Sommaire',
+                content: 'Sommaire des titres du document et indicateur de section visible au scroll.',
+            },
+        },
+        seoInfobox: {
+            type: 'InfoBox',
+            section: 'settings',
+            options: {
+                variant: 'info',
+                title: 'SEO',
+                content: 'Analyse SEO du contenu : mot-clé, lisibilité, structure, méta-données.',
+            },
         },
         /* wwEditor:end */
         showVersionHistory: {
