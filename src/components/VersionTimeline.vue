@@ -1,30 +1,32 @@
 <template>
-    <div class="version-timeline" ref="scroller" @scroll.passive="onScroll">
+    <div class="version-timeline" :class="{ '-scrollable': scrollable }" ref="scroller" @scroll.passive="onScroll">
         <div class="version-timeline__track" ref="track">
-            <div v-if="loading" class="version-timeline__loading">…</div>
-            <template v-else>
-                <div v-for="group in groups" :key="group.epoch" class="version-timeline__epoch">
-                    <div class="version-timeline__epoch-header"
-                        :class="{ '-current': group.epoch === liveEpoch }">
-                        <span class="version-timeline__epoch-number">{{ group.epoch }}</span>
-                        <span class="version-timeline__epoch-label">{{ epochLabel }}</span>
+            <div class="version-timeline__content" ref="content">
+                <div v-if="loading" class="version-timeline__loading">…</div>
+                <template v-else>
+                    <div v-for="group in groups" :key="group.epoch" class="version-timeline__epoch">
+                        <div class="version-timeline__epoch-header"
+                            :class="{ '-current': group.epoch === liveEpoch }">
+                            <span class="version-timeline__epoch-number">{{ group.epoch }}</span>
+                            <span class="version-timeline__epoch-label">{{ epochLabel }}</span>
+                        </div>
+                        <div class="version-timeline__versions">
+                            <button v-for="v in group.versions" :key="v.id" type="button"
+                                class="version-timeline__version"
+                                :class="{ '-selected': v.id === activeId }"
+                                :data-version-id="v.id"
+                                :title="tooltip(v)"
+                                @click="onClickVersion(v)">
+                                <span class="version-timeline__tick"></span>
+                                <!-- La date n'est affichée que sur la version active -->
+                                <span v-if="v.id === activeId" class="version-timeline__date">
+                                    {{ formatDate(v.created_at) }}
+                                </span>
+                            </button>
+                        </div>
                     </div>
-                    <div class="version-timeline__versions">
-                        <button v-for="v in group.versions" :key="v.id" type="button"
-                            class="version-timeline__version"
-                            :class="{ '-selected': v.id === activeId }"
-                            :data-version-id="v.id"
-                            :title="tooltip(v)"
-                            @click="onClickVersion(v)">
-                            <span class="version-timeline__tick"></span>
-                            <!-- La date n'est affichée que sur la version active -->
-                            <span v-if="v.id === activeId" class="version-timeline__date">
-                                {{ formatDate(v.created_at) }}
-                            </span>
-                        </button>
-                    </div>
-                </div>
-            </template>
+                </template>
+            </div>
         </div>
     </div>
 </template>
@@ -33,7 +35,7 @@
 export default {
     name: 'VersionTimeline',
     props: {
-        // Versions triées de la plus récente à la plus ancienne
+        // Versions triées de la plus récente à la plus ancienne (ordre API)
         versions: { type: Array, default: () => [] },
         selectedId: { type: String, default: null },
         liveEpoch: { type: Number, default: null },
@@ -49,16 +51,25 @@ export default {
         provisionalId: null,
         // La sélection vient du scroll : ne pas re-centrer (effet élastique)
         fromScroll: false,
+        // Le contenu déborde : padding de bord (50%) pour que les extrémités
+        // puissent se placer au centre, et sélection par scroll active
+        scrollable: false,
+        resizeObserver: null,
     }),
     computed: {
         activeId() {
             return this.provisionalId || this.selectedId;
         },
-        // Groupes consécutifs par époque (l'ordre du tableau est préservé :
-        // les plus récentes — et l'époque courante — à gauche)
+        // Affichage chronologique : de la plus ancienne (gauche) à la plus
+        // récente (droite)
+        displayVersions() {
+            return [...this.versions].reverse();
+        },
+        // Groupes consécutifs par époque, chaque libellé d'époque à gauche
+        // de ses versions
         groups() {
             const groups = [];
-            for (const v of this.versions) {
+            for (const v of this.displayVersions) {
                 const last = groups[groups.length - 1];
                 if (last && last.epoch === v.epoch) last.versions.push(v);
                 else groups.push({ epoch: v.epoch, versions: [v] });
@@ -76,8 +87,18 @@ export default {
             this.centerSelected();
         },
         versions() {
-            this.$nextTick(() => this.centerSelected());
+            this.$nextTick(() => {
+                this.updateScrollable();
+                this.centerSelected();
+            });
         },
+    },
+    mounted() {
+        this.updateScrollable();
+        if (typeof ResizeObserver !== 'undefined') {
+            this.resizeObserver = new ResizeObserver(() => this.updateScrollable());
+            if (this.$refs.scroller) this.resizeObserver.observe(this.$refs.scroller);
+        }
     },
     methods: {
         formatDate(iso) {
@@ -99,11 +120,11 @@ export default {
             this.provisionalId = null;
             this.$emit('select', v);
         },
-        contentFits() {
+        updateScrollable() {
             const scroller = this.$refs.scroller;
-            const track = this.$refs.track;
-            if (!scroller || !track) return true;
-            return track.scrollWidth <= scroller.clientWidth + 1;
+            const content = this.$refs.content;
+            if (!scroller || !content) return;
+            this.scrollable = content.scrollWidth > scroller.clientWidth + 1;
         },
         nearestToCenter() {
             const scroller = this.$refs.scroller;
@@ -123,7 +144,7 @@ export default {
         // La sélection se centre dans la frise — sauf si tout tient déjà,
         // ou si elle provient du scroll de l'utilisateur
         centerSelected() {
-            if (!this.selectedId || this.contentFits()) return;
+            if (!this.selectedId || !this.scrollable) return;
             const scroller = this.$refs.scroller;
             const el = scroller?.querySelector(`[data-version-id="${this.selectedId}"]`);
             if (!el) return;
@@ -138,7 +159,7 @@ export default {
         // Scroll manuel : surlignage immédiat de la version la plus proche du
         // centre, sélection réelle confirmée dès que le scroll se pose
         onScroll() {
-            if (this.suppressScrollSelect || this.contentFits()) return;
+            if (this.suppressScrollSelect || !this.scrollable) return;
             const nearest = this.nearestToCenter();
             if (nearest) this.provisionalId = nearest.id;
             clearTimeout(this.scrollTimer);
@@ -155,26 +176,45 @@ export default {
     },
     beforeUnmount() {
         clearTimeout(this.scrollTimer);
+        if (this.resizeObserver) this.resizeObserver.disconnect();
     },
 };
 </script>
 
 <style lang="scss" scoped>
 .version-timeline {
+    position: relative;
     height: 100%;
     overflow-x: auto;
     overflow-y: hidden;
     background: #fff;
+    /* Scrollbar masquée : la navigation se fait au scroll/trackpad */
     scrollbar-width: none;
+    -ms-overflow-style: none;
 
     &::-webkit-scrollbar {
         display: none;
+        width: 0;
+        height: 0;
     }
 
     &__track {
         display: inline-flex;
-        align-items: stretch;
         min-width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Contenu débordant : padding d'une demi-frise de chaque côté pour que
+       la première et la dernière version puissent se placer au centre */
+    &.-scrollable &__track {
+        padding-left: 50%;
+        padding-right: 50%;
+    }
+
+    &__content {
+        display: inline-flex;
+        align-items: stretch;
         height: 100%;
         padding: 4px 12px 14px;
         box-sizing: border-box;
