@@ -203,7 +203,7 @@
                 </div>
                 <wwElement class="ww-rich-text__menu" v-else-if="content.customMenu"
                     v-bind="content.customMenuElement" />
-                <version-timeline v-if="shouldEnableCollaboration"
+                <version-timeline v-if="shouldEnableCollaboration && !timelineTargetEl"
                     class="ww-rich-text__menu-timeline"
                     :versions="versionHistory.versions"
                     :selected-id="versionHistory.selectedId"
@@ -212,6 +212,20 @@
                     :loading="versionHistory.loadingList"
                     @select="selectTimelineVersion" />
                 </div>
+
+                <!-- Frise téléportée dans un conteneur de la page (sélecteur
+                     CSS fourni) : le conteneur — et le menu qu'il abrite —
+                     reste entièrement sous le contrôle de l'utilisateur -->
+                <teleport v-if="shouldEnableCollaboration && timelineTargetEl" :to="timelineTargetEl">
+                    <version-timeline v-show="versionHistory.active"
+                        class="ww-rich-text__menu-timeline -teleported"
+                        :versions="versionHistory.versions"
+                        :selected-id="versionHistory.selectedId"
+                        :live-epoch="versionHistory.liveEpoch"
+                        :epoch-label="content.timelineEpochLabel || 'Époque'"
+                        :loading="versionHistory.loadingList"
+                        @select="selectTimelineVersion" />
+                </teleport>
 
                 <!-- Indicateur de section visible (fil d'Ariane des titres). Rendu
                      dès qu'il y a un sommaire, même sans section active :
@@ -539,6 +553,8 @@ export default {
             epochOverlay: { visible: false, targetEpoch: null, loading: false, pendingVersion: null },
         },
         epochBinaryCache: {},
+        // Conteneur externe de la frise (résolu depuis timelineContainerSelector)
+        timelineTargetEl: null,
         pendingSteps: [], // Accumulateur de diffs
         seoHighlightVisible: false, // reflété dans seo.highlighting
         outlineItems: [], // sommaire courant (avec positions doc, usage interne)
@@ -702,6 +718,9 @@ export default {
                 // Les options des extensions ychange sont figées au chargement
                 this.loadEditor();
             }
+        },
+        'content.timelineContainerSelector'() {
+            this.resolveTimelineTarget();
         },
         // Historique des versions piloté par l'état bindé
         'content.showVersionHistory'(value) {
@@ -1789,11 +1808,31 @@ export default {
             });
         },
 
+        // Résout le conteneur externe de la frise (peut apparaître après le
+        // montage : re-tenté à chaque ouverture de l'historique)
+        resolveTimelineTarget() {
+            const selector = (this.content.timelineContainerSelector || '').trim();
+            if (!selector) {
+                this.timelineTargetEl = null;
+                return;
+            }
+            try {
+                const doc = wwLib.getFrontDocument?.() || document;
+                this.timelineTargetEl = doc.querySelector(selector) || null;
+            } catch {
+                this.timelineTargetEl = null;
+            }
+            if (!this.timelineTargetEl) {
+                console.warn(`[Versions] Timeline container not found: ${selector}`);
+            }
+        },
+
         async openVersionHistory() {
             if (!this.shouldEnableCollaboration) {
                 console.warn('[Versions] History requires active collaboration');
                 return false;
             }
+            this.resolveTimelineTarget();
             const vh = this.versionHistory;
             vh.active = true;
             vh.loadingList = true;
@@ -2913,8 +2952,9 @@ export default {
     position: relative;
 }
 
-/* Sans menu du tout, réserver la place de la frise en mode historique */
-.ww-rich-text__menu-slot.-history:not(:has(.ww-rich-text__menu)) {
+/* Sans menu du tout, réserver la place de la frise en mode historique
+   (seulement si la frise est bien dans le slot, pas téléportée ailleurs) */
+.ww-rich-text__menu-slot.-history:not(:has(.ww-rich-text__menu)):has(.ww-rich-text__menu-timeline) {
     min-height: 52px;
 }
 
@@ -2942,6 +2982,21 @@ export default {
     opacity: 1;
     transform: none;
     pointer-events: auto;
+}
+
+/* Frise téléportée dans un conteneur de la page : positionnement normal,
+   elle épouse la boîte de l'utilisateur et laisse transparaître son style */
+.ww-rich-text__menu-timeline.-teleported {
+    position: relative;
+    inset: auto;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    width: 100%;
+    height: 100%;
+    min-height: 44px;
+    background: transparent;
+    z-index: auto;
 }
 
 /* ===== Overlay de chargement d'une époque archivée ===== */

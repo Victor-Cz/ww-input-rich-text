@@ -66,6 +66,7 @@ export default {
                 'showVersionHistory',
                 'versionDiffColorMode',
                 'versionDiffAuthors',
+                'timelineContainerSelector',
                 'timelineEpochLabel',
                 'epochLoadButtonText',
             ],
@@ -3219,6 +3220,22 @@ export default {
             propertyHelp: {
                 tooltip:
                     'How added/removed content is highlighted in version compare. In both modes, hovering shows the author in a tooltip.',
+            },
+            /* wwEditor:end */
+        },
+        timelineContainerSelector: {
+            section: 'settings',
+            label: { en: 'Timeline container (CSS selector)', fr: 'Conteneur de la frise (sélecteur CSS)' },
+            type: 'Text',
+            defaultValue: '',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            placeholder: '.ma-box-menu',
+            propertyHelp: {
+                tooltip:
+                    "Sélecteur CSS d'un conteneur de votre page (ex: une classe posée sur votre box de menu) : la frise y est rendue à la place du slot interne. Combinez avec la variable isVersionPreview pour masquer vos éléments de menu pendant l'historique.",
             },
             /* wwEditor:end */
         },
