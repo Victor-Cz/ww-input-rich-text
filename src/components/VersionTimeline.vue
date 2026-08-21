@@ -381,7 +381,7 @@ export default {
 }
 
 /* Séparateur discret entre époques (le concept n'est pas exposé au client) :
-   un petit trait centré, un peu plus épais mais pas plus haut que les barres */
+   un simple point centré sur l'axe, façon séparateur typographique */
 .version-timeline__epoch {
     position: relative;
     display: flex;
@@ -395,10 +395,10 @@ export default {
         left: 0;
         top: 50%;
         transform: translateY(-50%);
-        width: 3px;
-        height: 16px;
+        width: 4px;
+        height: 4px;
         background: #d1d5db;
-        border-radius: 2px;
+        border-radius: 50%;
     }
 
     &:first-child {
@@ -453,7 +453,7 @@ export default {
 .version-timeline__tick {
     width: 2px;
     height: 20px;
-    background: #d1d5db;
+    background: #b9c0ca;
     border-radius: 2px;
     transition: background 0.15s ease, width 0.15s ease, height 0.18s ease;
 }
