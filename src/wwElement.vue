@@ -1937,6 +1937,9 @@ export default {
 
         async selectTimelineVersion(version) {
             const vh = this.versionHistory;
+            // Téléchargement d'époque en cours : sélection gelée jusqu'à
+            // la fin (sinon le re-ciblage jette le téléchargement)
+            if (vh.epochOverlay.loading) return;
             const prev = this.previousVersionInEpoch(version);
 
             if (version.epoch === vh.liveEpoch) {

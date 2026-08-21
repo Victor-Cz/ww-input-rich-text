@@ -47,6 +47,7 @@ export default {
         provisionalId: null,
         // La sélection vient du scroll : ne pas re-centrer (effet élastique)
         fromScroll: false,
+        fromScrollTimer: null,
         resizeObserver: null,
         // Animation de défilement maison (décélération douce en fin de course)
         scrollAnimId: null,
@@ -251,6 +252,12 @@ export default {
                 this.provisionalId = null;
                 if (version && version.id !== this.selectedId) {
                     this.fromScroll = true;
+                    // Si la sélection ne change finalement pas (ex: overlay
+                    // d'époque), ne pas laisser le drapeau bloqué
+                    clearTimeout(this.fromScrollTimer);
+                    this.fromScrollTimer = setTimeout(() => {
+                        this.fromScroll = false;
+                    }, 800);
                     this.$emit('select', version);
                 }
                 // Posé de fin de course : caler la barre exactement au centre
@@ -267,6 +274,7 @@ export default {
     },
     beforeUnmount() {
         clearTimeout(this.scrollTimer);
+        clearTimeout(this.fromScrollTimer);
         if (this.scrollAnimId) cancelAnimationFrame(this.scrollAnimId);
         if (this.wheelAnimId) cancelAnimationFrame(this.wheelAnimId);
         if (this.resizeObserver) this.resizeObserver.disconnect();
