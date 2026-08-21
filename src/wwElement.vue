@@ -4,7 +4,7 @@
         editing: isEditing,
         'version-preview': isVersionPreview,
     }" data-capture
-        @wheel="onEditorWheel" :style="{
+        @wheel="onEditorWheel" @mouseover="onVersionDiffHover" :style="{
         '--primary-color': content.parameterAiMenuPrimaryColor ?? '#007bff',
         '--primary-color-1A': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '1A', // 10%
         '--primary-color-33': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '33', // 20%
@@ -1664,6 +1664,17 @@ export default {
             this.setIsVersionPreview(false);
         },
 
+        // Ancre la bulle d'attribution à droite quand l'élément survolé est
+        // dans la moitié droite du composant (sinon elle déborderait)
+        onVersionDiffHover(event) {
+            const el = event.target?.closest?.('[data-ychange-label]');
+            if (!el || !this.$el) return;
+            const containerRect = this.$el.getBoundingClientRect();
+            const elRect = el.getBoundingClientRect();
+            const isRightHalf = elRect.left - containerRect.left > containerRect.width / 2;
+            el.setAttribute('data-ychange-align', isRightHalf ? 'right' : 'left');
+        },
+
         // Image Layout actions
         insertEmptyImage(caption = null, position = null, refresh = false) {
             if (!this.content.useImageLayout) {
@@ -2625,5 +2636,12 @@ export default {
 
 .ww-rich-text .ProseMirror [data-ychange-type][data-ychange-label] {
     position: relative;
+}
+
+/* Élément dans la moitié droite : bulle ancrée à droite, déployée vers la gauche */
+.ww-rich-text .ProseMirror [data-ychange-label][data-ychange-align='right']:hover::after {
+    left: auto;
+    right: 0;
+    border-radius: 3px 3px 0 3px;
 }
 </style>
