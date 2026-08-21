@@ -702,6 +702,27 @@ export default {
                 this.loadEditor();
             }
         },
+        // Historique des versions piloté par l'état bindé
+        'content.showVersionHistory'(value) {
+            if (value) {
+                this.openVersionHistory();
+            } else if (this.versionHistory.active) {
+                this.closeVersionHistory();
+            }
+        },
+        // La sélection initiale attend que le document soit synchronisé
+        // (cas d'un binding déjà à true au chargement de la page)
+        'collaborationStatus.synced'(synced) {
+            if (!synced) return;
+            const vh = this.versionHistory;
+            if (this.content.showVersionHistory && !vh.active) {
+                this.openVersionHistory();
+                return;
+            }
+            if (vh.active && !vh.selectedId && vh.versions.length) {
+                this.selectTimelineVersion(vh.versions[0]);
+            }
+        },
         // Époque périmée (document compacté côté serveur pendant une coupure) :
         // l'état Yjs local est inutilisable, on repart d'un document vierge
         'collaborationStatus.staleEpoch'(stale) {
@@ -1782,8 +1803,12 @@ export default {
                 vh.versions = res.versions || [];
                 vh.liveEpoch = res.currentEpoch ?? null;
                 vh.loadingList = false;
+                // Sélection initiale seulement si le doc est synchronisé ;
+                // sinon le watcher collaborationStatus.synced s'en chargera
                 const latest = vh.versions[0];
-                if (latest) await this.selectTimelineVersion(latest);
+                if (latest && this.collaborationStatus?.synced) {
+                    await this.selectTimelineVersion(latest);
+                }
                 return true;
             } catch (e) {
                 console.error('[Versions] Failed to load history:', e);

@@ -56,14 +56,18 @@ export default {
                 'authToken',
                 'userName',
                 'userId',
-                'versionDiffColorMode',
-                'versionDiffAuthors',
-                'timelineEpochLabel',
-                'epochLoadButtonText',
                 'autoConnect',
                 'saveMode',
                 'saveDebounce',
                 'maxConnectionAttempts',
+            ],
+            'versionsInfobox',
+            [
+                'showVersionHistory',
+                'versionDiffColorMode',
+                'versionDiffAuthors',
+                'timelineEpochLabel',
+                'epochLoadButtonText',
             ],
             'formInfobox',
             ['fieldName', 'customValidation', 'validation'],
@@ -614,14 +618,6 @@ export default {
         {
             label: { en: 'Collab: Hide version preview', fr: 'Collab: Quitter l’aperçu de version' },
             action: 'hideVersionPreview',
-        },
-        {
-            label: { en: 'Collab: Open version history', fr: "Collab: Ouvrir l'historique des versions" },
-            action: 'openVersionHistory',
-        },
-        {
-            label: { en: 'Collab: Close version history', fr: "Collab: Fermer l'historique des versions" },
-            action: 'closeVersionHistory',
         },
         // Image Layout actions
         {
@@ -3175,6 +3171,36 @@ export default {
             propertyHelp: {
                 tooltip:
                     'Stable identifier used to attribute each written character in version history (falls back to User Name if empty)',
+            },
+            /* wwEditor:end */
+        },
+        /* wwEditor:start */
+        versionsInfobox: {
+            type: 'InfoBox',
+            section: 'settings',
+            options: {
+                icon: 'history',
+                title: { en: 'Versions', fr: 'Versions' },
+                content: {
+                    en: 'Version history, diff display and timeline',
+                    fr: 'Historique des versions, affichage des diffs et frise chronologique',
+                },
+            },
+            hidden: content => !content.enableCollaboration,
+        },
+        /* wwEditor:end */
+        showVersionHistory: {
+            section: 'settings',
+            label: { en: 'Show version history', fr: "Afficher l'historique des versions" },
+            type: 'OnOff',
+            defaultValue: false,
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            propertyHelp: {
+                tooltip:
+                    'Bind this to a variable: true opens the version timeline (replaces the menu), false returns to normal editing',
             },
             /* wwEditor:end */
         },
