@@ -567,8 +567,6 @@ export default {
         epochBinaryCache: {},
         // Conteneur externe de la frise (résolu depuis timelineContainerSelector)
         timelineTargetEl: null,
-        // Surveillance du conteneur pendant l'historique (re-résolution si détaché)
-        timelineTargetTimer: null,
         pendingSteps: [], // Accumulateur de diffs
         seoHighlightVisible: false, // reflété dans seo.highlighting
         outlineItems: [], // sommaire courant (avec positions doc, usage interne)
@@ -1852,8 +1850,8 @@ export default {
         },
 
         // Résout le conteneur externe de la frise (peut apparaître après le
-        // montage : surveillé tant que l'historique est actif)
-        resolveTimelineTarget(quiet = false) {
+        // montage : re-tenté à chaque ouverture de l'historique)
+        resolveTimelineTarget() {
             const selector = (this.content.timelineContainerSelector || '').trim();
             if (!selector) {
                 this.timelineTargetEl = null;
@@ -1865,30 +1863,18 @@ export default {
             } catch {
                 this.timelineTargetEl = null;
             }
-            if (!this.timelineTargetEl && !quiet) {
+            if (!this.timelineTargetEl) {
                 console.warn(`[Versions] Timeline container not found: ${selector}`);
             }
         },
 
-        // WeWeb peut rendre — ou re-rendre — le conteneur après nous : tant
-        // que l'historique est actif, on re-résout dès que le nœud mémorisé
-        // est absent ou détaché du DOM (résolution pure, aucun rendu)
-        startTimelineTargetWatch() {
-            this.stopTimelineTargetWatch();
-            this.resolveTimelineTarget();
-            this.timelineTargetTimer = setInterval(() => {
+        // Le conteneur peut apparaître après nous : réessayer quelques fois
+        async resolveTimelineTargetWithRetry(attempts = 6) {
+            for (let i = 0; i < attempts; i++) {
+                this.resolveTimelineTarget();
                 const wanted = (this.content.timelineContainerSelector || '').trim();
-                if (!wanted) return;
-                if (!this.timelineTargetEl || !this.timelineTargetEl.isConnected) {
-                    this.resolveTimelineTarget(true);
-                }
-            }, 500);
-        },
-
-        stopTimelineTargetWatch() {
-            if (this.timelineTargetTimer) {
-                clearInterval(this.timelineTargetTimer);
-                this.timelineTargetTimer = null;
+                if (this.timelineTargetEl || !wanted) return;
+                await new Promise(resolve => setTimeout(resolve, 250));
             }
         },
 
@@ -1897,7 +1883,7 @@ export default {
                 console.warn('[Versions] History requires active collaboration');
                 return false;
             }
-            this.startTimelineTargetWatch();
+            this.resolveTimelineTargetWithRetry();
             const vh = this.versionHistory;
             vh.active = true;
             vh.loadingList = true;
@@ -1928,7 +1914,6 @@ export default {
         },
 
         closeVersionHistory() {
-            this.stopTimelineTargetWatch();
             const vh = this.versionHistory;
             vh.active = false;
             vh.selectedId = null;
@@ -2496,9 +2481,6 @@ export default {
             this.outlineDebounce = null;
         }
         this.detachOutlineListeners();
-
-        // Arrêter la surveillance du conteneur de la frise
-        this.stopTimelineTargetWatch();
 
         // Nettoyer la collaboration
         this.destroyCollaboration();
