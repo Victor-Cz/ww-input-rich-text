@@ -1,10 +1,11 @@
 <template>
     <div class="version-timeline">
-        <!-- Date de la version au centre, dans le creux formé par les barres -->
-        <div v-if="activeDateLabel" class="version-timeline__date">{{ activeDateLabel }}</div>
+        <!-- Date de la barre survolée, dans le creux formé par les barres -->
+        <div v-if="hoveredDateLabel" class="version-timeline__date"
+            :style="{ left: `${dateLeft}px` }">{{ hoveredDateLabel }}</div>
 
         <div class="version-timeline__scroller" ref="scroller"
-            @scroll.passive="onScroll" @wheel.prevent.stop="onWheel">
+            @scroll.passive="onScroll" @wheel.prevent.stop="onWheel" @mouseleave="clearHover">
             <div class="version-timeline__track" ref="track">
                 <div class="version-timeline__content" ref="content">
                     <div v-if="loading" class="version-timeline__loading">…</div>
@@ -15,7 +16,7 @@
                                     class="version-timeline__version"
                                     :class="{ '-selected': v.id === activeId }"
                                     :data-version-id="v.id"
-                                    :title="tooltip(v)"
+                                    @mouseenter="onHoverVersion(v, $event)"
                                     @click="onClickVersion(v)">
                                     <span class="version-timeline__tick"></span>
                                 </button>
@@ -50,14 +51,21 @@ export default {
         fromScroll: false,
         resizeObserver: null,
         rafId: null,
+        // Défilement inertiel à la molette : cible + animation vers elle
+        scrollAnimId: null,
+        scrollTarget: null,
+        // Barre survolée : creux local + date affichée au-dessus
+        hoveredId: null,
+        dateLeft: 0,
     }),
     computed: {
         activeId() {
             return this.provisionalId || this.selectedId;
         },
-        activeDateLabel() {
-            const active = this.versions.find(v => v.id === this.activeId);
-            return active ? this.formatDate(active.created_at) : '';
+        hoveredDateLabel() {
+            if (!this.hoveredId) return '';
+            const hovered = this.versions.find(v => v.id === this.hoveredId);
+            return hovered ? this.formatDate(hovered.created_at) : '';
         },
         // Affichage chronologique : de la plus ancienne (gauche) à la plus
         // récente (droite)
@@ -115,16 +123,27 @@ export default {
                 return d.toLocaleString();
             }
         },
-        tooltip(v) {
-            const parts = [`v${v.version_number}`, this.formatDate(v.created_at)];
-            if (v.label) parts.push(v.label);
-            else if (v.source) parts.push(v.source);
-            if (v.created_by_name) parts.push(v.created_by_name);
-            return parts.join(' · ');
-        },
         onClickVersion(v) {
             this.provisionalId = null;
             this.$emit('select', v);
+        },
+        // Survol d'une barre : creux local autour d'elle + date au-dessus
+        onHoverVersion(v, event) {
+            this.hoveredId = v.id;
+            const root = this.$el;
+            const el = event.currentTarget;
+            if (root && el) {
+                const rootRect = root.getBoundingClientRect();
+                const elRect = el.getBoundingClientRect();
+                const center = elRect.left + elRect.width / 2 - rootRect.left;
+                // Garder la date dans les limites du composant
+                this.dateLeft = Math.max(34, Math.min(rootRect.width - 34, center));
+            }
+            this.scheduleTickHeights();
+        },
+        clearHover() {
+            this.hoveredId = null;
+            this.scheduleTickHeights();
         },
         nearestToCenter() {
             const scroller = this.$refs.scroller;
@@ -150,30 +169,78 @@ export default {
                 this.updateTickHeights();
             });
         },
+        // Creux local autour de la barre survolée (barres alignées en bas),
+        // pour laisser passer la date au-dessus. Sans survol : hauteur pleine.
         updateTickHeights() {
             const scroller = this.$refs.scroller;
             if (!scroller) return;
-            const center = scroller.scrollLeft + scroller.clientWidth / 2;
-            const radius = 90;
-            const minFactor = 0.35;
-            for (const el of scroller.querySelectorAll('[data-version-id]')) {
+            const buttons = scroller.querySelectorAll('[data-version-id]');
+            if (!this.hoveredId) {
+                for (const el of buttons) {
+                    const tick = el.firstElementChild;
+                    if (tick) tick.style.height = '';
+                }
+                return;
+            }
+            const hoveredEl = scroller.querySelector(`[data-version-id="${this.hoveredId}"]`);
+            if (!hoveredEl) return;
+            const center = hoveredEl.offsetLeft + hoveredEl.offsetWidth / 2;
+            const radius = 70;
+            const minFactor = 0.55;
+            const baseHeight = 26;
+            for (const el of buttons) {
                 const dist = Math.abs(el.offsetLeft + el.offsetWidth / 2 - center);
                 const t = Math.min(1, dist / radius);
-                const factor = minFactor + (1 - minFactor) * t;
+                // smoothstep : dérivée nulle aux deux bouts, creux sans cassure
+                const eased = t * t * (3 - 2 * t);
+                const factor = minFactor + (1 - minFactor) * eased;
                 const tick = el.firstElementChild;
-                if (tick) tick.style.transform = `scaleY(${factor.toFixed(3)})`;
+                if (tick) tick.style.height = `${(baseHeight * factor).toFixed(1)}px`;
             }
         },
-        // La molette fait défiler la frise sous le sélecteur central
+        stopWheelAnimation() {
+            if (this.scrollAnimId) {
+                cancelAnimationFrame(this.scrollAnimId);
+                this.scrollAnimId = null;
+            }
+            this.scrollTarget = null;
+        },
+        // La molette fait défiler la frise sous le sélecteur central,
+        // avec inertie (interpolation vers la cible à chaque frame)
         onWheel(event) {
             const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
             if (!delta) return;
             const scroller = this.$refs.scroller;
-            if (scroller) scroller.scrollLeft += delta;
+            if (!scroller) return;
+            const max = scroller.scrollWidth - scroller.clientWidth;
+            const from = this.scrollAnimId !== null && this.scrollTarget !== null
+                ? this.scrollTarget
+                : scroller.scrollLeft;
+            this.scrollTarget = Math.max(0, Math.min(max, from + delta));
+            if (this.scrollAnimId === null) {
+                const step = () => {
+                    const s = this.$refs.scroller;
+                    if (!s || this.scrollTarget === null) {
+                        this.scrollAnimId = null;
+                        return;
+                    }
+                    const diff = this.scrollTarget - s.scrollLeft;
+                    if (Math.abs(diff) < 0.5) {
+                        s.scrollLeft = this.scrollTarget;
+                        this.scrollAnimId = null;
+                        this.scrollTarget = null;
+                        return;
+                    }
+                    s.scrollLeft += diff * 0.16;
+                    this.scrollAnimId = requestAnimationFrame(step);
+                };
+                this.scrollAnimId = requestAnimationFrame(step);
+            }
         },
         // Amène la version sélectionnée sous le sélecteur central
         centerSelected() {
             if (!this.selectedId) return;
+            this.stopWheelAnimation();
             const scroller = this.$refs.scroller;
             const el = scroller?.querySelector(`[data-version-id="${this.selectedId}"]`);
             if (!el) return;
@@ -208,6 +275,7 @@ export default {
     beforeUnmount() {
         clearTimeout(this.scrollTimer);
         if (this.rafId) cancelAnimationFrame(this.rafId);
+        this.stopWheelAnimation();
         if (this.resizeObserver) this.resizeObserver.disconnect();
     },
 };
@@ -222,8 +290,7 @@ export default {
 
 .version-timeline__date {
     position: absolute;
-    top: 3px;
-    left: 50%;
+    top: 2px;
     transform: translateX(-50%);
     font-size: 10px;
     font-weight: 600;
@@ -318,8 +385,7 @@ export default {
     width: 2px;
     height: 26px;
     background: #d1d5db;
-    border-radius: 1px;
-    transform-origin: bottom;
-    transition: background 0.12s ease, width 0.12s ease;
+    border-radius: 2px;
+    transition: background 0.12s ease, width 0.12s ease, height 0.1s ease-out;
 }
 </style>
