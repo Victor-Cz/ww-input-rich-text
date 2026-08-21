@@ -174,7 +174,7 @@ export default {
                         this.wheelTarget = null;
                         return;
                     }
-                    s.scrollLeft += diff * 0.22;
+                    s.scrollLeft += diff * 0.3;
                     this.wheelAnimId = requestAnimationFrame(step);
                 };
                 this.wheelAnimId = requestAnimationFrame(step);
