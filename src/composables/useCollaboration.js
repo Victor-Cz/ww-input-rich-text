@@ -100,6 +100,41 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // Clé d'identité de l'utilisateur local (stable) : id, fallback nom
     const localUserKey = () => collabConfig.value.userId || collabConfig.value.userName || 'Anonymous';
 
+    // Utilisateur local sans identité propre : le hash sur 'Anonymous'
+    // donnerait la même couleur à tous les anonymes
+    const isAnonymousLocal = () =>
+        !collabConfig.value.userId && (collabConfig.value.userName || 'Anonymous') === 'Anonymous';
+
+    // Couleur du curseur local : déterministe pour un utilisateur identifié,
+    // dérivée du clientID Yjs (unique par session) pour un anonyme
+    const localCursorColor = () =>
+        isAnonymousLocal() && ydocInstance
+            ? colorForUser(`anon-${ydocInstance.clientID}`)
+            : colorForUser(localUserKey());
+
+    // Garantit des couleurs distinctes entre anonymes : si un autre
+    // participant (de clientID inférieur — un seul des deux bouge) a la même
+    // couleur, l'utilisateur local prend la première couleur libre de la
+    // palette. Convergence assurée jusqu'à 12 participants simultanés.
+    const resolveAnonymousColorCollision = () => {
+        if (!isAnonymousLocal() || !provider.value?.awareness) return;
+        const awareness = provider.value.awareness;
+        const myClientId = awareness.clientID;
+        const states = awareness.getStates();
+        const me = states.get(myClientId)?.user;
+        if (!me?.color) return;
+
+        const others = [...states.entries()].filter(([clientId, state]) => clientId !== myClientId && state.user?.color);
+        const conflict = others.some(([clientId, state]) => state.user.color === me.color && clientId < myClientId);
+        if (!conflict) return;
+
+        const used = new Set(others.map(([, state]) => state.user.color));
+        const free = USER_COLORS.find(color => !used.has(color));
+        if (free && free !== me.color) {
+            awareness.setLocalStateField('user', { ...me, color: free });
+        }
+    };
+
     // Couleur déterministe par utilisateur : même id → même couleur,
     // partout (curseurs, liste users, diffs de version) et à chaque session
     const colorForUser = key => {
@@ -278,6 +313,9 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 // Alimenter le mapping de couleurs des diffs de version
                 // avec les utilisateurs présents (même clé que PermanentUserData)
                 users.forEach(user => registerUserColor(user.id || user.name));
+
+                // Éviter que deux anonymes partagent la même couleur
+                resolveAnonymousColorCollision();
 
                 console.log('[Collaboration] Awareness update - Users with colors:', users);
 
@@ -624,7 +662,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                     provider: prov,
                     user: {
                         name: collabConfig.value.userName || 'Anonymous',
-                        color: colorForUser(localUserKey()),
+                        color: localCursorColor(),
                         id: collabConfig.value.userId || null,
                     },
                 })
@@ -642,12 +680,12 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     };
 
     // Mettre à jour le nom d'utilisateur dans awareness
-    // (couleur inchangée : elle dépend de l'id, pas du nom affiché)
+    // (couleur inchangée pour un utilisateur identifié : elle dépend de l'id)
     const updateUserName = newName => {
         if (provider.value?.awareness) {
             provider.value.awareness.setLocalStateField('user', {
                 name: newName,
-                color: colorForUser(collabConfig.value.userId || newName),
+                color: localCursorColor(),
                 id: collabConfig.value.userId || null,
             });
         }
