@@ -320,18 +320,33 @@ export default {
     color: #9ca3af;
 }
 
-/* Séparateur discret entre époques (le concept n'est pas exposé au client) */
+/* Séparateur discret entre époques (le concept n'est pas exposé au client) :
+   un petit trait centré, pas plus haut que les barres */
 .version-timeline__epoch {
+    position: relative;
     display: flex;
     align-items: center;
-    align-self: stretch;
-    border-left: 2px solid #d1d5db;
     padding-left: 8px;
     margin-right: 8px;
 
+    &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 2px;
+        height: 18px;
+        background: #d1d5db;
+        border-radius: 1px;
+    }
+
     &:first-child {
-        border-left: none;
         padding-left: 0;
+
+        &::before {
+            display: none;
+        }
     }
 }
 
