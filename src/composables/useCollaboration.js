@@ -66,6 +66,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         documentId: content.value.documentId || '',
         authToken: content.value.authToken || '',
         userName: content.value.userName || 'Anonymous',
+        userId: content.value.userId || '',
         autoConnect: content.value.autoConnect ?? true,
         saveMode: content.value.saveMode || 'manual',
         saveDebounce: content.value.saveDebounce ?? 2000,
@@ -381,12 +382,14 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             ydocInstance = new Y.Doc({ gc: false });
 
             // Attribution durable par utilisateur (qui a écrit quoi) pour la
-            // comparaison de versions — stockée dans le document lui-même
+            // comparaison de versions — stockée dans le document lui-même.
+            // Clé = userId (stable face aux renommages et homonymes),
+            // fallback userName ; la résolution id → nom se fait côté UI.
             permanentUserDataInstance = new Y.PermanentUserData(ydocInstance);
             permanentUserDataInstance.setUserMapping(
                 ydocInstance,
                 ydocInstance.clientID,
-                collabConfig.value.userName || 'Anonymous'
+                collabConfig.value.userId || collabConfig.value.userName || 'Anonymous'
             );
 
             // Nettoyer l'URL WebSocket (enlever les slashes finaux)

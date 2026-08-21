@@ -55,6 +55,7 @@ export default {
                 'documentId',
                 'authToken',
                 'userName',
+                'userId',
                 'autoConnect',
                 'saveMode',
                 'saveDebounce',
@@ -3107,6 +3108,22 @@ export default {
             /* eslint-disable-next-line */
             /* wwEditor:start */
             placeholder: '= auth.user.name',
+            /* wwEditor:end */
+        },
+        userId: {
+            section: 'settings',
+            label: { en: 'User ID (attribution)', fr: 'ID utilisateur (attribution)' },
+            type: 'Text',
+            defaultValue: '',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            placeholder: '= auth.user.id',
+            propertyHelp: {
+                tooltip:
+                    'Stable identifier used to attribute each written character in version history (falls back to User Name if empty)',
+            },
             /* wwEditor:end */
         },
         autoConnect: {
