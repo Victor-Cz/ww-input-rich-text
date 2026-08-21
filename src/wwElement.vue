@@ -639,6 +639,12 @@ export default {
                 this.updateUserName(newName);
             }
         },
+        'collabConfig.versionDiffColorMode'(newMode, oldMode) {
+            if (newMode !== oldMode && this.shouldEnableCollaboration) {
+                // Les options des extensions ychange sont figées au chargement
+                this.loadEditor();
+            }
+        },
         // Époque périmée (document compacté côté serveur pendant une coupure) :
         // l'état Yjs local est inutilisable, on repart d'un document vierge
         'collaborationStatus.staleEpoch'(stale) {

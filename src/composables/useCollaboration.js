@@ -67,6 +67,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         authToken: content.value.authToken || '',
         userName: content.value.userName || 'Anonymous',
         userId: content.value.userId || '',
+        versionDiffColorMode: content.value.versionDiffColorMode || 'default',
         autoConnect: content.value.autoConnect ?? true,
         saveMode: content.value.saveMode || 'manual',
         saveDebounce: content.value.saveDebounce ?? 2000,
@@ -564,6 +565,21 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             { light: '#DB277726', dark: '#DB2777' },
         ];
 
+        // Résolution id → nom pour l'infobulle des diffs de versions,
+        // via la propriété bindable versionDiffAuthors ({ userId: name }).
+        // Lue au moment du rendu : la table peut arriver après le chargement.
+        const resolveAuthor = user => {
+            const authors = content.value.versionDiffAuthors;
+            if (authors && typeof authors === 'object' && authors[user]) {
+                return authors[user];
+            }
+            return user;
+        };
+        const ychangeOptions = {
+            colorMode: collabConfig.value.versionDiffColorMode,
+            resolveAuthor,
+        };
+
         const extensions = [
             Collaboration.configure({
                 document: doc,
@@ -575,8 +591,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 },
             }),
             // Schéma + rendu des annotations de versions (snapshot compare)
-            YChangeMark,
-            YChangeNodeAttrs,
+            YChangeMark.configure(ychangeOptions),
+            YChangeNodeAttrs.configure(ychangeOptions),
         ];
 
         // Ajouter CollaborationCursor

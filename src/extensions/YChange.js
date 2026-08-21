@@ -9,22 +9,52 @@ import { Extension, Mark } from '@tiptap/core';
  * - sur les nœuds : un attribut `ychange` avec la même forme
  * Ces deux extensions déclarent ce schéma et son rendu visuel.
  * Inertes en dehors du mode comparaison.
+ *
+ * Options (via .configure) :
+ * - colorMode : 'default' (vert = ajouté, rouge barré = retiré) ou
+ *   'author' (teinte par auteur, fournie par ySyncPlugin)
+ * - resolveAuthor : fonction id → nom affiché dans l'infobulle au survol
  */
 
-const changeStyle = change => {
+const DEFAULT_ADDED = { light: '#16a34a2b', dark: '#16a34a' };
+const DEFAULT_REMOVED = { light: '#dc26262b', dark: '#dc2626' };
+
+const changeStyle = (change, colorMode) => {
     if (!change || !change.type) return null;
-    const color = change.color || {};
+    const authorColor = colorMode === 'author' ? change.color : null;
     if (change.type === 'removed') {
-        return `background-color: ${color.light || '#ff525233'}; text-decoration: line-through; text-decoration-color: ${
-            color.dark || '#ff5252'
-        };`;
+        const color = authorColor || DEFAULT_REMOVED;
+        return `background-color: ${color.light}; text-decoration: line-through; text-decoration-color: ${color.dark};`;
     }
-    return `background-color: ${color.light || '#2bc21633'};`;
+    const color = authorColor || DEFAULT_ADDED;
+    return `background-color: ${color.light};`;
+};
+
+const changeAttrs = (change, options) => {
+    if (!change || !change.type) return {};
+    const attrs = {
+        'data-ychange-type': change.type,
+        'data-ychange-user': change.user,
+    };
+    const style = changeStyle(change, options.colorMode);
+    if (style) attrs.style = style;
+    if (change.user) {
+        const author = options.resolveAuthor ? options.resolveAuthor(change.user) : change.user;
+        attrs.title = change.type === 'removed' ? `Retiré par ${author}` : `Ajouté par ${author}`;
+    }
+    return attrs;
 };
 
 export const YChangeMark = Mark.create({
     name: 'ychange',
     inclusive: false,
+
+    addOptions() {
+        return {
+            colorMode: 'default',
+            resolveAuthor: user => user,
+        };
+    },
 
     addAttributes() {
         return {
@@ -39,20 +69,22 @@ export const YChangeMark = Mark.create({
     },
 
     renderHTML({ mark }) {
-        const attrs = {
-            'data-ychange-type': mark.attrs.type,
-            'data-ychange-user': mark.attrs.user,
-        };
-        const style = changeStyle(mark.attrs);
-        if (style) attrs.style = style;
-        return ['ychange', attrs, 0];
+        return ['ychange', changeAttrs(mark.attrs, this.options), 0];
     },
 });
 
 export const YChangeNodeAttrs = Extension.create({
     name: 'ychangeNodeAttrs',
 
+    addOptions() {
+        return {
+            colorMode: 'default',
+            resolveAuthor: user => user,
+        };
+    },
+
     addGlobalAttributes() {
+        const options = this.options;
         return [
             {
                 types: [
@@ -78,16 +110,7 @@ export const YChangeNodeAttrs = Extension.create({
                     ychange: {
                         default: null,
                         parseHTML: () => null,
-                        renderHTML: attributes => {
-                            if (!attributes.ychange) return {};
-                            const attrs = {
-                                'data-ychange-type': attributes.ychange.type,
-                                'data-ychange-user': attributes.ychange.user,
-                            };
-                            const style = changeStyle(attributes.ychange);
-                            if (style) attrs.style = style;
-                            return attrs;
-                        },
+                        renderHTML: attributes => changeAttrs(attributes.ychange, options),
                     },
                 },
             },

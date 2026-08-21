@@ -56,6 +56,8 @@ export default {
                 'authToken',
                 'userName',
                 'userId',
+                'versionDiffColorMode',
+                'versionDiffAuthors',
                 'autoConnect',
                 'saveMode',
                 'saveDebounce',
@@ -3124,6 +3126,43 @@ export default {
             propertyHelp: {
                 tooltip:
                     'Stable identifier used to attribute each written character in version history (falls back to User Name if empty)',
+            },
+            /* wwEditor:end */
+        },
+        versionDiffColorMode: {
+            section: 'settings',
+            label: { en: 'Version diff colors', fr: 'Couleurs des diffs de version' },
+            type: 'TextSelect',
+            options: {
+                options: [
+                    { value: 'default', label: { en: 'Default (green added / red removed)', fr: 'Défaut (vert ajouté / rouge retiré)' } },
+                    { value: 'author', label: { en: 'Author colors', fr: 'Couleurs par auteur' } },
+                ],
+            },
+            defaultValue: 'default',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            propertyHelp: {
+                tooltip:
+                    'How added/removed content is highlighted in version compare. In both modes, hovering shows the author in a tooltip.',
+            },
+            /* wwEditor:end */
+        },
+        versionDiffAuthors: {
+            section: 'settings',
+            label: { en: 'Version diff authors', fr: 'Auteurs des diffs de version' },
+            type: 'Object',
+            defaultValue: {},
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            placeholder: '= { "user-uuid": "Display name" }',
+            propertyHelp: {
+                tooltip:
+                    'Object mapping user ids to display names, used in the version compare tooltip (falls back to the raw id)',
             },
             /* wwEditor:end */
         },
