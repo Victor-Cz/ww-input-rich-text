@@ -214,9 +214,9 @@ export default {
 
     &__content {
         display: inline-flex;
-        align-items: stretch;
+        align-items: center;
         height: 100%;
-        padding: 4px 12px 14px;
+        padding: 2px 12px;
         box-sizing: border-box;
     }
 
@@ -226,13 +226,17 @@ export default {
         color: #9ca3af;
     }
 
+    /* Disposition horizontale : l'époque à gauche de ses picots, sur une
+       seule ligne — la frise tient dans une toolbar basse (~42px) */
     &__epoch {
         display: flex;
-        flex-direction: column;
-        justify-content: center;
+        flex-direction: row;
+        align-items: center;
+        align-self: stretch;
+        gap: 8px;
         border-left: 2px solid #d1d5db;
         padding-left: 10px;
-        margin-right: 24px;
+        margin-right: 20px;
 
         &:first-child {
             border-left: none;
@@ -242,11 +246,11 @@ export default {
 
     &__epoch-header {
         display: flex;
-        align-items: baseline;
-        gap: 5px;
+        flex-direction: column;
+        align-items: center;
         color: #9ca3af;
         user-select: none;
-        line-height: 1.1;
+        line-height: 1;
 
         &.-current {
             color: #111827;
@@ -254,19 +258,20 @@ export default {
     }
 
     &__epoch-number {
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 700;
     }
 
     &__epoch-label {
-        font-size: 10px;
+        font-size: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
     }
 
     &__versions {
         display: flex;
-        align-items: flex-end;
+        align-items: center;
         gap: 1px;
-        padding-top: 3px;
     }
 
     &__version {
@@ -300,7 +305,7 @@ export default {
 
     &__date {
         position: absolute;
-        top: 100%;
+        top: calc(100% - 1px);
         left: 50%;
         transform: translateX(-50%);
         font-size: 9px;
