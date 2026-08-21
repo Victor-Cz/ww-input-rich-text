@@ -625,12 +625,18 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         // (ychangeColorMapping), fallback sur la palette pour les inconnus
         const ychangeColors = USER_COLORS.map(dark => ({ light: `${dark}26`, dark }));
 
-        // Résolution id → nom pour l'infobulle des diffs de versions,
-        // via la propriété bindable versionDiffAuthors ({ userId: name }).
+        // Résolution id → nom pour l'infobulle des diffs de versions, via la
+        // propriété bindable versionDiffAuthors. Deux formats acceptés :
+        // objet { userId: name } ou tableau [{ id|user_id, name|display_name }].
         // Lue au moment du rendu : la table peut arriver après le chargement.
         const resolveAuthor = user => {
             const authors = content.value.versionDiffAuthors;
-            if (authors && typeof authors === 'object' && authors[user]) {
+            if (!authors) return user;
+            if (Array.isArray(authors)) {
+                const found = authors.find(a => a && (a.id === user || a.user_id === user));
+                return found?.name || found?.display_name || user;
+            }
+            if (typeof authors === 'object' && authors[user]) {
                 return authors[user];
             }
             return user;
