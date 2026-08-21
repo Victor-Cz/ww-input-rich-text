@@ -277,6 +277,7 @@ export default {
 }
 
 .version-timeline__scroller {
+    display: flex;
     height: 100%;
     overflow-x: auto;
     overflow-y: hidden;
@@ -292,7 +293,9 @@ export default {
 }
 
 .version-timeline__track {
-    display: inline-flex;
+    display: flex;
+    align-items: center;
+    flex: none;
     min-width: 100%;
     height: 100%;
     box-sizing: border-box;
@@ -303,7 +306,7 @@ export default {
 }
 
 .version-timeline__content {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     height: 100%;
     box-sizing: border-box;
