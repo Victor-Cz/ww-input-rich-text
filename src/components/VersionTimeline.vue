@@ -31,9 +31,6 @@ export default {
         // Versions triées de la plus récente à la plus ancienne (ordre API)
         versions: { type: Array, default: () => [] },
         selectedId: { type: String, default: null },
-        // Version en attente de confirmation (overlay de chargement d'époque) :
-        // reste la barre active tant que l'overlay est affiché
-        pendingId: { type: String, default: null },
         loading: { type: Boolean, default: false },
         // Couleur de la barre sélectionnée (config WeWeb)
         selectedColor: { type: String, default: '#111827' },
@@ -47,7 +44,6 @@ export default {
         provisionalId: null,
         // La sélection vient du scroll : ne pas re-centrer (effet élastique)
         fromScroll: false,
-        fromScrollTimer: null,
         resizeObserver: null,
         // Animation de défilement maison (décélération douce en fin de course)
         scrollAnimId: null,
@@ -57,7 +53,7 @@ export default {
     }),
     computed: {
         activeId() {
-            return this.provisionalId || this.pendingId || this.selectedId;
+            return this.provisionalId || this.selectedId;
         },
         // Affichage chronologique : de la plus ancienne (gauche) à la plus
         // récente (droite)
@@ -159,9 +155,7 @@ export default {
                 this.suppressScrollSelect = false;
             }
 
-            // Plancher : quand les barres sont très rapprochées, un cran
-            // déplace au moins ~16px (sinon la frise devient trop « dure »)
-            const gain = Math.max(this.barPitch(), 16) / 100;
+            const gain = this.barPitch() / 100;
             const max = scroller.scrollWidth - scroller.clientWidth;
             const from = this.wheelTarget !== null ? this.wheelTarget : scroller.scrollLeft;
             this.wheelTarget = Math.max(0, Math.min(max, from + delta * gain));
@@ -252,12 +246,6 @@ export default {
                 this.provisionalId = null;
                 if (version && version.id !== this.selectedId) {
                     this.fromScroll = true;
-                    // Si la sélection ne change finalement pas (ex: overlay
-                    // d'époque), ne pas laisser le drapeau bloqué
-                    clearTimeout(this.fromScrollTimer);
-                    this.fromScrollTimer = setTimeout(() => {
-                        this.fromScroll = false;
-                    }, 800);
                     this.$emit('select', version);
                 }
                 // Posé de fin de course : caler la barre exactement au centre
@@ -274,7 +262,6 @@ export default {
     },
     beforeUnmount() {
         clearTimeout(this.scrollTimer);
-        clearTimeout(this.fromScrollTimer);
         if (this.scrollAnimId) cancelAnimationFrame(this.scrollAnimId);
         if (this.wheelAnimId) cancelAnimationFrame(this.wheelAnimId);
         if (this.resizeObserver) this.resizeObserver.disconnect();
@@ -331,33 +318,18 @@ export default {
     color: #9ca3af;
 }
 
-/* Séparateur discret entre époques (le concept n'est pas exposé au client) :
-   un petit trait centré, pas plus haut que les barres */
+/* Séparateur discret entre époques (le concept n'est pas exposé au client) */
 .version-timeline__epoch {
-    position: relative;
     display: flex;
     align-items: center;
+    align-self: stretch;
+    border-left: 2px solid #d1d5db;
     padding-left: 8px;
     margin-right: 8px;
 
-    &::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 2px;
-        height: 18px;
-        background: #d1d5db;
-        border-radius: 1px;
-    }
-
     &:first-child {
+        border-left: none;
         padding-left: 0;
-
-        &::before {
-            display: none;
-        }
     }
 }
 

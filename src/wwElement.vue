@@ -208,7 +208,6 @@
                     class="ww-rich-text__menu-timeline"
                     :versions="versionHistory.versions"
                     :selected-id="versionHistory.selectedId"
-                    :pending-id="versionHistory.epochOverlay.pendingVersion?.id || null"
                     :loading="versionHistory.loadingList"
                     :selected-color="content.timelineSelectedColor"
                     @select="selectTimelineVersion" />
@@ -222,7 +221,6 @@
                         class="ww-rich-text__menu-timeline -teleported"
                         :versions="versionHistory.versions"
                         :selected-id="versionHistory.selectedId"
-                        :pending-id="versionHistory.epochOverlay.pendingVersion?.id || null"
                         :loading="versionHistory.loadingList"
                         :selected-color="content.timelineSelectedColor"
                         @select="selectTimelineVersion" />
@@ -1937,14 +1935,10 @@ export default {
 
         async selectTimelineVersion(version) {
             const vh = this.versionHistory;
-            // Téléchargement d'époque en cours : sélection gelée jusqu'à
-            // la fin (sinon le re-ciblage jette le téléchargement)
-            if (vh.epochOverlay.loading) return;
             const prev = this.previousVersionInEpoch(version);
 
             if (version.epoch === vh.liveEpoch) {
                 // Époque courante : comparaison sur le document vivant
-                this.cancelLoadEpoch();
                 if (this.isArchivePreview()) {
                     this.exitArchivePreview();
                     this.loadEditor();
@@ -1955,13 +1949,11 @@ export default {
                 }
             } else if (vh.loadedArchiveEpoch === version.epoch) {
                 // Archive déjà chargée dans l'éditeur
-                this.cancelLoadEpoch();
                 if (this.renderVersionCompare(version.snapshot, prev?.snapshot ?? null)) {
                     this.markTimelineSelection(version);
                 }
             } else if (this.epochBinaryCache[version.epoch]) {
                 // Binaire déjà téléchargé : pas d'overlay
-                this.cancelLoadEpoch();
                 await this.loadArchiveEpoch(version);
             } else {
                 // Époque archivée à télécharger : demander confirmation
@@ -1992,7 +1984,7 @@ export default {
             });
         },
 
-        async loadArchiveEpoch(version, stillWanted = null) {
+        async loadArchiveEpoch(version) {
             let binary = this.epochBinaryCache[version.epoch];
             if (!binary) {
                 const res = await this.collabApiFetch(
@@ -2001,8 +1993,6 @@ export default {
                 binary = res.binary_data;
                 this.epochBinaryCache[version.epoch] = binary;
             }
-            // L'utilisateur a pu repartir ailleurs pendant le téléchargement
-            if (stillWanted && !stillWanted()) return;
             const prev = this.previousVersionInEpoch(version);
             if (this.showArchiveVersionCompare(binary, version.snapshot, prev?.snapshot ?? null)) {
                 this.versionHistory.loadedArchiveEpoch = version.epoch;
@@ -2016,13 +2006,8 @@ export default {
             if (!version) return;
             vh.epochOverlay.loading = true;
             try {
-                await this.loadArchiveEpoch(
-                    version,
-                    () => this.versionHistory.epochOverlay.pendingVersion?.id === version.id
-                );
-                if (vh.epochOverlay.pendingVersion?.id === version.id) {
-                    vh.epochOverlay = { visible: false, targetEpoch: null, loading: false, pendingVersion: null };
-                }
+                await this.loadArchiveEpoch(version);
+                vh.epochOverlay = { visible: false, targetEpoch: null, loading: false, pendingVersion: null };
             } catch (e) {
                 console.error('[Versions] Epoch load failed:', e);
                 vh.epochOverlay.loading = false;
