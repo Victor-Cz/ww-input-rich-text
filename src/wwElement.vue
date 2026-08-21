@@ -2997,10 +2997,6 @@ export default {
     z-index: auto;
 }
 
-/* Frise téléportée : contenu centré dans la boîte quand il ne déborde pas */
-.ww-rich-text__menu-timeline.-teleported .version-timeline__track {
-    justify-content: center;
-}
 
 /* ===== Overlay de chargement d'une époque archivée ===== */
 .ww-rich-text__epoch-overlay {
