@@ -1700,18 +1700,47 @@ export default {
         },
 
         /**
-         * Affiche le document à un état donné, avec les ajouts/suppressions
-         * annotés (colorés par auteur) par rapport à un état de référence.
-         * @param {string|null} snapshot - état AFFICHÉ, le plus récent :
-         *   contenu base64 de la colonne ydoc_versions.snapshot (PAS l'id de
-         *   la ligne). null/vide = état actuel du document vivant.
+         * Action WeWeb : affiche le mode versionnage.
+         * @param {string|null} snapshot - état AFFICHÉ (base64 de la colonne
+         *   ydoc_versions.snapshot). null/vide = état actuel du document.
          * @param {string|null} prevSnapshot - état de RÉFÉRENCE, plus ancien.
-         *   null = document vide (tout apparaît comme ajouté).
-         * Ex. « quoi de neuf depuis la version X » : showVersionCompare(null, snapshotX)
-         * Limite : versions de l'époque courante uniquement (sinon passer par
-         * l'endpoint REST /versions/:id/content côté WeWeb).
+         *   null/vide = LA DERNIÈRE VERSION du document (récupérée
+         *   automatiquement) — « qu'est-ce qui a changé depuis ? ».
          */
-        showVersionCompare(snapshot = null, prevSnapshot = null) {
+        async showVersionCompare(snapshot = null, prevSnapshot = null) {
+            let reference = prevSnapshot;
+            if (!reference) {
+                try {
+                    reference = await this.getLatestVersionSnapshot();
+                } catch (e) {
+                    console.warn('[Versions] Could not fetch latest version as reference:', e);
+                    reference = null;
+                }
+            }
+            return this.renderVersionCompare(snapshot, reference);
+        },
+
+        // Snapshot de la dernière version de l'époque courante (référence par
+        // défaut du compare) — depuis l'historique chargé, sinon via l'API
+        async getLatestVersionSnapshot() {
+            const vh = this.versionHistory;
+            if (vh.versions.length) {
+                const latest = vh.versions[0];
+                return latest.epoch === vh.liveEpoch ? latest.snapshot : null;
+            }
+            const res = await this.collabApiFetch(
+                `/documents/${encodeURIComponent(this.collabConfig.documentId)}/versions`
+            );
+            const latest = (res.versions || [])[0];
+            return latest && latest.epoch === (res.currentEpoch ?? null) ? latest.snapshot : null;
+        },
+
+        /**
+         * Rendu du diff annoté (colorés par auteur) entre deux états.
+         * prevSnapshot null = document vide (tout apparaît comme ajouté).
+         * Limite : versions de l'époque du document affiché uniquement.
+         */
+        renderVersionCompare(snapshot = null, prevSnapshot = null) {
             if (!this.shouldEnableCollaboration || !this.richEditor || !this.ydoc) {
                 console.warn('[Versions] Compare requires active collaboration');
                 return false;
@@ -1768,7 +1797,7 @@ export default {
             try {
                 this.enterArchivePreview(epochBinary);
                 this.loadEditor();
-                const ok = this.showVersionCompare(snapshot, prevSnapshot);
+                const ok = this.renderVersionCompare(snapshot, prevSnapshot);
                 if (!ok) {
                     this.exitArchivePreview();
                     this.loadEditor();
@@ -1905,12 +1934,12 @@ export default {
                     this.loadEditor();
                     vh.loadedArchiveEpoch = null;
                 }
-                if (this.showVersionCompare(version.snapshot, prev?.snapshot ?? null)) {
+                if (this.renderVersionCompare(version.snapshot, prev?.snapshot ?? null)) {
                     this.markTimelineSelection(version);
                 }
             } else if (vh.loadedArchiveEpoch === version.epoch) {
                 // Archive déjà chargée dans l'éditeur
-                if (this.showVersionCompare(version.snapshot, prev?.snapshot ?? null)) {
+                if (this.renderVersionCompare(version.snapshot, prev?.snapshot ?? null)) {
                     this.markTimelineSelection(version);
                 }
             } else if (this.epochBinaryCache[version.epoch]) {
