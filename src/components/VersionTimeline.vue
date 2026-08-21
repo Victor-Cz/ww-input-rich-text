@@ -316,7 +316,6 @@ export default {
     }
 
     &.-selected .version-timeline__tick {
-        width: 3px;
         height: 32px;
         background: var(--vt-selected-color, #111827);
     }
