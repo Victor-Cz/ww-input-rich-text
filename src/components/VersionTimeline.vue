@@ -46,6 +46,9 @@ export default {
         // Molette à crans : accumulation puis pas d'une barre (effet detent)
         wheelAccumulator: 0,
         lastWheelTime: 0,
+        // Temps mort après un pas : avale les événements résiduels du même
+        // cran physique (le navigateur en découpe souvent plusieurs)
+        stepCooldownUntil: 0,
         // Animation de défilement maison (décélération douce en fin de course)
         scrollAnimId: null,
     }),
@@ -149,22 +152,31 @@ export default {
             // Changement de sens : repartir de zéro
             if (Math.sign(delta) !== Math.sign(this.wheelAccumulator)) this.wheelAccumulator = 0;
 
-            // Nouveau geste (après une pause) : premier cran immédiat,
-            // les suivants suivent le seuil pour garder le rythme
             const now = performance.now();
             const isNewGesture = now - this.lastWheelTime > 200;
             this.lastWheelTime = now;
+
+            // Temps mort : ignorer les résidus du cran qui vient d'être pris
+            if (now < this.stepCooldownUntil) {
+                this.wheelAccumulator = 0;
+                return;
+            }
+
+            // Nouveau geste (après une pause) : premier cran immédiat,
+            // les suivants suivent le seuil pour garder le rythme
             if (isNewGesture) {
                 this.wheelAccumulator = 0;
+                this.stepCooldownUntil = now + 140;
                 this.stepSelection(delta > 0 ? 1 : -1);
                 return;
             }
 
             this.wheelAccumulator += delta;
             const threshold = 25;
-            while (Math.abs(this.wheelAccumulator) >= threshold) {
+            if (Math.abs(this.wheelAccumulator) >= threshold) {
                 const direction = this.wheelAccumulator > 0 ? 1 : -1;
-                this.wheelAccumulator -= direction * threshold;
+                this.wheelAccumulator = 0;
+                this.stepCooldownUntil = now + 140;
                 this.stepSelection(direction);
             }
         },
