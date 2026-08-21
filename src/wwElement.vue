@@ -1868,12 +1868,22 @@ export default {
             }
         },
 
+        // Le conteneur peut apparaître après nous : réessayer quelques fois
+        async resolveTimelineTargetWithRetry(attempts = 6) {
+            for (let i = 0; i < attempts; i++) {
+                this.resolveTimelineTarget();
+                const wanted = (this.content.timelineContainerSelector || '').trim();
+                if (this.timelineTargetEl || !wanted) return;
+                await new Promise(resolve => setTimeout(resolve, 250));
+            }
+        },
+
         async openVersionHistory() {
             if (!this.shouldEnableCollaboration) {
                 console.warn('[Versions] History requires active collaboration');
                 return false;
             }
-            this.resolveTimelineTarget();
+            this.resolveTimelineTargetWithRetry();
             const vh = this.versionHistory;
             vh.active = true;
             vh.loadingList = true;
