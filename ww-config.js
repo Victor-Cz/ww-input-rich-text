@@ -58,6 +58,8 @@ export default {
                 'userId',
                 'versionDiffColorMode',
                 'versionDiffAuthors',
+                'timelineEpochLabel',
+                'epochLoadButtonText',
                 'autoConnect',
                 'saveMode',
                 'saveDebounce',
@@ -278,6 +280,16 @@ export default {
             label: { en: 'On stale epoch (local state reset)', fr: 'Époque périmée (état local réinitialisé)' },
             event: {
                 documentId: '',
+                epoch: 0,
+                timestamp: '',
+            },
+        },
+        {
+            name: 'version-history:select',
+            label: { en: 'On version selected in timeline', fr: 'Version sélectionnée dans la frise' },
+            event: {
+                id: '',
+                versionNumber: 0,
                 epoch: 0,
                 timestamp: '',
             },
@@ -602,6 +614,14 @@ export default {
         {
             label: { en: 'Collab: Hide version preview', fr: 'Collab: Quitter l’aperçu de version' },
             action: 'hideVersionPreview',
+        },
+        {
+            label: { en: 'Collab: Open version history', fr: "Collab: Ouvrir l'historique des versions" },
+            action: 'openVersionHistory',
+        },
+        {
+            label: { en: 'Collab: Close version history', fr: "Collab: Fermer l'historique des versions" },
+            action: 'closeVersionHistory',
         },
         // Image Layout actions
         {
@@ -3178,6 +3198,22 @@ export default {
                     'How added/removed content is highlighted in version compare. In both modes, hovering shows the author in a tooltip.',
             },
             /* wwEditor:end */
+        },
+        timelineEpochLabel: {
+            section: 'settings',
+            label: { en: 'Timeline epoch label', fr: 'Libellé des époques (frise)' },
+            type: 'Text',
+            defaultValue: 'Époque',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+        },
+        epochLoadButtonText: {
+            section: 'settings',
+            label: { en: 'Load epoch button text', fr: 'Texte du bouton de chargement d’époque' },
+            type: 'Text',
+            defaultValue: "Charger l'époque",
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
         },
         versionDiffAuthors: {
             section: 'settings',

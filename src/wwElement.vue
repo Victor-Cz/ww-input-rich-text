@@ -15,6 +15,17 @@
         ...cssVariables
     }">
         <template v-if="richEditor">
+                <!-- Mode historique : la frise chronologique remplace le menu
+                     (transition rétraction/déploiement entre les deux) -->
+                <version-timeline v-if="shouldEnableCollaboration"
+                    :class="{ '-collapsed': !versionHistory.active }"
+                    :versions="versionHistory.versions"
+                    :selected-id="versionHistory.selectedId"
+                    :live-epoch="versionHistory.liveEpoch"
+                    :epoch-label="content.timelineEpochLabel || 'Époque'"
+                    :loading="versionHistory.loadingList"
+                    @select="selectTimelineVersion" />
+                <div class="ww-rich-text__menu-slot" :class="{ '-collapsed': versionHistory.active }">
                 <div class="ww-rich-text__menu native-menu" v-if="!hideMenu && !content.customMenu" :style="menuStyles">
                     <!-- Texte type (normal, ...) -->
                     <select id="rich-size" v-model="currentTextType" :disabled="!isEditable" v-if="menu.textType">
@@ -199,6 +210,7 @@
                 </div>
                 <wwElement class="ww-rich-text__menu" v-else-if="content.customMenu"
                     v-bind="content.customMenuElement" />
+                </div>
 
                 <!-- Indicateur de section visible (fil d'Ariane des titres). Rendu
                      dès qu'il y a un sommaire, même sans section active :
@@ -212,6 +224,21 @@
                 </div>
 
                 <editor-content class="ww-rich-text__input" :editor="richEditor" :style="richStyles" />
+
+                <!-- Overlay de chargement d'une époque archivée -->
+                <div v-if="versionHistory.epochOverlay.visible" class="ww-rich-text__epoch-overlay">
+                    <div class="ww-rich-text__epoch-overlay-box">
+                        <template v-if="!versionHistory.epochOverlay.loading">
+                            <button type="button" class="ww-rich-text__epoch-overlay-btn" @click="confirmLoadEpoch">
+                                {{ content.epochLoadButtonText || "Charger l'époque" }} {{ versionHistory.epochOverlay.targetEpoch }}
+                            </button>
+                            <button type="button" class="ww-rich-text__epoch-overlay-cancel" @click="cancelLoadEpoch">
+                                Annuler
+                            </button>
+                        </template>
+                        <div v-else class="ww-rich-text__epoch-spinner"></div>
+                    </div>
+                </div>
 
                 <!-- Link Popover pour afficher/modifier les liens -->
                 <link-popover
@@ -276,6 +303,7 @@ import TableIcon from './icons/table-icon.vue';
 import AiMenu from './components/AiMenu.vue';
 import MagicMenu from './components/MagicMenu.vue';
 import LinkPopover from './components/LinkPopover.vue';
+import VersionTimeline from './components/VersionTimeline.vue';
 import { SelectionHighlighter } from './extensions/SelectionHighlighter.js';
 import { SeoHighlighter } from './extensions/SeoHighlighter.js';
 import { TextSuggestion } from './extensions/TextSuggestion.js';
@@ -312,6 +340,7 @@ export default {
         TableIcon,
         AiMenu,
         MagicMenu,
+        VersionTimeline,
         LinkPopover,
     },
     props: {
@@ -498,6 +527,17 @@ export default {
     data: () => ({
         richEditor: null,
         loading: false,
+        // Mode historique : frise chronologique des versions
+        versionHistory: {
+            active: false,
+            loadingList: false,
+            versions: [],
+            selectedId: null,
+            liveEpoch: null,
+            loadedArchiveEpoch: null,
+            epochOverlay: { visible: false, targetEpoch: null, loading: false, pendingVersion: null },
+        },
+        epochBinaryCache: {},
         pendingSteps: [], // Accumulateur de diffs
         seoHighlightVisible: false, // reflété dans seo.highlighting
         outlineItems: [], // sommaire courant (avec positions doc, usage interne)
@@ -1712,6 +1752,149 @@ export default {
             this.setIsVersionPreview(false);
         },
 
+        // ===== Mode historique (frise chronologique) =====
+
+        collabApiFetch(path) {
+            const base = (this.collabConfig.websocketUrl || '').replace(/^ws/, 'http').replace(/\/+$/, '');
+            const token = this.collabConfig.authToken || '';
+            const auth = token.startsWith('Bearer') ? token : `Bearer ${token}`;
+            return fetch(`${base}${path}`, { headers: { Authorization: auth } }).then(async response => {
+                if (!response.ok) {
+                    const body = await response.json().catch(() => ({}));
+                    throw new Error(body.error || `HTTP ${response.status}`);
+                }
+                return response.json();
+            });
+        },
+
+        async openVersionHistory() {
+            if (!this.shouldEnableCollaboration) {
+                console.warn('[Versions] History requires active collaboration');
+                return false;
+            }
+            const vh = this.versionHistory;
+            vh.active = true;
+            vh.loadingList = true;
+            try {
+                const res = await this.collabApiFetch(
+                    `/documents/${encodeURIComponent(this.collabConfig.documentId)}/versions`
+                );
+                vh.versions = res.versions || [];
+                vh.liveEpoch = res.currentEpoch ?? null;
+                vh.loadingList = false;
+                const latest = vh.versions[0];
+                if (latest) await this.selectTimelineVersion(latest);
+                return true;
+            } catch (e) {
+                console.error('[Versions] Failed to load history:', e);
+                vh.loadingList = false;
+                vh.active = false;
+                this.$emit('trigger-event', {
+                    name: 'collab:error',
+                    event: { error: 'version-history', message: e.message, timestamp: new Date().toISOString() },
+                });
+                return false;
+            }
+        },
+
+        closeVersionHistory() {
+            const vh = this.versionHistory;
+            vh.active = false;
+            vh.selectedId = null;
+            vh.loadedArchiveEpoch = null;
+            vh.epochOverlay = { visible: false, targetEpoch: null, loading: false, pendingVersion: null };
+            this.hideVersionPreview();
+        },
+
+        // Liste triée desc : la version « précédente » est la suivante du
+        // tableau, si elle appartient à la même époque
+        previousVersionInEpoch(version) {
+            const versions = this.versionHistory.versions;
+            const idx = versions.findIndex(v => v.id === version.id);
+            if (idx === -1) return null;
+            const prev = versions[idx + 1];
+            return prev && prev.epoch === version.epoch ? prev : null;
+        },
+
+        async selectTimelineVersion(version) {
+            const vh = this.versionHistory;
+            const prev = this.previousVersionInEpoch(version);
+
+            if (version.epoch === vh.liveEpoch) {
+                // Époque courante : comparaison sur le document vivant
+                if (this.isArchivePreview()) {
+                    this.exitArchivePreview();
+                    this.loadEditor();
+                    vh.loadedArchiveEpoch = null;
+                }
+                if (this.showVersionCompare(version.snapshot, prev?.snapshot ?? null)) {
+                    this.markTimelineSelection(version);
+                }
+            } else if (vh.loadedArchiveEpoch === version.epoch) {
+                // Archive déjà chargée dans l'éditeur
+                if (this.showVersionCompare(version.snapshot, prev?.snapshot ?? null)) {
+                    this.markTimelineSelection(version);
+                }
+            } else if (this.epochBinaryCache[version.epoch]) {
+                // Binaire déjà téléchargé : pas d'overlay
+                await this.loadArchiveEpoch(version);
+            } else {
+                // Époque archivée à télécharger : demander confirmation
+                vh.epochOverlay = { visible: true, targetEpoch: version.epoch, loading: false, pendingVersion: version };
+            }
+        },
+
+        markTimelineSelection(version) {
+            this.versionHistory.selectedId = version.id;
+            this.$emit('trigger-event', {
+                name: 'version-history:select',
+                event: {
+                    id: version.id,
+                    versionNumber: version.version_number,
+                    epoch: version.epoch,
+                    timestamp: new Date().toISOString(),
+                },
+            });
+        },
+
+        async loadArchiveEpoch(version) {
+            let binary = this.epochBinaryCache[version.epoch];
+            if (!binary) {
+                const res = await this.collabApiFetch(
+                    `/documents/${encodeURIComponent(this.collabConfig.documentId)}/epochs/${version.epoch}`
+                );
+                binary = res.binary_data;
+                this.epochBinaryCache[version.epoch] = binary;
+            }
+            const prev = this.previousVersionInEpoch(version);
+            if (this.showArchiveVersionCompare(binary, version.snapshot, prev?.snapshot ?? null)) {
+                this.versionHistory.loadedArchiveEpoch = version.epoch;
+                this.markTimelineSelection(version);
+            }
+        },
+
+        async confirmLoadEpoch() {
+            const vh = this.versionHistory;
+            const version = vh.epochOverlay.pendingVersion;
+            if (!version) return;
+            vh.epochOverlay.loading = true;
+            try {
+                await this.loadArchiveEpoch(version);
+                vh.epochOverlay = { visible: false, targetEpoch: null, loading: false, pendingVersion: null };
+            } catch (e) {
+                console.error('[Versions] Epoch load failed:', e);
+                vh.epochOverlay.loading = false;
+                this.$emit('trigger-event', {
+                    name: 'collab:error',
+                    event: { error: 'epoch-load', message: e.message, timestamp: new Date().toISOString() },
+                });
+            }
+        },
+
+        cancelLoadEpoch() {
+            this.versionHistory.epochOverlay = { visible: false, targetEpoch: null, loading: false, pendingVersion: null };
+        },
+
         // Ancre la bulle d'attribution à droite quand l'élément survolé est
         // dans la moitié droite du composant (sinon elle déborderait)
         onVersionDiffHover(event) {
@@ -2691,5 +2874,96 @@ export default {
     left: auto;
     right: 0;
     border-radius: 3px 3px 0 3px;
+}
+
+/* ===== Mode historique : transition menu ↔ frise chronologique ===== */
+.ww-rich-text {
+    position: relative;
+}
+
+.ww-rich-text__menu-slot {
+    max-height: 300px;
+    transition: max-height 0.3s ease, opacity 0.25s ease, transform 0.3s ease;
+    transform-origin: top;
+}
+
+.ww-rich-text__menu-slot.-collapsed {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+}
+
+.ww-rich-text .version-timeline {
+    max-height: 90px;
+    transition: max-height 0.3s ease, opacity 0.25s ease, transform 0.3s ease;
+    transform-origin: top;
+}
+
+.ww-rich-text .version-timeline.-collapsed {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+    border-bottom-width: 0;
+}
+
+/* ===== Overlay de chargement d'une époque archivée ===== */
+.ww-rich-text__epoch-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+}
+
+.ww-rich-text__epoch-overlay-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 20px 28px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.ww-rich-text__epoch-overlay-btn {
+    background: var(--primary-color, #007bff);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ww-rich-text__epoch-overlay-cancel {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.ww-rich-text__epoch-spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid #e5e7eb;
+    border-top-color: var(--primary-color, #007bff);
+    border-radius: 50%;
+    animation: ww-epoch-spin 0.8s linear infinite;
+}
+
+@keyframes ww-epoch-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 </style>
