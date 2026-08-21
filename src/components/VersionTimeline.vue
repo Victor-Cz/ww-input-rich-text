@@ -298,11 +298,11 @@ export default {
     }
 }
 
-/* La rangée (hauteur de la plus grande barre) est centrée verticalement,
-   les barres s'y alignent en bas sur une ligne de base commune */
+/* Barres centrées verticalement : elles grandissent symétriquement
+   depuis l'axe central (plus de date à loger au-dessus) */
 .version-timeline__versions {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     height: 32px;
     gap: 1px;
 }
@@ -310,7 +310,7 @@ export default {
 .version-timeline__version {
     position: relative;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     height: 100%;
     padding: 0 3px;
     background: none;
