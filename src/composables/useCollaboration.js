@@ -79,23 +79,46 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         return collabConfig.value.enabled && collabConfig.value.documentId && collabConfig.value.websocketUrl;
     });
 
-    // Palette de couleurs pour les curseurs (couleurs plus foncées et saturées)
-    const getRandomColor = () => {
-        const colors = [
-            '#6B46C1', // Violet foncé
-            '#DC2626', // Rouge foncé
-            '#EA580C', // Orange foncé
-            '#CA8A04', // Jaune moutarde
-            '#0284C7', // Bleu foncé
-            '#0D9488', // Teal foncé
-            '#16A34A', // Vert foncé
-            '#65A30D', // Vert lime foncé
-            '#C026D3', // Magenta foncé
-            '#DB2777', // Rose foncé
-            '#7C3AED', // Indigo foncé
-            '#0891B2', // Cyan foncé
-        ];
-        return colors[Math.floor(Math.random() * colors.length)];
+    // Palette de couleurs utilisateurs (couleurs foncées et saturées)
+    const USER_COLORS = [
+        '#6B46C1', // Violet foncé
+        '#DC2626', // Rouge foncé
+        '#EA580C', // Orange foncé
+        '#CA8A04', // Jaune moutarde
+        '#0284C7', // Bleu foncé
+        '#0D9488', // Teal foncé
+        '#16A34A', // Vert foncé
+        '#65A30D', // Vert lime foncé
+        '#C026D3', // Magenta foncé
+        '#DB2777', // Rose foncé
+        '#7C3AED', // Indigo foncé
+        '#0891B2', // Cyan foncé
+    ];
+
+    const getRandomColor = () => USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
+
+    // Clé d'identité de l'utilisateur local (stable) : id, fallback nom
+    const localUserKey = () => collabConfig.value.userId || collabConfig.value.userName || 'Anonymous';
+
+    // Couleur déterministe par utilisateur : même id → même couleur,
+    // partout (curseurs, liste users, diffs de version) et à chaque session
+    const colorForUser = key => {
+        const str = String(key || 'anonymous');
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = (hash * 31 + str.charCodeAt(i)) | 0;
+        }
+        return USER_COLORS[Math.abs(hash) % USER_COLORS.length];
+    };
+
+    // Mapping utilisateur → couleur pour les diffs de version (ySync).
+    // Clé = la même que PermanentUserData (userId, fallback userName),
+    // alimenté pour soi à l'init et pour les autres via l'awareness.
+    const ychangeColorMapping = new Map();
+    const registerUserColor = key => {
+        if (!key) return;
+        const dark = colorForUser(key);
+        ychangeColorMapping.set(String(key), { light: `${dark}26`, dark });
     };
 
     // Configuration des event listeners du provider
@@ -249,8 +272,12 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                     .map(state => ({
                         name: state.user.name,
                         color: state.user.color, // <-- On s'assure que c'est bien mappé ici
-                        id: state.user.id || null, // Optionnel: pour des listes Vue.js plus stables
+                        id: state.user.id || null,
                     }));
+
+                // Alimenter le mapping de couleurs des diffs de version
+                // avec les utilisateurs présents (même clé que PermanentUserData)
+                users.forEach(user => registerUserColor(user.id || user.name));
 
                 console.log('[Collaboration] Awareness update - Users with colors:', users);
 
@@ -390,8 +417,9 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             permanentUserDataInstance.setUserMapping(
                 ydocInstance,
                 ydocInstance.clientID,
-                collabConfig.value.userId || collabConfig.value.userName || 'Anonymous'
+                localUserKey()
             );
+            registerUserColor(localUserKey());
 
             // Nettoyer l'URL WebSocket (enlever les slashes finaux)
             const cleanBaseUrl = collabConfig.value.websocketUrl.replace(/\/+$/, '');
@@ -554,16 +582,10 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             return [];
         }
 
-        // Palette d'attribution pour la comparaison de versions
-        // (fond léger + couleur franche par utilisateur)
-        const ychangeColors = [
-            { light: '#6B46C126', dark: '#6B46C1' },
-            { light: '#DC262626', dark: '#DC2626' },
-            { light: '#0284C726', dark: '#0284C7' },
-            { light: '#16A34A26', dark: '#16A34A' },
-            { light: '#EA580C26', dark: '#EA580C' },
-            { light: '#DB277726', dark: '#DB2777' },
-        ];
+        // Palette d'attribution pour la comparaison de versions : mêmes
+        // couleurs que les curseurs, mapping déterministe par utilisateur
+        // (ychangeColorMapping), fallback sur la palette pour les inconnus
+        const ychangeColors = USER_COLORS.map(dark => ({ light: `${dark}26`, dark }));
 
         // Résolution id → nom pour l'infobulle des diffs de versions,
         // via la propriété bindable versionDiffAuthors ({ userId: name }).
@@ -587,7 +609,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 ySyncOptions: {
                     permanentUserData: permanentUserDataInstance,
                     colors: ychangeColors,
-                    colorMapping: new Map(),
+                    colorMapping: ychangeColorMapping,
                 },
             }),
             // Schéma + rendu des annotations de versions (snapshot compare)
@@ -602,7 +624,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                     provider: prov,
                     user: {
                         name: collabConfig.value.userName || 'Anonymous',
-                        color: getRandomColor(),
+                        color: colorForUser(localUserKey()),
+                        id: collabConfig.value.userId || null,
                     },
                 })
             );
@@ -619,11 +642,13 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     };
 
     // Mettre à jour le nom d'utilisateur dans awareness
+    // (couleur inchangée : elle dépend de l'id, pas du nom affiché)
     const updateUserName = newName => {
         if (provider.value?.awareness) {
             provider.value.awareness.setLocalStateField('user', {
                 name: newName,
-                color: getRandomColor(),
+                color: colorForUser(collabConfig.value.userId || newName),
+                id: collabConfig.value.userId || null,
             });
         }
     };
@@ -696,6 +721,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         getCollaborationExtensions,
         updateUserName,
         getRandomColor,
+        colorForUser,
         sendSaveSignal,
         sendCreateVersionSignal,
         getEpoch,
