@@ -1983,7 +1983,7 @@ export default {
             } else if (this.epochBinaryCache[version.epoch]) {
                 // Binaire déjà téléchargé : pas d'overlay ; le curseur suit
                 // tout de suite, le rendu confirmera la sélection
-                vh.selectedId = version.id;
+                this.followTimelineCursor(version);
                 await this.loadArchiveEpoch(version);
             } else {
                 // Époque archivée à télécharger : demander confirmation. Le
@@ -1999,7 +1999,7 @@ export default {
                     pendingVersion: version,
                     returnId,
                 };
-                vh.selectedId = version.id;
+                this.followTimelineCursor(version);
             }
         },
 
@@ -2012,7 +2012,10 @@ export default {
             }
         },
 
-        markTimelineSelection(version) {
+        // Le curseur suit une version (rendue ou non) : sélection visuelle
+        // + variable currentVersion. L'événement de sélection, lui, n'est
+        // émis qu'au rendu réel (markTimelineSelection)
+        followTimelineCursor(version) {
             this.versionHistory.selectedId = version.id;
             this.setCurrentVersion({
                 id: version.id,
@@ -2024,6 +2027,10 @@ export default {
                 createdBy: version.created_by ?? null,
                 createdByName: version.created_by_name ?? null,
             });
+        },
+
+        markTimelineSelection(version) {
+            this.followTimelineCursor(version);
             this.$emit('trigger-event', {
                 name: 'version-history:select',
                 event: {
