@@ -47,6 +47,9 @@ export default {
         resizeObserver: null,
         // Animation de défilement maison (décélération douce en fin de course)
         scrollAnimId: null,
+        // Molette : cible lissée par interpolation (inertie)
+        wheelAnimId: null,
+        wheelTarget: null,
     }),
     computed: {
         activeId() {
@@ -127,8 +130,15 @@ export default {
             }
             return bestId ? this.versions.find(v => v.id === bestId) || null : null;
         },
-        // Molette : défilement direct de la frise (vertical → horizontal) ;
-        // la sélection suit la barre la plus proche du centre (onScroll)
+        // Écart entre deux barres adjacentes (pour calibrer la molette)
+        barPitch() {
+            const els = this.$refs.scroller?.querySelectorAll('[data-version-id]');
+            if (!els || els.length < 2) return 9;
+            return Math.max(4, els[1].offsetLeft - els[0].offsetLeft);
+        },
+        // Molette : gain calibré sur le pas des barres (un cran de souris
+        // ≈ une barre) + lissage inertiel vers la cible. La sélection suit
+        // la barre la plus proche du centre (onScroll), puis posé magnétique.
         onWheel(event) {
             let delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
             if (!delta) return;
@@ -136,7 +146,39 @@ export default {
             if (event.deltaMode === 1) delta *= 16;
             else if (event.deltaMode === 2) delta *= 100;
             const scroller = this.$refs.scroller;
-            if (scroller) scroller.scrollLeft += delta;
+            if (!scroller) return;
+
+            // Un nouveau geste interrompt le posé en cours
+            if (this.scrollAnimId) {
+                cancelAnimationFrame(this.scrollAnimId);
+                this.scrollAnimId = null;
+                this.suppressScrollSelect = false;
+            }
+
+            const gain = this.barPitch() / 100;
+            const max = scroller.scrollWidth - scroller.clientWidth;
+            const from = this.wheelTarget !== null ? this.wheelTarget : scroller.scrollLeft;
+            this.wheelTarget = Math.max(0, Math.min(max, from + delta * gain));
+
+            if (this.wheelAnimId === null) {
+                const step = () => {
+                    const s = this.$refs.scroller;
+                    if (!s || this.wheelTarget === null) {
+                        this.wheelAnimId = null;
+                        return;
+                    }
+                    const diff = this.wheelTarget - s.scrollLeft;
+                    if (Math.abs(diff) < 0.4) {
+                        s.scrollLeft = this.wheelTarget;
+                        this.wheelAnimId = null;
+                        this.wheelTarget = null;
+                        return;
+                    }
+                    s.scrollLeft += diff * 0.22;
+                    this.wheelAnimId = requestAnimationFrame(step);
+                };
+                this.wheelAnimId = requestAnimationFrame(step);
+            }
         },
         // Défilement animé maison : décélération douce (ease-out cubique),
         // re-ciblable en cours de route sans à-coup
@@ -144,6 +186,12 @@ export default {
             const scroller = this.$refs.scroller;
             if (!scroller) return;
             if (this.scrollAnimId) cancelAnimationFrame(this.scrollAnimId);
+            // Le posé prend la main sur l'inertie de molette en cours
+            if (this.wheelAnimId) {
+                cancelAnimationFrame(this.wheelAnimId);
+                this.wheelAnimId = null;
+                this.wheelTarget = null;
+            }
             const from = scroller.scrollLeft;
             const clamped = Math.max(0, Math.min(target, scroller.scrollWidth - scroller.clientWidth));
             if (Math.abs(clamped - from) < 0.5) return;
@@ -215,6 +263,7 @@ export default {
     beforeUnmount() {
         clearTimeout(this.scrollTimer);
         if (this.scrollAnimId) cancelAnimationFrame(this.scrollAnimId);
+        if (this.wheelAnimId) cancelAnimationFrame(this.wheelAnimId);
         if (this.resizeObserver) this.resizeObserver.disconnect();
     },
 };
