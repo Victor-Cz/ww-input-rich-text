@@ -403,6 +403,16 @@ export default {
             readonly: true,
         });
 
+        // true pendant un aperçu/comparaison de version (éditeur en lecture
+        // seule sur un état passé), false en édition normale
+        const { value: isVersionPreview, setValue: _setIsVersionPreview } = wwLib.wwVariable.useComponentVariable({
+            uid: props.uid,
+            name: 'isVersionPreview',
+            type: 'boolean',
+            defaultValue: false,
+            readonly: true,
+        });
+
         // Wrap setters to silently ignore calls after variable cleanup
         let _isDestroyed = false;
         onBeforeUnmount(() => { _isDestroyed = true; });
@@ -415,6 +425,7 @@ export default {
         const setHistory = (...args) => { if (!_isDestroyed) _setHistory(...args); };
         const setOutline = (...args) => { if (!_isDestroyed) _setOutline(...args); };
         const setCurrentHeading = (...args) => { if (!_isDestroyed) _setCurrentHeading(...args); };
+        const setIsVersionPreview = (...args) => { if (!_isDestroyed) _setIsVersionPreview(...args); };
 
 
         /* wwEditor:start */
@@ -470,6 +481,8 @@ export default {
             setOutline,
             currentHeading,
             setCurrentHeading,
+            isVersionPreview,
+            setIsVersionPreview,
             randomUid,
             /* wwEditor:start */
             createElement,
@@ -1061,6 +1074,8 @@ export default {
             if (this.loading) return;
             this.loading = true;
             if (this.richEditor) this.richEditor.destroy();
+            // Un éditeur fraîchement chargé repart en édition normale
+            this.setIsVersionPreview(false);
 
             try {
                 // Vérifier les imports d'extensions
@@ -1621,6 +1636,7 @@ export default {
                     })
                 );
                 this.richEditor.setEditable(false);
+                this.setIsVersionPreview(true);
                 return true;
             } catch (e) {
                 console.error('[Versions] Compare failed:', e);
@@ -1641,6 +1657,7 @@ export default {
             const binding = ySyncPluginKey.getState(this.richEditor.view.state)?.binding;
             if (binding) binding.unrenderSnapshot();
             this.richEditor.setEditable(this.isEditable);
+            this.setIsVersionPreview(false);
         },
 
         // Image Layout actions
