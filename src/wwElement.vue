@@ -3055,6 +3055,10 @@ export default {
     position: absolute;
     top: -1.9em;
     left: 0;
+    /* Le conteneur est le span inline du texte modifié : sans largeur
+       explicite, la bulle serait bornée à sa largeur */
+    width: max-content;
+    max-width: none;
     background: #1f2937;
     color: #fff;
     font-size: 12px;
