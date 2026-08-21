@@ -2,8 +2,8 @@
     <div class="version-timeline" :style="{ '--vt-selected-color': selectedColor || '#111827' }">
         <div class="version-timeline__scroller" ref="scroller"
             @scroll.passive="onScroll" @wheel.prevent.stop="onWheel">
-            <div class="version-timeline__track" ref="track">
-                <div class="version-timeline__content" ref="content">
+            <div class="version-timeline__track">
+                <div class="version-timeline__content">
                     <div v-if="loading" class="version-timeline__loading">…</div>
                     <template v-else>
                         <div v-for="group in groups" :key="group.epoch" class="version-timeline__epoch">
@@ -132,33 +132,17 @@ export default {
             if (!scroller || !el) return null;
             return el.getBoundingClientRect().left - scroller.getBoundingClientRect().left + scroller.scrollLeft;
         },
-        nearestToCenter() {
+        // Toutes les barres, avec leur centre dans le repère du scroller
+        collectBars() {
             const scroller = this.$refs.scroller;
-            if (!scroller) return null;
-            const center = scroller.scrollLeft + scroller.clientWidth / 2;
-            let bestId = null;
-            let bestDist = Infinity;
-            for (const el of scroller.querySelectorAll('[data-version-id]')) {
-                const dist = Math.abs(this.barLeftInScroller(el) + el.offsetWidth / 2 - center);
-                if (dist < bestDist) {
-                    bestDist = dist;
-                    bestId = el.getAttribute('data-version-id');
-                }
-            }
-            return bestId ? this.versions.find(v => v.id === bestId) || null : null;
-        },
-        // Barre retenue au posé : la plus proche du centre, mais jamais à
-        // contre-sens du scroll — si la plus proche est derrière, on prend
-        // la première barre dans le sens du mouvement
-        pickSettleVersion() {
-            const scroller = this.$refs.scroller;
-            if (!scroller) return null;
-            const center = scroller.scrollLeft + scroller.clientWidth / 2;
+            if (!scroller) return [];
             const bars = [];
             for (const el of scroller.querySelectorAll('[data-version-id]')) {
                 bars.push({ id: el.getAttribute('data-version-id'), center: this.barLeftInScroller(el) + el.offsetWidth / 2 });
             }
-            if (!bars.length) return null;
+            return bars;
+        },
+        nearestBar(bars, center) {
             let best = null;
             let bestDist = Infinity;
             for (const bar of bars) {
@@ -168,6 +152,24 @@ export default {
                     best = bar;
                 }
             }
+            return best;
+        },
+        nearestToCenter() {
+            const scroller = this.$refs.scroller;
+            if (!scroller) return null;
+            const best = this.nearestBar(this.collectBars(), scroller.scrollLeft + scroller.clientWidth / 2);
+            return best ? this.versions.find(v => v.id === best.id) || null : null;
+        },
+        // Barre retenue au posé : la plus proche du centre, mais jamais à
+        // contre-sens du scroll — si la plus proche est derrière, on prend
+        // la première barre dans le sens du mouvement
+        pickSettleVersion() {
+            const scroller = this.$refs.scroller;
+            if (!scroller) return null;
+            const center = scroller.scrollLeft + scroller.clientWidth / 2;
+            const bars = this.collectBars();
+            let best = this.nearestBar(bars, center);
+            if (!best) return null;
             const dir = this.scrollDirection;
             if (dir > 0 && best.center < center - 1) {
                 const forward = bars.filter(b => b.center >= center - 1).sort((a, b) => a.center - b.center)[0];
@@ -180,9 +182,9 @@ export default {
         },
         // Écart entre deux barres adjacentes (pour calibrer la molette)
         barPitch() {
-            const els = this.$refs.scroller?.querySelectorAll('[data-version-id]');
-            if (!els || els.length < 2) return 9;
-            return Math.max(4, this.barLeftInScroller(els[1]) - this.barLeftInScroller(els[0]));
+            const bars = this.collectBars();
+            if (bars.length < 2) return 9;
+            return Math.max(4, bars[1].center - bars[0].center);
         },
         // Molette : gain calibré sur le pas des barres (un cran de souris
         // ≈ une barre) + lissage inertiel vers la cible. La sélection suit
