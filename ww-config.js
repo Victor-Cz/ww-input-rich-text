@@ -551,14 +551,15 @@ export default {
             action: 'showVersionCompare',
             args: [
                 {
-                    name: 'Snapshot',
+                    name: 'Snapshot (newer state, empty = current)',
                     type: 'Text',
+                    optional: true,
                     options: {
                         bindable: true,
                     },
                 },
                 {
-                    name: 'Previous snapshot',
+                    name: 'Previous snapshot (reference state)',
                     type: 'Text',
                     optional: true,
                     options: {

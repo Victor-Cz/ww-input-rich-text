@@ -1582,25 +1582,35 @@ export default {
         },
 
         /**
-         * Affiche le document tel qu'il était à une version, avec les
-         * ajouts/suppressions annotés et attribués par utilisateur.
-         * @param {string} snapshot - snapshot base64 (colonne ydoc_versions.snapshot)
-         * @param {string|null} prevSnapshot - snapshot de la version précédente
-         *   pour une comparaison (null = afficher la version seule)
-         * Limite : la version doit appartenir à l'époque courante du document
-         * (sinon passer par l'endpoint REST /versions/:id/content côté WeWeb).
+         * Affiche le document à un état donné, avec les ajouts/suppressions
+         * annotés (colorés par auteur) par rapport à un état de référence.
+         * @param {string|null} snapshot - état AFFICHÉ, le plus récent :
+         *   contenu base64 de la colonne ydoc_versions.snapshot (PAS l'id de
+         *   la ligne). null/vide = état actuel du document vivant.
+         * @param {string|null} prevSnapshot - état de RÉFÉRENCE, plus ancien.
+         *   null = document vide (tout apparaît comme ajouté).
+         * Ex. « quoi de neuf depuis la version X » : showVersionCompare(null, snapshotX)
+         * Limite : versions de l'époque courante uniquement (sinon passer par
+         * l'endpoint REST /versions/:id/content côté WeWeb).
          */
-        showVersionCompare(snapshot, prevSnapshot = null) {
-            if (!this.shouldEnableCollaboration || !this.richEditor) {
+        showVersionCompare(snapshot = null, prevSnapshot = null) {
+            if (!this.shouldEnableCollaboration || !this.richEditor || !this.ydoc) {
                 console.warn('[Versions] Compare requires active collaboration');
                 return false;
             }
             try {
-                const decode = b64 => Y.decodeSnapshot(Uint8Array.from(atob(b64), c => c.charCodeAt(0)));
+                const decode = b64 => {
+                    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(b64)) {
+                        throw new Error(
+                            "Un id de version (uuid) a été fourni au lieu du snapshot : passez le contenu de la colonne ydoc_versions.snapshot"
+                        );
+                    }
+                    return Y.decodeSnapshot(Uint8Array.from(atob(b64), c => c.charCodeAt(0)));
+                };
                 const view = this.richEditor.view;
                 view.dispatch(
                     view.state.tr.setMeta(ySyncPluginKey, {
-                        snapshot: decode(snapshot),
+                        snapshot: snapshot ? decode(snapshot) : Y.snapshot(this.ydoc),
                         prevSnapshot: prevSnapshot ? decode(prevSnapshot) : Y.emptySnapshot,
                     })
                 );
