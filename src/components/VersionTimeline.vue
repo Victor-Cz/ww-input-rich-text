@@ -2,6 +2,9 @@
     <div class="version-timeline" :class="{ '-scrollable': scrollable }" ref="scroller"
         @scroll.passive="onScroll" @wheel.prevent.stop="onWheel">
         <div class="version-timeline__track" ref="track">
+            <!-- Date de la version active : badge sticky, toujours visible à
+                 gauche de la frise, indépendant du scroll -->
+            <div v-if="activeDateLabel" class="version-timeline__current-date">{{ activeDateLabel }}</div>
             <div class="version-timeline__content" ref="content">
                 <div v-if="loading" class="version-timeline__loading">…</div>
                 <template v-else>
@@ -14,10 +17,6 @@
                                 :title="tooltip(v)"
                                 @click="onClickVersion(v)">
                                 <span class="version-timeline__tick"></span>
-                                <!-- La date n'est affichée que sur la version active -->
-                                <span v-if="v.id === activeId" class="version-timeline__date">
-                                    {{ formatDate(v.created_at) }}
-                                </span>
                             </button>
                         </div>
                     </div>
@@ -35,6 +34,8 @@ export default {
         versions: { type: Array, default: () => [] },
         selectedId: { type: String, default: null },
         loading: { type: Boolean, default: false },
+        // Langue du site pour le formatage des dates
+        locale: { type: String, default: '' },
     },
     emits: ['select'],
     data: () => ({
@@ -55,6 +56,10 @@ export default {
     computed: {
         activeId() {
             return this.provisionalId || this.selectedId;
+        },
+        activeDateLabel() {
+            const active = this.versions.find(v => v.id === this.activeId);
+            return active ? this.formatDate(active.created_at) : '';
         },
         // Affichage chronologique : de la plus ancienne (gauche) à la plus
         // récente (droite)
@@ -100,9 +105,14 @@ export default {
             if (!iso) return '';
             const d = new Date(iso);
             if (Number.isNaN(d.getTime())) return '';
-            const date = d.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' });
-            const time = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-            return `${date} ${time}`;
+            const locale = this.locale || undefined;
+            try {
+                const date = d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' });
+                const time = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+                return `${date} ${time}`;
+            } catch {
+                return d.toLocaleString();
+            }
         },
         tooltip(v) {
             const parts = [`v${v.version_number}`, this.formatDate(v.created_at)];
@@ -288,29 +298,35 @@ export default {
 
         &.-selected .version-timeline__tick {
             background: #4f46e5;
-            height: 16px;
+            height: 26px;
         }
     }
 
     &__tick {
         width: 2px;
-        height: 11px;
+        height: 18px;
         background: #d1d5db;
         border-radius: 1px;
         transition: height 0.12s ease, background 0.12s ease;
     }
 
-    &__date {
-        position: absolute;
-        top: calc(100% - 1px);
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 9px;
+    /* Badge sticky : reste visible au bord gauche pendant le scroll */
+    &__current-date {
+        position: sticky;
+        left: 6px;
+        align-self: center;
+        flex-shrink: 0;
+        padding: 2px 7px;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 10px;
         font-weight: 600;
         color: #4f46e5;
         white-space: nowrap;
         user-select: none;
         pointer-events: none;
+        z-index: 2;
     }
 }
 </style>

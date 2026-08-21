@@ -209,6 +209,7 @@
                     :versions="versionHistory.versions"
                     :selected-id="versionHistory.selectedId"
                     :loading="versionHistory.loadingList"
+                    :locale="timelineLocale"
                     @select="selectTimelineVersion" />
                 </div>
 
@@ -221,6 +222,7 @@
                         :versions="versionHistory.versions"
                         :selected-id="versionHistory.selectedId"
                         :loading="versionHistory.loadingList"
+                        :locale="timelineLocale"
                         @select="selectTimelineVersion" />
                 </teleport>
 
@@ -813,6 +815,14 @@ export default {
         },
     },
     computed: {
+        // Langue du site pour le formatage des dates de la frise
+        timelineLocale() {
+            try {
+                return wwLib.wwLang?.lang || navigator.language || '';
+            } catch {
+                return '';
+            }
+        },
         isEditing() {
             /* wwEditor:start */
             return this.wwEditorState.editMode === wwLib.wwEditorHelper.EDIT_MODES.EDITION;
@@ -2985,6 +2995,11 @@ export default {
     min-height: 44px;
     background: transparent;
     z-index: auto;
+}
+
+/* Frise téléportée : contenu centré dans la boîte quand il ne déborde pas */
+.ww-rich-text__menu-timeline.-teleported .version-timeline__track {
+    justify-content: center;
 }
 
 /* ===== Overlay de chargement d'une époque archivée ===== */
