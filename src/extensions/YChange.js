@@ -34,14 +34,15 @@ const changeAttrs = (change, options) => {
     if (!change || !change.type) return {};
     const attrs = {
         'data-ychange-type': change.type,
-        'data-ychange-user': change.user,
     };
+    if (change.user) attrs['data-ychange-user'] = change.user;
     const style = changeStyle(change, options.colorMode);
     if (style) attrs.style = style;
-    if (change.user) {
-        const author = options.resolveAuthor ? options.resolveAuthor(change.user) : change.user;
-        attrs.title = change.type === 'removed' ? `Retiré par ${author}` : `Ajouté par ${author}`;
-    }
+    // Infobulle toujours présente ; auteur ajouté quand il est connu
+    // (le contenu écrit avant l'activation de l'attribution n'a pas d'auteur)
+    const base = change.type === 'removed' ? 'Retiré' : 'Ajouté';
+    const author = change.user && options.resolveAuthor ? options.resolveAuthor(change.user) : change.user;
+    attrs.title = author ? `${base} par ${author}` : base;
     return attrs;
 };
 
