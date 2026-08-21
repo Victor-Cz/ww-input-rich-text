@@ -562,7 +562,7 @@ export default {
             selectedId: null,
             liveEpoch: null,
             loadedArchiveEpoch: null,
-            epochOverlay: { visible: false, targetEpoch: null, loading: false, pendingVersion: null },
+            epochOverlay: { visible: false, targetEpoch: null, loading: false, pendingVersion: null, returnId: null },
         },
         epochBinaryCache: {},
         // Conteneur externe de la frise (résolu depuis timelineContainerSelector)
@@ -1944,7 +1944,7 @@ export default {
             vh.active = false;
             vh.selectedId = null;
             vh.loadedArchiveEpoch = null;
-            vh.epochOverlay = { visible: false, targetEpoch: null, loading: false, pendingVersion: null };
+            vh.epochOverlay = { visible: false, targetEpoch: null, loading: false, pendingVersion: null, returnId: null };
             this.setCurrentVersion(null);
             this.hideVersionPreview();
         },
@@ -1965,6 +1965,7 @@ export default {
 
             if (version.epoch === vh.liveEpoch) {
                 // Époque courante : comparaison sur le document vivant
+                this.dismissEpochOverlay();
                 if (this.isArchivePreview()) {
                     this.exitArchivePreview();
                     this.loadEditor();
@@ -1975,15 +1976,39 @@ export default {
                 }
             } else if (vh.loadedArchiveEpoch === version.epoch) {
                 // Archive déjà chargée dans l'éditeur
+                this.dismissEpochOverlay();
                 if (this.renderVersionCompare(version.snapshot, prev?.snapshot ?? null)) {
                     this.markTimelineSelection(version);
                 }
             } else if (this.epochBinaryCache[version.epoch]) {
-                // Binaire déjà téléchargé : pas d'overlay
+                // Binaire déjà téléchargé : pas d'overlay ; le curseur suit
+                // tout de suite, le rendu confirmera la sélection
+                vh.selectedId = version.id;
                 await this.loadArchiveEpoch(version);
             } else {
-                // Époque archivée à télécharger : demander confirmation
-                vh.epochOverlay = { visible: true, targetEpoch: version.epoch, loading: false, pendingVersion: version };
+                // Époque archivée à télécharger : demander confirmation. Le
+                // curseur continue de suivre le geste (le contenu affiché ne
+                // change pas) ; on retient la version rendue pour pouvoir y
+                // revenir si l'utilisateur annule
+                const overlay = vh.epochOverlay;
+                const returnId = overlay.visible ? overlay.returnId : vh.selectedId;
+                vh.epochOverlay = {
+                    visible: true,
+                    targetEpoch: version.epoch,
+                    loading: overlay.loading,
+                    pendingVersion: version,
+                    returnId,
+                };
+                vh.selectedId = version.id;
+            }
+        },
+
+        // Retire l'overlay de confirmation quand la sélection revient sur
+        // une époque déjà affichable (sauf pendant un chargement en cours)
+        dismissEpochOverlay() {
+            const vh = this.versionHistory;
+            if (vh.epochOverlay.visible && !vh.epochOverlay.loading) {
+                vh.epochOverlay = { visible: false, targetEpoch: null, loading: false, pendingVersion: null, returnId: null };
             }
         },
 
@@ -2033,7 +2058,7 @@ export default {
             vh.epochOverlay.loading = true;
             try {
                 await this.loadArchiveEpoch(version);
-                vh.epochOverlay = { visible: false, targetEpoch: null, loading: false, pendingVersion: null };
+                vh.epochOverlay = { visible: false, targetEpoch: null, loading: false, pendingVersion: null, returnId: null };
             } catch (e) {
                 console.error('[Versions] Epoch load failed:', e);
                 vh.epochOverlay.loading = false;
@@ -2045,7 +2070,12 @@ export default {
         },
 
         cancelLoadEpoch() {
-            this.versionHistory.epochOverlay = { visible: false, targetEpoch: null, loading: false, pendingVersion: null };
+            const vh = this.versionHistory;
+            const returnId = vh.epochOverlay.returnId;
+            vh.epochOverlay = { visible: false, targetEpoch: null, loading: false, pendingVersion: null, returnId: null };
+            // Retour élastique du curseur sur la version qui était affichée
+            const back = returnId ? vh.versions.find(v => v.id === returnId) : null;
+            if (back) this.selectTimelineVersion(back);
         },
 
         // Ancre la bulle d'attribution à droite quand l'élément survolé est
