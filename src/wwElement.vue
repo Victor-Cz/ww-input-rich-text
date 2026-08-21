@@ -15,9 +15,10 @@
         ...cssVariables
     }">
         <template v-if="richEditor">
-                <!-- Mode historique : la frise remplace le CONTENU du menu sans
-                     toucher au conteneur ni à sa position — elle se superpose
-                     dans la même boîte pendant que le menu s'estompe -->
+                <!-- Mode historique : le menu n'est jamais masqué par le plugin
+                     (l'utilisateur pilote sa visibilité via isVersionPreview) ;
+                     la frise apparaît par-dessus le slot, ou dans le conteneur
+                     externe si un sélecteur est fourni -->
                 <div class="ww-rich-text__menu-slot" :class="{ '-history': versionHistory.active }">
                 <div class="ww-rich-text__menu native-menu" v-if="!hideMenu && !content.customMenu" :style="menuStyles">
                     <!-- Texte type (normal, ...) -->
@@ -2941,9 +2942,10 @@ export default {
     border-radius: 3px 3px 0 3px;
 }
 
-/* ===== Mode historique : la frise se superpose au contenu du menu =====
-   Le conteneur du menu garde sa taille et sa position ; seul son contenu
-   s'estompe pendant que la frise apparaît dans la même boîte. */
+/* ===== Mode historique =====
+   Le plugin ne touche jamais au menu : sa visibilité pendant l'historique
+   est pilotée par l'utilisateur (binding sur isVersionPreview). La frise
+   apparaît par-dessus le slot, ou dans le conteneur externe (teleport). */
 .ww-rich-text {
     position: relative;
 }
@@ -2956,16 +2958,6 @@ export default {
    (seulement si la frise est bien dans le slot, pas téléportée ailleurs) */
 .ww-rich-text__menu-slot.-history:not(:has(.ww-rich-text__menu)):has(.ww-rich-text__menu-timeline) {
     min-height: 52px;
-}
-
-.ww-rich-text__menu-slot .ww-rich-text__menu {
-    transition: opacity 0.25s ease, transform 0.25s ease;
-}
-
-.ww-rich-text__menu-slot.-history .ww-rich-text__menu {
-    opacity: 0;
-    transform: translateY(-4px);
-    pointer-events: none;
 }
 
 .ww-rich-text__menu-timeline {
