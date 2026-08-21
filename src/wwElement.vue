@@ -208,8 +208,6 @@
                     class="ww-rich-text__menu-timeline"
                     :versions="versionHistory.versions"
                     :selected-id="versionHistory.selectedId"
-                    :live-epoch="versionHistory.liveEpoch"
-                    :epoch-label="content.timelineEpochLabel || 'Époque'"
                     :loading="versionHistory.loadingList"
                     @select="selectTimelineVersion" />
                 </div>
@@ -222,8 +220,6 @@
                         class="ww-rich-text__menu-timeline -teleported"
                         :versions="versionHistory.versions"
                         :selected-id="versionHistory.selectedId"
-                        :live-epoch="versionHistory.liveEpoch"
-                        :epoch-label="content.timelineEpochLabel || 'Époque'"
                         :loading="versionHistory.loadingList"
                         @select="selectTimelineVersion" />
                 </teleport>

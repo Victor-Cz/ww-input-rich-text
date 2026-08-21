@@ -1,15 +1,11 @@
 <template>
-    <div class="version-timeline" :class="{ '-scrollable': scrollable }" ref="scroller" @scroll.passive="onScroll">
+    <div class="version-timeline" :class="{ '-scrollable': scrollable }" ref="scroller"
+        @scroll.passive="onScroll" @wheel.prevent.stop="onWheel">
         <div class="version-timeline__track" ref="track">
             <div class="version-timeline__content" ref="content">
                 <div v-if="loading" class="version-timeline__loading">…</div>
                 <template v-else>
                     <div v-for="group in groups" :key="group.epoch" class="version-timeline__epoch">
-                        <div class="version-timeline__epoch-header"
-                            :class="{ '-current': group.epoch === liveEpoch }">
-                            <span class="version-timeline__epoch-number">{{ group.epoch }}</span>
-                            <span class="version-timeline__epoch-label">{{ epochLabel }}</span>
-                        </div>
                         <div class="version-timeline__versions">
                             <button v-for="v in group.versions" :key="v.id" type="button"
                                 class="version-timeline__version"
@@ -38,8 +34,6 @@ export default {
         // Versions triées de la plus récente à la plus ancienne (ordre API)
         versions: { type: Array, default: () => [] },
         selectedId: { type: String, default: null },
-        liveEpoch: { type: Number, default: null },
-        epochLabel: { type: String, default: 'Époque' },
         loading: { type: Boolean, default: false },
     },
     emits: ['select'],
@@ -55,6 +49,8 @@ export default {
         // puissent se placer au centre, et sélection par scroll active
         scrollable: false,
         resizeObserver: null,
+        // Accumulation de molette pour le pas-à-pas quand rien ne déborde
+        wheelAccumulator: 0,
     }),
     computed: {
         activeId() {
@@ -65,8 +61,7 @@ export default {
         displayVersions() {
             return [...this.versions].reverse();
         },
-        // Groupes consécutifs par époque, chaque libellé d'époque à gauche
-        // de ses versions
+        // Groupes consécutifs par époque (séparateur visuel uniquement)
         groups() {
             const groups = [];
             for (const v of this.displayVersions) {
@@ -141,6 +136,35 @@ export default {
             }
             return bestId ? this.versions.find(v => v.id === bestId) || null : null;
         },
+        // Sélection suivante/précédente dans l'ordre chronologique affiché
+        stepSelection(direction) {
+            const list = this.displayVersions;
+            if (!list.length) return;
+            const idx = list.findIndex(v => v.id === this.selectedId);
+            const nextIdx = idx === -1 ? list.length - 1 : Math.min(list.length - 1, Math.max(0, idx + direction));
+            const next = list[nextIdx];
+            if (next && next.id !== this.selectedId) this.$emit('select', next);
+        },
+        // La molette navigue TOUJOURS entre les versions :
+        // - contenu débordant → molette verticale convertie en défilement
+        //   horizontal (la sélection suit le centre via onScroll)
+        // - tout visible → pas-à-pas version suivante/précédente
+        onWheel(event) {
+            const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+            if (!delta) return;
+            if (this.scrollable) {
+                const scroller = this.$refs.scroller;
+                if (scroller) scroller.scrollLeft += delta;
+                return;
+            }
+            this.wheelAccumulator += delta;
+            const threshold = 40;
+            if (Math.abs(this.wheelAccumulator) >= threshold) {
+                const direction = this.wheelAccumulator > 0 ? 1 : -1;
+                this.wheelAccumulator = 0;
+                this.stepSelection(direction);
+            }
+        },
         // La sélection se centre dans la frise — sauf si tout tient déjà,
         // ou si elle provient du scroll de l'utilisateur
         centerSelected() {
@@ -188,7 +212,7 @@ export default {
     overflow-x: auto;
     overflow-y: hidden;
     background: #fff;
-    /* Scrollbar masquée : la navigation se fait au scroll/trackpad */
+    /* Scrollbar masquée : la navigation se fait à la molette/trackpad */
     scrollbar-width: none;
     -ms-overflow-style: none;
 
@@ -226,46 +250,19 @@ export default {
         color: #9ca3af;
     }
 
-    /* Disposition horizontale : l'époque à gauche de ses picots, sur une
-       seule ligne — la frise tient dans une toolbar basse (~42px) */
+    /* Séparateur discret entre époques (le concept n'est pas exposé au client) */
     &__epoch {
         display: flex;
-        flex-direction: row;
         align-items: center;
         align-self: stretch;
-        gap: 8px;
         border-left: 2px solid #d1d5db;
-        padding-left: 10px;
-        margin-right: 20px;
+        padding-left: 8px;
+        margin-right: 8px;
 
         &:first-child {
             border-left: none;
             padding-left: 0;
         }
-    }
-
-    &__epoch-header {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        color: #9ca3af;
-        user-select: none;
-        line-height: 1;
-
-        &.-current {
-            color: #111827;
-        }
-    }
-
-    &__epoch-number {
-        font-size: 14px;
-        font-weight: 700;
-    }
-
-    &__epoch-label {
-        font-size: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
     }
 
     &__versions {
