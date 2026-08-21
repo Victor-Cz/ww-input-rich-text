@@ -1719,7 +1719,11 @@ export default {
                     reference = null;
                 }
             }
-            return this.renderVersionCompare(snapshot, reference);
+            // Aucune référence trouvée : l'activation du mode doit rester
+            // visible — comparer au document vide (tout apparaît en ajout),
+            // comme avant. La frise, elle, garde le rendu sans annotations
+            // pour une version sans prédécesseur.
+            return this.renderVersionCompare(snapshot, reference, { emptyReference: !reference });
         },
 
         // Historique de versions (trié desc) : celui déjà chargé, sinon l'API
@@ -1753,9 +1757,11 @@ export default {
          * prevSnapshot null = comparaison de l'état à lui-même : rien n'est
          * annoté — le contenu initial est « là », pas ajouté (cas de la
          * toute première version, ou du début d'une époque).
+         * emptyReference : sans prevSnapshot, comparer au document vide à la
+         * place (tout apparaît en ajout) — repli du trigger showVersionCompare.
          * Limite : versions de l'époque du document affiché uniquement.
          */
-        renderVersionCompare(snapshot = null, prevSnapshot = null) {
+        renderVersionCompare(snapshot = null, prevSnapshot = null, { emptyReference = false } = {}) {
             if (!this.shouldEnableCollaboration || !this.richEditor || !this.ydoc) {
                 console.warn('[Versions] Compare requires active collaboration');
                 return false;
@@ -1772,10 +1778,11 @@ export default {
                 const view = this.richEditor.view;
                 const compareDoc = this.getCompareDoc();
                 const shown = snapshot ? decode(snapshot) : Y.snapshot(compareDoc);
+                const reference = prevSnapshot ? decode(prevSnapshot) : emptyReference ? Y.emptySnapshot : shown;
                 view.dispatch(
                     view.state.tr.setMeta(ySyncPluginKey, {
                         snapshot: shown,
-                        prevSnapshot: prevSnapshot ? decode(prevSnapshot) : shown,
+                        prevSnapshot: reference,
                     })
                 );
                 this.richEditor.setEditable(false);
