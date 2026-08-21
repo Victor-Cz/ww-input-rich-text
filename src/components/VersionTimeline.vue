@@ -44,6 +44,10 @@ export default {
         provisionalId: null,
         // La sélection vient du scroll : ne pas re-centrer (effet élastique)
         fromScroll: false,
+        // Sens du scroll en cours (+1 droite, -1 gauche) : le posé magnétique
+        // ne doit jamais revenir en arrière
+        scrollDirection: 0,
+        lastScrollLeft: 0,
         resizeObserver: null,
         // Animation de défilement maison (décélération douce en fin de course)
         scrollAnimId: null,
@@ -129,6 +133,37 @@ export default {
                 }
             }
             return bestId ? this.versions.find(v => v.id === bestId) || null : null;
+        },
+        // Barre retenue au posé : la plus proche du centre, mais jamais à
+        // contre-sens du scroll — si la plus proche est derrière, on prend
+        // la première barre dans le sens du mouvement
+        pickSettleVersion() {
+            const scroller = this.$refs.scroller;
+            if (!scroller) return null;
+            const center = scroller.scrollLeft + scroller.clientWidth / 2;
+            const bars = [];
+            for (const el of scroller.querySelectorAll('[data-version-id]')) {
+                bars.push({ id: el.getAttribute('data-version-id'), center: el.offsetLeft + el.offsetWidth / 2 });
+            }
+            if (!bars.length) return null;
+            let best = null;
+            let bestDist = Infinity;
+            for (const bar of bars) {
+                const dist = Math.abs(bar.center - center);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    best = bar;
+                }
+            }
+            const dir = this.scrollDirection;
+            if (dir > 0 && best.center < center - 1) {
+                const forward = bars.filter(b => b.center >= center - 1).sort((a, b) => a.center - b.center)[0];
+                if (forward) best = forward;
+            } else if (dir < 0 && best.center > center + 1) {
+                const backward = bars.filter(b => b.center <= center + 1).sort((a, b) => b.center - a.center)[0];
+                if (backward) best = backward;
+            }
+            return this.versions.find(v => v.id === best.id) || null;
         },
         // Écart entre deux barres adjacentes (pour calibrer la molette)
         barPitch() {
@@ -237,13 +272,21 @@ export default {
         // confirmée et la frise se cale doucement sur la barre
         onScroll() {
             if (this.suppressScrollSelect) return;
+            // Mémoriser le sens du mouvement pour le posé magnétique
+            const scrollLeft = this.$refs.scroller?.scrollLeft ?? 0;
+            const delta = scrollLeft - this.lastScrollLeft;
+            if (delta !== 0) this.scrollDirection = delta > 0 ? 1 : -1;
+            this.lastScrollLeft = scrollLeft;
+
             const nearest = this.nearestToCenter();
             if (nearest) this.provisionalId = nearest.id;
             clearTimeout(this.scrollTimer);
             this.scrollTimer = setTimeout(() => {
                 if (this.suppressScrollSelect) return;
-                const version = this.nearestToCenter();
+                // Jamais à contre-sens du scroll
+                const version = this.pickSettleVersion();
                 this.provisionalId = null;
+                this.scrollDirection = 0;
                 if (version && version.id !== this.selectedId) {
                     this.fromScroll = true;
                     this.$emit('select', version);
@@ -318,18 +361,33 @@ export default {
     color: #9ca3af;
 }
 
-/* Séparateur discret entre époques (le concept n'est pas exposé au client) */
+/* Séparateur discret entre époques (le concept n'est pas exposé au client) :
+   un petit trait centré, un peu plus épais mais pas plus haut que les barres */
 .version-timeline__epoch {
+    position: relative;
     display: flex;
     align-items: center;
-    align-self: stretch;
-    border-left: 2px solid #d1d5db;
-    padding-left: 8px;
-    margin-right: 8px;
+    padding-left: 9px;
+    margin-right: 9px;
+
+    &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 16px;
+        background: #d1d5db;
+        border-radius: 2px;
+    }
 
     &:first-child {
-        border-left: none;
         padding-left: 0;
+
+        &::before {
+            display: none;
+        }
     }
 }
 
