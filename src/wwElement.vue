@@ -208,6 +208,7 @@
                     class="ww-rich-text__menu-timeline"
                     :versions="versionHistory.versions"
                     :selected-id="versionHistory.selectedId"
+                    :pending-id="versionHistory.epochOverlay.pendingVersion?.id || null"
                     :loading="versionHistory.loadingList"
                     :selected-color="content.timelineSelectedColor"
                     @select="selectTimelineVersion" />
@@ -221,6 +222,7 @@
                         class="ww-rich-text__menu-timeline -teleported"
                         :versions="versionHistory.versions"
                         :selected-id="versionHistory.selectedId"
+                        :pending-id="versionHistory.epochOverlay.pendingVersion?.id || null"
                         :loading="versionHistory.loadingList"
                         :selected-color="content.timelineSelectedColor"
                         @select="selectTimelineVersion" />

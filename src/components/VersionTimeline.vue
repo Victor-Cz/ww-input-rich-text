@@ -31,6 +31,9 @@ export default {
         // Versions triées de la plus récente à la plus ancienne (ordre API)
         versions: { type: Array, default: () => [] },
         selectedId: { type: String, default: null },
+        // Version en attente de confirmation (overlay de chargement d'époque) :
+        // reste la barre active tant que l'overlay est affiché
+        pendingId: { type: String, default: null },
         loading: { type: Boolean, default: false },
         // Couleur de la barre sélectionnée (config WeWeb)
         selectedColor: { type: String, default: '#111827' },
@@ -53,7 +56,7 @@ export default {
     }),
     computed: {
         activeId() {
-            return this.provisionalId || this.selectedId;
+            return this.provisionalId || this.pendingId || this.selectedId;
         },
         // Affichage chronologique : de la plus ancienne (gauche) à la plus
         // récente (droite)
