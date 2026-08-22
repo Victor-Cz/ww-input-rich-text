@@ -31,6 +31,7 @@ A versatile rich text editor enabling text content creation with formatting opti
 - debounce: boolean - Debounce change event. Default: false
 - debounceDelay: string - Debounce delay (1-5000ms). Default: "500ms"
 - hideMenu: boolean - Hide formatting menu. Default: false
+- parameterTableTools: boolean - Table hover handles (select/move rows & columns) and right click menu. Edition only (ignored when readonly). Default: true
 - wrapMenu: boolean - Wrap formatting menu. Default: false
 - customMenu: boolean - Use custom menu. Default: false
 - menuColor: string - Menu color. Default: "#000000ad"
@@ -45,7 +46,7 @@ A versatile rich text editor enabling text content creation with formatting opti
 - code: object - Code block styles
 - img: object - Image styles
 - checkbox: object - Checkbox styles
-- table: object - Table styles
+- table: object - Table styles (borderColor, borderWidth, headerBgColor, headerColor, pairCellBgColor, oddCellBgColor, cellColor, cellPaddingX, cellPaddingY, handleColor)
 
 ***Slots:***
 - customMenuElement: (element) ww-div - Optional custom menu element
@@ -86,6 +87,41 @@ A versatile rich text editor enabling text content creation with formatting opti
 - value: string - Current editor content (path: variables['current_element_uid-value'])
 - mentions: array - List of mentions in content (path: variables['current_element_uid-mentions'])
 - states: object - Editor states (text formatting, alignment, etc) + `selected` object describing the current selection: `{ text, wordCount, charCount }` (charCount includes spaces; all values are 0/empty when the selection is collapsed) (path: variables['current_element_uid-states'])
+
+# Tableaux — poignées, largeurs et menu contextuel
+
+Activées par le paramètre `parameterTableTools` (par défaut `true`), ces interactions
+ne sont disponibles qu'en édition (ni en `readonly`, ni dans l'éditeur WeWeb).
+
+## Redimensionnement et mémorisation des largeurs
+
+- Le pointeur près du bord droit d'une colonne fait apparaître une poignée de
+  redimensionnement ; sa couleur suit `table.handleColor`.
+- La largeur choisie est stockée dans le contenu (attribut `colwidth` des cellules)
+  et donc conservée d'une session à l'autre, tant que la sortie est en `html` :
+  le format `markdown` ne transporte pas les largeurs.
+- Le tableau est rendu en `table-layout: fixed` — condition pour que ces largeurs
+  s'appliquent exactement. Sans largeur explicite, les colonnes se partagent la
+  place à parts égales (au lieu de s'ajuster au contenu).
+
+## Poignées de ligne / colonne
+
+Au survol d'une cellule, une petite poignée apparaît au-dessus de la colonne et à
+gauche de la ligne :
+
+- **Clic** : sélectionne toute la ligne / colonne.
+- **Glisser-déposer** : déplace la ligne / colonne, un repère indiquant la position
+  d'insertion. La ligne d'en-tête reste en première position (ni déplaçable, ni
+  dépassable). `Échap` annule le déplacement en cours.
+- **Clic droit** : ouvre le menu contextuel sur cette ligne / colonne.
+
+## Menu contextuel
+
+Clic droit dans une cellule (ou sur une poignée) : insérer une ligne au-dessus /
+en dessous, insérer une colonne à gauche / à droite, supprimer la ligne, supprimer
+la colonne, basculer la ligne d'en-tête, supprimer le tableau. Les actions portent
+sur la sélection courante lorsqu'elle couvre plusieurs cellules, sinon sur la
+cellule cliquée.
 
 # Menu AI - Types de modification personnalisés
 

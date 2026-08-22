@@ -112,6 +112,7 @@ export default {
                 'parameterOrderedList',
                 'parameterTaskList',
                 'parameterTable',
+                'parameterTableTools',
                 'parameterLink',
                 'parameterImage',
                 'parameterCodeBlock',
@@ -2175,6 +2176,18 @@ export default {
                         classes: true,
                         states: true,
                     },
+                    handleColor: {
+                        type: 'Color',
+                        label: {
+                            en: 'Handle color',
+                        },
+                        bindable: true,
+                        options: {
+                            nullable: true,
+                        },
+                        classes: true,
+                        states: true,
+                    },
                 },
                 singleLine: true,
             },
@@ -2188,6 +2201,7 @@ export default {
                 cellColor: '#000',
                 cellPaddingY: '6px',
                 cellPaddingX: '8px',
+                handleColor: '#099af2',
             },
             states: true,
             classes: true,
@@ -2508,6 +2522,19 @@ export default {
                     },
                 ],
             },
+            defaultValue: true,
+        },
+        parameterTableTools: {
+            section: 'settings',
+            label: {
+                en: 'Table handles & right click menu',
+            },
+            propertyHelp: {
+                tooltip:
+                    'Hover handles to select and drag rows/columns, column resizing, and a right click menu (insert, delete). Edition only.',
+            },
+            type: 'OnOff',
+            bindable: true,
             defaultValue: true,
         },
         parameterLink: {

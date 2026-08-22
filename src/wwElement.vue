@@ -261,6 +261,15 @@
                     ref="linkPopover"
                 />
 
+                <!-- Poignées de ligne/colonne (survol + glisser-déposer) et
+                     menu contextuel des tableaux -->
+                <template v-if="richEditor && tableToolsEnabled">
+                    <table-controls :editor="richEditor" :enabled="tableToolsEnabled"
+                        @contextmenu="openTableContextMenu" />
+                    <table-context-menu ref="tableContextMenu" :editor="richEditor"
+                        :enabled="tableToolsEnabled" />
+                </template>
+
                 <!-- Utilisation du composant AiMenu personnalisé -->
                 <ai-menu ref="aiMenu" :rich-editor="richEditor" :is-read-only="content.parameterAiMenuReadOnly ?? true"
                     :parameter-ai-menu-primary-color="content.parameterAiMenuPrimaryColor ?? '#007bff'"
@@ -317,6 +326,8 @@ import TableIcon from './icons/table-icon.vue';
 import AiMenu from './components/AiMenu.vue';
 import MagicMenu from './components/MagicMenu.vue';
 import LinkPopover from './components/LinkPopover.vue';
+import TableControls from './components/TableControls.vue';
+import TableContextMenu from './components/TableContextMenu.vue';
 import VersionTimeline from './components/VersionTimeline.vue';
 import { SelectionHighlighter } from './extensions/SelectionHighlighter.js';
 import { SeoHighlighter } from './extensions/SeoHighlighter.js';
@@ -356,6 +367,8 @@ export default {
         MagicMenu,
         VersionTimeline,
         LinkPopover,
+        TableControls,
+        TableContextMenu,
     },
     props: {
         content: { type: Object, required: true },
@@ -910,6 +923,12 @@ export default {
         hideMenu() {
             return this.content.hideMenu || this.isReadonly;
         },
+        // Poignées et menu contextuel : des affordances d'édition. Inutiles en
+        // lecture seule, et inopérantes dans l'éditeur WeWeb où un calque
+        // capture les clics sur le contenu.
+        tableToolsEnabled() {
+            return this.isEditable && !this.isEditing && (this.content.parameterTableTools ?? true);
+        },
         isMagicMenu() {
             return (this.content.parameterAiMenuVariant ?? 'classic') === 'magic';
         },
@@ -1094,6 +1113,7 @@ export default {
                 '--table-cell-color': this.content.table?.cellColor || '#000',
                 '--table-cell-padding-x': this.content.table?.cellPaddingX || '8px',
                 '--table-cell-padding-y': this.content.table?.cellPaddingY || '6px',
+                '--table-handle-color': this.content.table?.handleColor || '#099af2',
                 // tooltip
                 '--tooltip-color': this.content.a?.tooltipColor || '#ffffff',
                 '--tooltip-background-color': this.content.a?.tooltipBackgroundColor || '#393d45',
@@ -1639,6 +1659,9 @@ export default {
         },
         deleteTable() {
             this.richEditor.chain().focus().deleteTable().run();
+        },
+        openTableContextMenu(event) {
+            this.$refs.tableContextMenu?.openAt(event);
         },
 
         // AI Menu actions
@@ -2849,6 +2872,9 @@ export default {
             overflow: hidden;
             display: table;
             width: 100%;
+            /* Indispensable pour que les largeurs de colonnes mémorisées
+               (attribut colwidth du contenu) soient réellement appliquées */
+            table-layout: fixed;
 
             td,
             th {
@@ -2898,14 +2924,28 @@ export default {
             }
                 */
 
+            /* Poignée de redimensionnement : ProseMirror ne la pose que
+               lorsque le pointeur approche du bord d'une colonne */
             .column-resize-handle {
-                background-color: red;
-                bottom: -2px;
+                background-color: var(--table-handle-color);
+                bottom: -1px;
                 pointer-events: none;
                 position: absolute;
                 right: -2px;
                 top: 0;
-                width: 4px;
+                width: 3px;
+                border-radius: 2px;
+                z-index: 3;
+            }
+
+            .selectedCell:after {
+                background: var(--table-handle-color);
+                opacity: 0.12;
+                content: '';
+                inset: 0;
+                pointer-events: none;
+                position: absolute;
+                z-index: 2;
             }
         }
 
@@ -3199,5 +3239,13 @@ export default {
     to {
         transform: rotate(360deg);
     }
+}
+
+/* Déplacement d'une ligne/colonne : curseur cohérent sur toute la page et
+   pas de sélection de texte parasite pendant le glisser */
+body.ww-rich-text-table-dragging,
+body.ww-rich-text-table-dragging * {
+    cursor: grabbing !important;
+    user-select: none !important;
 }
 </style>
