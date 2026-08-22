@@ -114,6 +114,9 @@ gauche de la ligne :
 - **Glisser-déposer** : déplace la ligne / colonne, un repère indiquant la position
   d'insertion. La ligne d'en-tête reste en première position (ni déplaçable, ni
   dépassable). `Échap` annule le déplacement en cours.
+- Chaque déplacement forme un pas d'annulation isolé : `cmd+Z` défait le
+  déplacement seul, sans emporter la frappe qui le précède ni le déplacement
+  suivant (historique local comme pile y-undo en collaboration).
 
 ## Menu contextuel
 

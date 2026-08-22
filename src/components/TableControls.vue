@@ -34,6 +34,8 @@
 </template>
 
 <script>
+import { closeHistory } from '@tiptap/pm/history';
+import { yUndoPluginKey } from 'y-prosemirror';
 import { CellSelection, TableMap, findTable, moveTableColumn, moveTableRow } from '@tiptap/pm/tables';
 
 const GRIP_THICKNESS = 4; // épaisseur de la poignée
@@ -310,11 +312,29 @@ export default {
                 drag.axis === 'col'
                     ? moveTableColumn({ from: drag.from, to: drag.to, select: true })
                     : moveTableRow({ from: drag.from, to: drag.to, select: true });
-            command(this.editor.state, this.editor.view.dispatch);
-            this.editor.view.focus();
+            // Un déplacement doit être un pas d'annulation à lui seul. Sans cela
+            // il est agrégé à l'événement en cours (moins de 500 ms, plages
+            // adjacentes — le remplacement du tableau chevauche tout) et le
+            // cmd+Z défait la frappe précédente en même temps, ou le
+            // déplacement suivant. On ferme le groupe avant et après.
+            const view = this.editor.view;
+            this.closeUndoGroup(view);
+            command(this.editor.state, transaction => view.dispatch(closeHistory(transaction)));
+            view.dispatch(closeHistory(view.state.tr));
+            this.closeUndoGroup(view);
+            view.focus();
             // Le déplacement reconstruit le tableau : on raccroche la poignée à
             // la ligne/colonne déplacée via la sélection que la commande pose.
             this.$nextTick(() => this.syncFromSelection(drag.axis, drag.to));
+        },
+        /**
+         * En collaboration, l'historique local n'est pas prosemirror-history
+         * mais la pile y-undo, qui regroupe elle aussi les changements proches
+         * dans le temps (captureTimeout). `closeHistory` n'a alors aucun effet :
+         * c'est `stopCapturing` qui isole le pas.
+         */
+        closeUndoGroup(view) {
+            yUndoPluginKey.getState(view.state)?.undoManager?.stopCapturing();
         },
         syncFromSelection(axis, index) {
             const { node } = this.editor.view.domAtPos(this.editor.state.selection.from);
