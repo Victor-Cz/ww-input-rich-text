@@ -109,19 +109,23 @@ ne sont disponibles qu'en édition (ni en `readonly`, ni dans l'éditeur WeWeb).
 Au survol d'une cellule, une petite poignée apparaît au-dessus de la colonne et à
 gauche de la ligne :
 
-- **Clic** : sélectionne toute la ligne / colonne.
+- **Clic** (gauche ou droit) : sélectionne toute la ligne / colonne et ouvre son
+  menu d'actions.
 - **Glisser-déposer** : déplace la ligne / colonne, un repère indiquant la position
   d'insertion. La ligne d'en-tête reste en première position (ni déplaçable, ni
   dépassable). `Échap` annule le déplacement en cours.
-- **Clic droit** : ouvre le menu contextuel sur cette ligne / colonne.
 
 ## Menu contextuel
 
-Clic droit dans une cellule (ou sur une poignée) : insérer une ligne au-dessus /
+Clic droit dans une cellule, ou clic sur une poignée : insérer une ligne au-dessus /
 en dessous, insérer une colonne à gauche / à droite, supprimer la ligne, supprimer
-la colonne, basculer la ligne d'en-tête, supprimer le tableau. Les actions portent
-sur la sélection courante lorsqu'elle couvre plusieurs cellules, sinon sur la
-cellule cliquée.
+la colonne, ligne d'en-tête, colonne d'en-tête, supprimer le tableau.
+
+Le menu s'adapte à la sélection : une colonne sélectionnée n'affiche que les actions
+de colonne, une ligne que celles de ligne — les actions de l'autre sens seraient de
+toute façon refusées, la sélection couvrant alors tout le tableau dans ce sens. Un
+clic droit dans une cellule (sans sélection multiple) affiche les deux, et les
+actions portent sur cette cellule.
 
 # Menu AI - Types de modification personnalisés
 

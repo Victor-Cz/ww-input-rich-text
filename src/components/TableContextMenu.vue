@@ -30,18 +30,43 @@ import { computePosition, flip, shift, offset } from '@floating-ui/dom';
 import { TextSelection } from '@tiptap/pm/state';
 import { CellSelection } from '@tiptap/pm/tables';
 
+// `axis` restreint l'action à un sens du tableau : une sélection de colonne ne
+// peut ni supprimer une ligne (prosemirror-tables refuse : toutes les lignes
+// sont sélectionnées) ni basculer la ligne d'en-tête, et inversement.
 const ACTIONS = [
-    { key: 'addRowBefore', label: 'Insérer une ligne au-dessus', icon: 'fas fa-arrow-up' },
-    { key: 'addRowAfter', label: 'Insérer une ligne en dessous', icon: 'fas fa-arrow-down' },
-    { key: 'addColumnBefore', label: 'Insérer une colonne à gauche', icon: 'fas fa-arrow-left' },
-    { key: 'addColumnAfter', label: 'Insérer une colonne à droite', icon: 'fas fa-arrow-right' },
+    { key: 'addRowBefore', axis: 'row', label: 'Insérer une ligne au-dessus', icon: 'fas fa-arrow-up' },
+    { key: 'addRowAfter', axis: 'row', label: 'Insérer une ligne en dessous', icon: 'fas fa-arrow-down' },
+    { key: 'addColumnBefore', axis: 'col', label: 'Insérer une colonne à gauche', icon: 'fas fa-arrow-left' },
+    { key: 'addColumnAfter', axis: 'col', label: 'Insérer une colonne à droite', icon: 'fas fa-arrow-right' },
     { separator: true },
-    { key: 'deleteRow', label: 'Supprimer la ligne', icon: 'fas fa-minus' },
-    { key: 'deleteColumn', label: 'Supprimer la colonne', icon: 'fas fa-minus' },
+    { key: 'deleteRow', axis: 'row', label: 'Supprimer la ligne', icon: 'fas fa-minus' },
+    { key: 'deleteColumn', axis: 'col', label: 'Supprimer la colonne', icon: 'fas fa-minus' },
     { separator: true },
-    { key: 'toggleHeaderRow', label: "Ligne d'en-tête", icon: 'fas fa-heading' },
+    { key: 'toggleHeaderRow', axis: 'row', label: "Ligne d'en-tête", icon: 'fas fa-heading' },
+    { key: 'toggleHeaderColumn', axis: 'col', label: "Colonne d'en-tête", icon: 'fas fa-heading' },
     { key: 'deleteTable', label: 'Supprimer le tableau', icon: 'fas fa-trash', danger: true },
 ];
+
+/** Sens de la sélection courante : 'row', 'col', ou null (une seule cellule) */
+function selectionAxis(selection) {
+    if (!(selection instanceof CellSelection)) return null;
+    const isColumn = selection.isColSelection();
+    const isRow = selection.isRowSelection();
+    // Tableau entier sélectionné : aucun sens ne prime, on montre tout.
+    if (isColumn === isRow) return null;
+    return isColumn ? 'col' : 'row';
+}
+
+/** Retire les séparateurs devenus orphelins après filtrage */
+function trimSeparators(items) {
+    const kept = [];
+    for (const item of items) {
+        if (item.separator && (!kept.length || kept[kept.length - 1].separator)) continue;
+        kept.push(item);
+    }
+    while (kept.length && kept[kept.length - 1].separator) kept.pop();
+    return kept;
+}
 
 export default {
     name: 'TableContextMenu',
@@ -101,9 +126,10 @@ export default {
         /** Ouvre le menu à la position du curseur (appelable depuis les poignées) */
         openAt(event) {
             if (!this.enabled) return;
-            this.items = ACTIONS.map(action =>
-                action.separator ? action : { ...action, disabled: !this.editor.can()[action.key]() }
-            );
+            const axis = selectionAxis(this.editor.state.selection);
+            this.items = trimSeparators(
+                ACTIONS.filter(action => !axis || !action.axis || action.axis === axis)
+            ).map(action => (action.separator ? action : { ...action, disabled: !this.editor.can()[action.key]() }));
             this.isOpen = true;
             this.$nextTick(() => this.place(event.clientX, event.clientY));
         },

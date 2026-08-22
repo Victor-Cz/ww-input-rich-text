@@ -9,7 +9,7 @@
             class="table-controls__grip -column"
             :class="{ '-active': isDragging('col') }"
             :style="columnGripStyle"
-            title="Glisser pour déplacer la colonne — clic pour la sélectionner"
+            title="Clic pour les actions de colonne — glisser pour la déplacer"
             @mousedown.prevent="startGrip('col', $event)"
             @mouseenter="cancelHide"
             @mouseleave="scheduleHide"
@@ -22,7 +22,7 @@
             class="table-controls__grip -row"
             :class="{ '-active': isDragging('row') }"
             :style="rowGripStyle"
-            title="Glisser pour déplacer la ligne — clic pour la sélectionner"
+            title="Clic pour les actions de ligne — glisser pour la déplacer"
             @mousedown.prevent="startGrip('row', $event)"
             @mouseenter="cancelHide"
             @mouseleave="scheduleHide"
@@ -36,7 +36,7 @@
 <script>
 import { CellSelection, TableMap, findTable, moveTableColumn, moveTableRow } from '@tiptap/pm/tables';
 
-const GRIP_THICKNESS = 8; // épaisseur de la poignée
+const GRIP_THICKNESS = 4; // épaisseur de la poignée
 const GRIP_GAP = 3; // écart entre la poignée et le bord du tableau
 const DRAG_THRESHOLD = 4; // px avant de considérer que l'on déplace (vs. simple clic)
 const HIDE_DELAY = 150; // laisse le temps d'atteindre la poignée depuis le tableau
@@ -295,10 +295,17 @@ export default {
             this.drag.active = false;
             this.onDragEnd();
         },
-        onDragEnd() {
+        onDragEnd(event) {
             const drag = this.drag;
             this.stopDrag();
-            if (!drag || !drag.active || !drag.movable || drag.to === drag.from) return;
+            if (!drag) return;
+            if (!drag.active) {
+                // Simple clic : la ligne/colonne vient d'être sélectionnée, on
+                // enchaîne sur ses actions (pas au clavier — Échap annule).
+                if (event?.type === 'mouseup') this.$emit('contextmenu', event);
+                return;
+            }
+            if (!drag.movable || drag.to === drag.from) return;
             const command =
                 drag.axis === 'col'
                     ? moveTableColumn({ from: drag.from, to: drag.to, select: true })
@@ -355,12 +362,19 @@ export default {
     position: fixed;
     padding: 0;
     border: none;
-    border-radius: 4px;
+    border-radius: 3px;
     background: var(--table-border-color, #c7c7c7);
     opacity: 0.6;
     cursor: grab;
     pointer-events: auto;
     transition: opacity 0.12s ease, background-color 0.12s ease;
+}
+
+/* Zone d'accroche plus large que le trait, sans l'épaissir visuellement */
+.table-controls__grip::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
 }
 
 .table-controls__grip:hover,
