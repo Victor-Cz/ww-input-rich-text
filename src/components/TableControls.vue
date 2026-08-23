@@ -9,7 +9,7 @@
             class="table-controls__grip -column"
             :class="{ '-active': isDragging('col') }"
             :style="columnGripStyle"
-            title="Clic pour les actions de colonne — glisser pour la déplacer"
+            :title="texts.columnGrip"
             @mousedown.prevent="startGrip('col', $event)"
             @mouseenter="cancelHide"
             @mouseleave="scheduleHide"
@@ -22,7 +22,7 @@
             class="table-controls__grip -row"
             :class="{ '-active': isDragging('row') }"
             :style="rowGripStyle"
-            title="Clic pour les actions de ligne — glisser pour la déplacer"
+            :title="texts.rowGrip"
             @mousedown.prevent="startGrip('row', $event)"
             @mouseenter="cancelHide"
             @mouseleave="scheduleHide"
@@ -36,6 +36,7 @@
 <script>
 import { closeHistory } from '@tiptap/pm/history';
 import { yUndoPluginKey } from 'y-prosemirror';
+import { getTableTexts } from '../i18n/tableUi.js';
 import { CellSelection, TableMap, findTable, moveTableColumn, moveTableRow } from '@tiptap/pm/tables';
 
 const GRIP_THICKNESS = 4; // épaisseur de la poignée
@@ -70,6 +71,9 @@ export default {
         };
     },
     computed: {
+        texts() {
+            return getTableTexts();
+        },
         columnGripStyle() {
             const column = this.geometry?.columns[this.hoverColumn];
             if (!column) return null;

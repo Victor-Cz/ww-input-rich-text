@@ -120,6 +120,10 @@ gauche de la ligne :
 
 ## Menu contextuel
 
+Les libellés suivent la langue de l'application (`wwLib.wwLang.lang`) : anglais et
+français fournis (`src/i18n/tableUi.js`), repli sur l'anglais pour les autres. Les
+réglages `seoLang` / `seoUiLang` sont indépendants, ils ne concernent que l'analyse SEO.
+
 Clic droit dans une cellule, ou clic sur une poignée : insérer une ligne au-dessus /
 en dessous, insérer une colonne à gauche / à droite, supprimer la ligne, supprimer
 la colonne, ligne d'en-tête, colonne d'en-tête, supprimer le tableau.

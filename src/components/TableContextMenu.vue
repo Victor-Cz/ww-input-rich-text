@@ -29,22 +29,24 @@
 import { computePosition, flip, shift, offset } from '@floating-ui/dom';
 import { TextSelection } from '@tiptap/pm/state';
 import { CellSelection } from '@tiptap/pm/tables';
+import { getTableTexts } from '../i18n/tableUi.js';
 
 // `axis` restreint l'action à un sens du tableau : une sélection de colonne ne
 // peut ni supprimer une ligne (prosemirror-tables refuse : toutes les lignes
 // sont sélectionnées) ni basculer la ligne d'en-tête, et inversement.
+// Le libellé est repris de `tableUi` sous la même clé, dans la langue de l'app.
 const ACTIONS = [
-    { key: 'addRowBefore', axis: 'row', label: 'Insérer une ligne au-dessus', icon: 'fas fa-arrow-up' },
-    { key: 'addRowAfter', axis: 'row', label: 'Insérer une ligne en dessous', icon: 'fas fa-arrow-down' },
-    { key: 'addColumnBefore', axis: 'col', label: 'Insérer une colonne à gauche', icon: 'fas fa-arrow-left' },
-    { key: 'addColumnAfter', axis: 'col', label: 'Insérer une colonne à droite', icon: 'fas fa-arrow-right' },
+    { key: 'addRowBefore', axis: 'row', icon: 'fas fa-arrow-up' },
+    { key: 'addRowAfter', axis: 'row', icon: 'fas fa-arrow-down' },
+    { key: 'addColumnBefore', axis: 'col', icon: 'fas fa-arrow-left' },
+    { key: 'addColumnAfter', axis: 'col', icon: 'fas fa-arrow-right' },
     { separator: true },
-    { key: 'deleteRow', axis: 'row', label: 'Supprimer la ligne', icon: 'fas fa-minus' },
-    { key: 'deleteColumn', axis: 'col', label: 'Supprimer la colonne', icon: 'fas fa-minus' },
+    { key: 'deleteRow', axis: 'row', icon: 'fas fa-minus' },
+    { key: 'deleteColumn', axis: 'col', icon: 'fas fa-minus' },
     { separator: true },
-    { key: 'toggleHeaderRow', axis: 'row', label: "Ligne d'en-tête", icon: 'fas fa-heading' },
-    { key: 'toggleHeaderColumn', axis: 'col', label: "Colonne d'en-tête", icon: 'fas fa-heading' },
-    { key: 'deleteTable', label: 'Supprimer le tableau', icon: 'fas fa-trash', danger: true },
+    { key: 'toggleHeaderRow', axis: 'row', icon: 'fas fa-heading' },
+    { key: 'toggleHeaderColumn', axis: 'col', icon: 'fas fa-heading' },
+    { key: 'deleteTable', icon: 'fas fa-trash', danger: true },
 ];
 
 /** Sens de la sélection courante : 'row', 'col', ou null (une seule cellule) */
@@ -127,9 +129,14 @@ export default {
         openAt(event) {
             if (!this.enabled) return;
             const axis = selectionAxis(this.editor.state.selection);
+            const texts = getTableTexts();
             this.items = trimSeparators(
                 ACTIONS.filter(action => !axis || !action.axis || action.axis === axis)
-            ).map(action => (action.separator ? action : { ...action, disabled: !this.editor.can()[action.key]() }));
+            ).map(action =>
+                action.separator
+                    ? action
+                    : { ...action, label: texts[action.key], disabled: !this.editor.can()[action.key]() }
+            );
             this.isOpen = true;
             this.$nextTick(() => this.place(event.clientX, event.clientY));
         },
