@@ -239,6 +239,10 @@
 
                 <editor-content class="ww-rich-text__input" :editor="richEditor" :style="richStyles" />
 
+                <!-- Réglette des modifications : carte du document le long du
+                     bord droit, active pendant une comparaison de versions -->
+                <diff-rail v-if="showDiffRail" :editor="richEditor" :active="isVersionPreview" />
+
                 <!-- Overlay de chargement d'une époque archivée -->
                 <div v-if="versionHistory.epochOverlay.visible" class="ww-rich-text__epoch-overlay">
                     <div class="ww-rich-text__epoch-overlay-box">
@@ -329,6 +333,7 @@ import LinkPopover from './components/LinkPopover.vue';
 import TableControls from './components/TableControls.vue';
 import TableContextMenu from './components/TableContextMenu.vue';
 import VersionTimeline from './components/VersionTimeline.vue';
+import DiffRail from './components/DiffRail.vue';
 import { SelectionHighlighter } from './extensions/SelectionHighlighter.js';
 import { SeoHighlighter } from './extensions/SeoHighlighter.js';
 import { TextSuggestion } from './extensions/TextSuggestion.js';
@@ -366,6 +371,7 @@ export default {
         AiMenu,
         MagicMenu,
         VersionTimeline,
+        DiffRail,
         LinkPopover,
         TableControls,
         TableContextMenu,
@@ -1148,6 +1154,10 @@ export default {
         },
         showOutlineIndicator() {
             return this.outlineEnabled && !!this.content.outlineIndicator;
+        },
+        // Réglette des modifications (comparaison de versions)
+        showDiffRail() {
+            return this.shouldEnableCollaboration && !!this.content.versionDiffRail;
         },
         currentHeadingPath() {
             const item = this.outlineItems[this.activeOutlineIndex];

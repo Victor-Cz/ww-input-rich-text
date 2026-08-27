@@ -67,6 +67,7 @@ export default {
                 'showVersionHistory',
                 'versionDiffColorMode',
                 'versionDiffAuthors',
+                'versionDiffRail',
                 'timelineContainerSelector',
                 'timelineSelectedColor',
                 'epochLoadButtonText',
@@ -3288,6 +3289,21 @@ export default {
             propertyHelp: {
                 tooltip:
                     'How added/removed content is highlighted in version compare. In both modes, hovering shows the author in a tooltip.',
+            },
+            /* wwEditor:end */
+        },
+        versionDiffRail: {
+            section: 'settings',
+            label: { en: 'Version change rail', fr: 'Réglette des modifications' },
+            type: 'OnOff',
+            defaultValue: false,
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            propertyHelp: {
+                tooltip:
+                    "Thin rail along the right edge of the text during a version compare: one marker per change, at its position in the document. Click a marker to scroll to it.",
             },
             /* wwEditor:end */
         },
