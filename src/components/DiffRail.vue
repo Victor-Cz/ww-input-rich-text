@@ -1,7 +1,7 @@
 <template>
     <!-- Réglette des modifications : carte verticale du document affichée le
          long du bord droit de la zone de texte pendant une comparaison de
-         versions. Un rectangle par zone modifiée, à sa position relative dans
+         versions. Un rectangle par ligne modifiée, à sa position relative dans
          le document (bicolore quand ajouts et retraits s'y côtoient). La
          position dans le document est déjà donnée par la barre de défilement
          native : la réglette ne montre que les modifications.
@@ -22,9 +22,10 @@
 
 <script>
 const RAIL_WIDTH = 10; // largeur des rectangles
-const MARK_HEIGHT = 3; // hauteur des rectangles (doit suivre la valeur CSS)
+const MARK_HEIGHT = 3; // hauteur d'un repère de ligne (doit suivre la valeur CSS)
 const RAIL_INSET = 4; // écart entre la réglette et le bord droit de l'éditeur
-const MERGE_GAP = 4; // px sur la réglette en deçà desquels deux zones n'en font qu'une
+const LINE_OVERLAP = 2; // px de chevauchement vertical à partir duquel deux fragments sont sur la même ligne
+const LINE_MERGE = 1; // px entre deux repères projetés en deçà desquels ils n'en font qu'un
 
 // Teintes sobres, dans l'esprit des indicateurs de diff GitHub
 const DEFAULT_COLORS = { removed: '#cf222e', added: '#1a7f37' };
@@ -53,6 +54,24 @@ function bandBackground(colors) {
     const { added, removed } = colors;
     if (added && removed) return `linear-gradient(90deg, ${added} 0 50%, ${removed} 50% 100%)`;
     return added || removed || DEFAULT_COLORS.added;
+}
+
+/**
+ * Rectangles ligne à ligne du contenu d'un élément : un passage modifié qui
+ * court sur trois lignes en donne trois, comme les lignes d'un diff. Le
+ * rectangle du bloc sert de repli (élément sans contenu sélectionnable).
+ */
+function lineRects(el) {
+    try {
+        const range = el.ownerDocument.createRange();
+        range.selectNodeContents(el);
+        const rects = Array.from(range.getClientRects()).filter(r => r.height > 0 && r.width > 0);
+        if (rects.length) return rects;
+    } catch {
+        // Contenu non sélectionnable (nœud atomique) : repli ci-dessous
+    }
+    const rect = el.getBoundingClientRect();
+    return rect.height ? [rect] : [];
 }
 
 export default {
@@ -90,6 +109,7 @@ export default {
     },
     watch: {
         active() {
+            this.marksDirty = true;
             this.$nextTick(this.scheduleMeasure);
         },
         // L'éditeur est recréé au rechargement du composant : les écouteurs
@@ -98,9 +118,15 @@ export default {
             this.detachListeners();
             this.rail = null;
             this.marks = [];
+            this.marksDirty = true;
             this.attachListeners();
             this.$nextTick(this.scheduleMeasure);
         },
+    },
+    created() {
+        // Hors data : ces champs pilotent le recalcul, ils ne sont pas rendus
+        this.marksDirty = true;
+        this.marksSignature = '';
     },
     mounted() {
         this.attachListeners();
@@ -117,6 +143,10 @@ export default {
             if (!document_ || !win) return;
 
             this.onViewChange = () => this.scheduleMeasure();
+            this.onDocChange = () => {
+                this.marksDirty = true;
+                this.scheduleMeasure();
+            };
             // Capture : les événements scroll ne remontent pas, mais descendent
             // — un seul écouteur couvre le défilement interne de l'éditeur
             // comme celui de la page ou d'un wrapper intermédiaire.
@@ -128,7 +158,7 @@ export default {
             }
             // Changement de version affichée : le rendu du diff passe par une
             // transaction ProseMirror
-            this.editor.on('transaction', this.onViewChange);
+            this.editor.on('transaction', this.onDocChange);
             this.listeners = { document_, win };
         },
 
@@ -140,7 +170,8 @@ export default {
             }
             this.resizeObserver?.disconnect();
             this.resizeObserver = null;
-            if (this.onViewChange) this.editor?.off?.('transaction', this.onViewChange);
+            if (this.onDocChange) this.editor?.off?.('transaction', this.onDocChange);
+            this.onDocChange = null;
             if (attached && this.onViewChange) {
                 attached.document_.removeEventListener('scroll', this.onViewChange, { capture: true });
                 attached.win.removeEventListener('resize', this.onViewChange);
@@ -165,49 +196,104 @@ export default {
             if (!this.active || !dom || !dom.isConnected) {
                 this.rail = null;
                 this.marks = [];
+                this.marksSignature = '';
                 return;
             }
 
             const rect = dom.getBoundingClientRect();
-            const total = Math.max(dom.scrollHeight, 1);
             this.rail = { top: rect.top, left: rect.right - RAIL_INSET - RAIL_WIDTH, height: rect.height };
 
-            // Zones modifiées, projetées sur la hauteur de la réglette. Les
-            // passages proches n'en forment qu'une : un ajout et un retrait
-            // au même endroit du texte donnent un seul rectangle bicolore.
+            // Les repères sont exprimés en px dans la réglette : le défilement
+            // ne les déplace pas, seule la géométrie ci-dessus change. On ne
+            // remesure les lignes qu'au changement de contenu ou de gabarit
+            // (la largeur commande les retours à la ligne).
+            const signature = `${dom.scrollHeight}|${Math.round(rect.height)}|${Math.round(rect.width)}|${this.colorMode}`;
+            if (!this.marksDirty && signature === this.marksSignature) return;
+            this.marksSignature = signature;
+            this.marksDirty = false;
+            this.marks = this.buildMarks(dom, rect);
+        },
+
+        // Un repère par ligne de texte modifiée, projeté sur la hauteur de la
+        // réglette : trois lignes changées = trois traits.
+        buildMarks(dom, rect) {
+            const total = Math.max(dom.scrollHeight, 1);
             const scale = rect.height / total;
-            const bands = [];
-            let last = null;
+
+            const lines = [];
             for (const el of dom.querySelectorAll('[data-ychange-type]')) {
                 // Un ancêtre déjà annoté (nœud entier ajouté/retiré) porte le repère
                 if (el.parentElement?.closest('[data-ychange-type]')) continue;
-                const elRect = el.getBoundingClientRect();
-                if (!elRect.height) continue;
                 const type = el.getAttribute('data-ychange-type');
-                const offset = elRect.top - rect.top + dom.scrollTop;
-                const top = offset * scale;
-                const bottom = top + elRect.height * scale;
                 const color = markColor(el, type, this.colorMode);
                 const label = el.getAttribute('data-ychange-label') || '';
-                if (last && top - last.bottom <= MERGE_GAP) {
-                    last.bottom = Math.max(last.bottom, bottom);
-                    last.colors[type] = last.colors[type] || color;
-                    if (label && !last.labels.includes(label)) last.labels.push(label);
+                for (const lineRect of lineRects(el)) {
+                    lines.push({
+                        top: lineRect.top - rect.top + dom.scrollTop,
+                        bottom: lineRect.bottom - rect.top + dom.scrollTop,
+                        type,
+                        color,
+                        label,
+                    });
+                }
+            }
+            lines.sort((a, b) => a.top - b.top);
+
+            // Fragments qui se chevauchent = même ligne de texte : un ajout et
+            // un retrait sur la même ligne donnent un repère bicolore
+            const rows = [];
+            let row = null;
+            for (const line of lines) {
+                if (row && line.top < row.bottom - LINE_OVERLAP) {
+                    row.bottom = Math.max(row.bottom, line.bottom);
+                    row.colors[line.type] = row.colors[line.type] || line.color;
+                    if (line.label && !row.labels.includes(line.label)) row.labels.push(line.label);
                     continue;
                 }
-                last = { top, bottom, offset, colors: { [type]: color }, labels: label ? [label] : [] };
-                bands.push(last);
+                row = {
+                    top: line.top,
+                    bottom: line.bottom,
+                    colors: { [line.type]: line.color },
+                    labels: line.label ? [line.label] : [],
+                };
+                rows.push(row);
             }
 
             const maxTop = Math.max(rect.height - MARK_HEIGHT, 0);
-            this.marks = bands.map((band, key) => ({
+            const marks = [];
+            let mark = null;
+            for (const current of rows) {
+                const key = Object.keys(current.colors).sort().join('+');
+                let top = Math.min(Math.max(((current.top + current.bottom) / 2) * scale - MARK_HEIGHT / 2, 0), maxTop);
+                if (mark) {
+                    // Document long : des lignes voisines se projettent au même
+                    // endroit — un bloc continu plutôt que des traits empilés
+                    if (mark.colorKey === key && top <= mark.bottom + LINE_MERGE) {
+                        mark.bottom = Math.max(mark.bottom, top + MARK_HEIGHT);
+                        continue;
+                    }
+                    // Natures différentes : les repères restent distincts
+                    top = Math.min(Math.max(top, mark.bottom), maxTop);
+                }
+                mark = {
+                    top,
+                    bottom: top + MARK_HEIGHT,
+                    colorKey: key,
+                    colors: current.colors,
+                    labels: current.labels,
+                    offset: current.top,
+                };
+                marks.push(mark);
+            }
+
+            return marks.map((item, key) => ({
                 key,
-                offset: band.offset,
-                label: band.labels.join(' · '),
+                offset: item.offset,
+                label: item.labels.join(' · '),
                 style: {
-                    // Rectangle centré sur la zone, borné à la réglette
-                    top: `${Math.min(Math.max((band.top + band.bottom) / 2 - MARK_HEIGHT / 2, 0), maxTop)}px`,
-                    background: bandBackground(band.colors),
+                    top: `${item.top}px`,
+                    height: `${item.bottom - item.top}px`,
+                    background: bandBackground(item.colors),
                 },
             }));
         },
@@ -245,7 +331,9 @@ export default {
     position: absolute;
     right: 0;
     width: 100%;
-    height: 3px;
+    /* Hauteur réelle posée en style inline : un trait par ligne modifiée,
+       ou un bloc continu quand elles se rejoignent à l'échelle de la réglette */
+    min-height: 3px;
     padding: 0;
     border: none;
     border-radius: 2px;
