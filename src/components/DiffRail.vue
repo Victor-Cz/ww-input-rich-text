@@ -3,7 +3,7 @@
          long du bord droit de la zone de texte pendant une comparaison de
          versions. Un rectangle par zone modifiée, à sa position relative dans
          le document (bicolore quand ajouts et retraits s'y côtoient) ; le
-         liseré, sur le filet vertical, situe la partie visible.
+         curseur, sur la piste, situe la partie visible.
          Positionnement en `fixed` (coordonnées viewport) : jamais rognée par
          le scroll interne de l'éditeur ni par un conteneur en overflow. -->
     <div v-if="visible" class="ww-diff-rail" :style="railStyle">
@@ -242,47 +242,89 @@ export default {
 </script>
 
 <style scoped>
-/* Aucun fond : la réglette n'est qu'un filet vertical, sur lequel se
-   posent les rectangles */
+/* Réglette : une piste fine, façon règle d'aperçu d'éditeur de code. Les
+   teintes neutres sont dérivées de la couleur du texte (color-mix), pour
+   tenir sur fond clair comme sur fond sombre ; la valeur rgba qui précède
+   sert de repli. */
 .ww-diff-rail {
     position: fixed;
-    background: transparent;
-    border-left: 1px solid rgba(0, 0, 0, 0.09);
     pointer-events: none;
     z-index: 20;
+    animation: ww-diff-rail-in 0.18s ease both;
 }
 
-/* Partie visible : le filet, simplement assombri sur la portion à l'écran */
+.ww-diff-rail::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 2px;
+    border-radius: 2px;
+    background: rgba(0, 0, 0, 0.07);
+    background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+/* Partie visible : un curseur sur la piste, comme une barre de défilement */
 .ww-diff-rail__viewport {
     position: absolute;
-    left: -1px;
-    width: 1px;
-    min-height: 8px;
-    background: rgba(0, 0, 0, 0.22);
+    right: 0;
+    width: 2px;
+    min-height: 10px;
+    border-radius: 2px;
+    background: rgba(0, 0, 0, 0.2);
+    background: color-mix(in srgb, currentColor 26%, transparent);
+    transition: top 0.12s ease, height 0.12s ease;
 }
 
+/* Repères posés sur la piste, débordant vers le texte ; ils s'allongent au
+   survol plutôt que de s'épaissir. */
 .ww-diff-rail__mark {
     position: absolute;
-    left: 0;
+    right: 0;
     width: 100%;
     height: 3px;
     padding: 0;
     border: none;
-    border-radius: 1px;
-    opacity: 0.75;
+    border-radius: 2px;
+    opacity: 0.85;
     cursor: pointer;
     pointer-events: auto;
-    transition: opacity 0.12s ease;
+    transition: width 0.14s ease, opacity 0.14s ease, box-shadow 0.14s ease;
 }
 
-/* Zone d'accroche plus large que le trait, sans l'épaissir visuellement */
+/* Zone d'accroche plus large que le repère, sans l'épaissir visuellement */
 .ww-diff-rail__mark::before {
     content: '';
     position: absolute;
-    inset: -3px -6px;
+    inset: -4px -6px;
 }
 
-.ww-diff-rail__mark:hover {
+.ww-diff-rail__mark:hover,
+.ww-diff-rail__mark:focus-visible {
+    width: 170%;
     opacity: 1;
+    outline: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16);
+}
+
+@keyframes ww-diff-rail-in {
+    from {
+        opacity: 0;
+        transform: translateX(3px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ww-diff-rail {
+        animation: none;
+    }
+
+    .ww-diff-rail__mark,
+    .ww-diff-rail__viewport {
+        transition: none;
+    }
 }
 </style>
