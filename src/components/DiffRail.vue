@@ -23,8 +23,9 @@
 <script>
 const RAIL_WIDTH = 10; // largeur des rectangles
 const MARK_HEIGHT = 3; // hauteur d'un repère de ligne (doit suivre la valeur CSS)
-const RAIL_INSET = 4; // écart entre la réglette et le bord droit de l'éditeur
+const RAIL_INSET = 8; // écart entre la réglette et le bord droit de l'éditeur
 const LINE_OVERLAP = 2; // px de chevauchement vertical à partir duquel deux fragments sont sur la même ligne
+const LINE_GAP = 6; // px de texte au-delà desquels deux lignes modifiées ne se suivent plus
 const LINE_MERGE = 1; // px entre deux repères projetés en deçà desquels ils n'en font qu'un
 
 // Teintes sobres, dans l'esprit des indicateurs de diff GitHub
@@ -259,30 +260,39 @@ export default {
                 rows.push(row);
             }
 
+            // Les lignes modifiées qui se suivent dans le texte forment un
+            // trait continu (la longueur dit combien de lignes), comme la
+            // colonne d'un diff ; les autres restent des repères séparés.
             const maxTop = Math.max(rect.height - MARK_HEIGHT, 0);
             const marks = [];
             let mark = null;
             for (const current of rows) {
                 const key = Object.keys(current.colors).sort().join('+');
-                let top = Math.min(Math.max(((current.top + current.bottom) / 2) * scale - MARK_HEIGHT / 2, 0), maxTop);
-                if (mark) {
-                    // Document long : des lignes voisines se projettent au même
-                    // endroit — un bloc continu plutôt que des traits empilés
-                    if (mark.colorKey === key && top <= mark.bottom + LINE_MERGE) {
-                        mark.bottom = Math.max(mark.bottom, top + MARK_HEIGHT);
-                        continue;
+                const top = Math.min(Math.max(current.top * scale, 0), maxTop);
+                const bottom = Math.max(Math.min(current.bottom * scale, rect.height), top + MARK_HEIGHT);
+                const follows = mark && current.top - mark.rowBottom <= LINE_GAP;
+                // Document long : des lignes éloignées peuvent se projeter au
+                // même endroit — les fondre évite des traits superposés
+                const overlaps = mark && top <= mark.bottom + LINE_MERGE;
+                if (mark && mark.colorKey === key && (follows || overlaps)) {
+                    mark.bottom = Math.max(mark.bottom, bottom);
+                    mark.rowBottom = Math.max(mark.rowBottom, current.bottom);
+                    for (const label of current.labels) {
+                        if (!mark.labels.includes(label)) mark.labels.push(label);
                     }
-                    // Natures différentes : les repères restent distincts
-                    top = Math.min(Math.max(top, mark.bottom), maxTop);
+                    continue;
                 }
                 mark = {
-                    top,
-                    bottom: top + MARK_HEIGHT,
+                    // Natures différentes : les repères restent distincts
+                    top: mark ? Math.min(Math.max(top, mark.bottom), maxTop) : top,
+                    bottom,
+                    rowBottom: current.bottom,
                     colorKey: key,
                     colors: current.colors,
-                    labels: current.labels,
+                    labels: [...current.labels],
                     offset: current.top,
                 };
+                mark.bottom = Math.max(mark.bottom, mark.top + MARK_HEIGHT);
                 marks.push(mark);
             }
 
@@ -332,7 +342,7 @@ export default {
     right: 0;
     width: 100%;
     /* Hauteur réelle posée en style inline : un trait par ligne modifiée,
-       ou un bloc continu quand elles se rejoignent à l'échelle de la réglette */
+       d'un seul tenant quand plusieurs lignes se suivent */
     min-height: 3px;
     padding: 0;
     border: none;
