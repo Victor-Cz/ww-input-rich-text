@@ -5,8 +5,8 @@
          le document (bicolore quand ajouts et retraits s'y côtoient). La
          position dans le document est déjà donnée par la barre de défilement
          native : la réglette ne montre que les modifications.
-         Positionnement en `fixed` (coordonnées viewport) : jamais rognée par
-         le scroll interne de l'éditeur ni par un conteneur en overflow. -->
+         Positionnement en absolu dans le composant : la réglette suit la zone
+         de texte sans dépendre du défilement ni du zoom du canvas. -->
     <div v-if="visible" class="ww-diff-rail" :style="railStyle">
         <button
             v-for="mark in marks"
@@ -28,21 +28,19 @@ const LINE_OVERLAP = 2; // px de chevauchement vertical à partir duquel deux fr
 const LINE_GAP = 6; // px de texte au-delà desquels deux lignes modifiées ne se suivent plus
 const LINE_MERGE = 1; // px entre deux repères projetés en deçà desquels ils n'en font qu'un
 
-// Teintes sobres, dans l'esprit des indicateurs de diff GitHub
-const DEFAULT_COLORS = { removed: '#e5534b', added: '#2da44e' };
+// Repli aligné sur les teintes par défaut de l'extension ychange
+const DEFAULT_COLORS = { removed: '#dc2626', added: '#16a34a' };
 
 /**
- * Couleur du bloc. En mode « couleurs par auteur », elle est reprise du fond
- * appliqué au passage modifié (translucide dans le texte, plein ici) ; sinon
- * les deux teintes sobres ci-dessus, indépendantes du surlignage du texte.
+ * Couleur du repère : exactement celle du surlignage du passage dans le
+ * texte, reprise de son fond et rendue opaque (le texte l'applique
+ * translucide). Le mode « couleurs par auteur » suit donc sans rien de plus.
  */
-function markColor(el, type, colorMode) {
-    if (colorMode === 'author') {
-        const match = /^rgba?\(([^)]+)\)/.exec(el.style?.backgroundColor || '');
-        if (match) {
-            const [r, g, b] = match[1].split(',').map(part => parseFloat(part));
-            if ([r, g, b].every(Number.isFinite)) return `rgb(${r}, ${g}, ${b})`;
-        }
+function markColor(el, type) {
+    const match = /^rgba?\(([^)]+)\)/.exec(el.style?.backgroundColor || '');
+    if (match) {
+        const [r, g, b] = match[1].split(',').map(part => parseFloat(part));
+        if ([r, g, b].every(Number.isFinite)) return `rgb(${r}, ${g}, ${b})`;
     }
     return DEFAULT_COLORS[type] || DEFAULT_COLORS.added;
 }
@@ -55,6 +53,24 @@ function bandBackground(colors) {
     const { added, removed } = colors;
     if (added && removed) return `linear-gradient(90deg, ${added} 0 50%, ${removed} 50% 100%)`;
     return added || removed || DEFAULT_COLORS.added;
+}
+
+/**
+ * Décalage en pixels de mise en page d'un élément par rapport à un ancêtre
+ * positionné, en remontant la chaîne des offsetParent. Contrairement aux
+ * rectangles, ces valeurs ignorent le facteur de zoom éventuel du canvas et
+ * correspondent directement aux `top`/`left` d'un enfant en position absolue.
+ */
+function offsetWithin(el, host) {
+    let top = 0;
+    let left = 0;
+    let node = el;
+    while (node && node !== host) {
+        top += node.offsetTop;
+        left += node.offsetLeft;
+        node = node.offsetParent;
+    }
+    return node === host ? { top, left } : null;
 }
 
 /**
@@ -82,8 +98,6 @@ export default {
         // Vrai pendant un aperçu/comparaison de version : hors de ce mode la
         // réglette n'a rien à montrer et ne mesure rien.
         active: { type: Boolean, default: false },
-        // 'default' (teintes ajouté/retiré) ou 'author' (teinte par auteur)
-        colorMode: { type: String, default: 'default' },
     },
     data() {
         return {
@@ -148,10 +162,8 @@ export default {
                 this.marksDirty = true;
                 this.scheduleMeasure();
             };
-            // Capture : les événements scroll ne remontent pas, mais descendent
-            // — un seul écouteur couvre le défilement interne de l'éditeur
-            // comme celui de la page ou d'un wrapper intermédiaire.
-            document_.addEventListener('scroll', this.onViewChange, { capture: true, passive: true });
+            // Positionnée en absolu dans le composant, la réglette ne bouge pas
+            // au défilement : seuls les changements de gabarit la concernent.
             win.addEventListener('resize', this.onViewChange, { passive: true });
             if (win.ResizeObserver) {
                 this.resizeObserver = new win.ResizeObserver(this.onViewChange);
@@ -173,10 +185,7 @@ export default {
             this.resizeObserver = null;
             if (this.onDocChange) this.editor?.off?.('transaction', this.onDocChange);
             this.onDocChange = null;
-            if (attached && this.onViewChange) {
-                attached.document_.removeEventListener('scroll', this.onViewChange, { capture: true });
-                attached.win.removeEventListener('resize', this.onViewChange);
-            }
+            if (attached && this.onViewChange) attached.win.removeEventListener('resize', this.onViewChange);
             this.onViewChange = null;
             this.listeners = null;
         },
@@ -194,44 +203,56 @@ export default {
 
         measure() {
             const dom = this.editor?.view?.dom;
-            if (!this.active || !dom || !dom.isConnected) {
+            const host = dom?.closest?.('.ww-rich-text');
+            const offset = host && dom.isConnected ? offsetWithin(dom, host) : null;
+            if (!this.active || !offset) {
                 this.rail = null;
                 this.marks = [];
                 this.marksSignature = '';
                 return;
             }
 
-            const rect = dom.getBoundingClientRect();
-            this.rail = { top: rect.top, left: rect.right - RAIL_INSET - RAIL_WIDTH, height: rect.height };
+            // Réglette posée dans la zone de texte visible, en deçà de la
+            // barre de défilement native (clientWidth l'exclut) pour ne pas
+            // lui disputer les clics.
+            this.rail = {
+                top: offset.top,
+                left: offset.left + dom.clientWidth - RAIL_INSET - RAIL_WIDTH,
+                height: dom.clientHeight,
+            };
 
             // Les repères sont exprimés en px dans la réglette : le défilement
-            // ne les déplace pas, seule la géométrie ci-dessus change. On ne
-            // remesure les lignes qu'au changement de contenu ou de gabarit
-            // (la largeur commande les retours à la ligne).
-            const signature = `${dom.scrollHeight}|${Math.round(rect.height)}|${Math.round(rect.width)}|${this.colorMode}`;
+            // ne les déplace pas. On ne remesure les lignes qu'au changement de
+            // contenu ou de gabarit (la largeur commande les retours à la ligne).
+            const signature = `${dom.scrollHeight}|${dom.clientHeight}|${dom.clientWidth}`;
             if (!this.marksDirty && signature === this.marksSignature) return;
             this.marksSignature = signature;
             this.marksDirty = false;
-            this.marks = this.buildMarks(dom, rect);
+            this.marks = this.buildMarks(dom);
         },
 
         // Un repère par ligne de texte modifiée, projeté sur la hauteur de la
         // réglette : trois lignes changées = trois traits.
-        buildMarks(dom, rect) {
+        buildMarks(dom) {
             const total = Math.max(dom.scrollHeight, 1);
-            const scale = rect.height / total;
+            const scale = dom.clientHeight / total;
+            const rect = dom.getBoundingClientRect();
+            // Canvas zoomé (éditeur WeWeb) : les rectangles sont à l'échelle du
+            // rendu, les positions de scroll en pixels CSS. Ce rapport ramène
+            // les premiers dans le repère des secondes.
+            const zoom = dom.offsetWidth ? rect.width / dom.offsetWidth : 1;
 
             const lines = [];
             for (const el of dom.querySelectorAll('[data-ychange-type]')) {
                 // Un ancêtre déjà annoté (nœud entier ajouté/retiré) porte le repère
                 if (el.parentElement?.closest('[data-ychange-type]')) continue;
                 const type = el.getAttribute('data-ychange-type');
-                const color = markColor(el, type, this.colorMode);
+                const color = markColor(el, type);
                 const label = el.getAttribute('data-ychange-label') || '';
                 for (const lineRect of lineRects(el)) {
                     lines.push({
-                        top: lineRect.top - rect.top + dom.scrollTop,
-                        bottom: lineRect.bottom - rect.top + dom.scrollTop,
+                        top: (lineRect.top - rect.top) / zoom + dom.scrollTop,
+                        bottom: (lineRect.bottom - rect.top) / zoom + dom.scrollTop,
                         type,
                         color,
                         label,
@@ -263,13 +284,13 @@ export default {
             // Les lignes modifiées qui se suivent dans le texte forment un
             // trait continu (la longueur dit combien de lignes), comme la
             // colonne d'un diff ; les autres restent des repères séparés.
-            const maxTop = Math.max(rect.height - MARK_HEIGHT, 0);
+            const maxTop = Math.max(dom.clientHeight - MARK_HEIGHT, 0);
             const marks = [];
             let mark = null;
             for (const current of rows) {
                 const key = Object.keys(current.colors).sort().join('+');
                 const top = Math.min(Math.max(current.top * scale, 0), maxTop);
-                const bottom = Math.max(Math.min(current.bottom * scale, rect.height), top + MARK_HEIGHT);
+                const bottom = Math.max(Math.min(current.bottom * scale, dom.clientHeight), top + MARK_HEIGHT);
                 const follows = mark && current.top - mark.rowBottom <= LINE_GAP;
                 // Document long : des lignes éloignées peuvent se projeter au
                 // même endroit — les fondre évite des traits superposés
@@ -318,8 +339,9 @@ export default {
             }
             const win = dom.ownerDocument?.defaultView;
             if (!win) return;
-            const delta = dom.getBoundingClientRect().top + mark.offset - win.innerHeight / 3;
-            win.scrollBy({ top: delta, behavior: 'smooth' });
+            const rect = dom.getBoundingClientRect();
+            const zoom = dom.offsetWidth ? rect.width / dom.offsetWidth : 1;
+            win.scrollBy({ top: rect.top + mark.offset * zoom - win.innerHeight / 3, behavior: 'smooth' });
         },
     },
 };
@@ -329,7 +351,7 @@ export default {
 /* Réglette réduite à ses repères : ni piste, ni curseur de défilement —
    la barre de défilement native tient déjà ce rôle. */
 .ww-diff-rail {
-    position: fixed;
+    position: absolute;
     pointer-events: none;
     z-index: 20;
     animation: ww-diff-rail-in 0.18s ease both;

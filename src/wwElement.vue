@@ -242,8 +242,7 @@
                 <!-- Réglette des modifications : carte du document le long du
                      bord droit, active pendant une comparaison de versions -->
                 <diff-rail v-if="showDiffRail" :editor="richEditor"
-                    :active="isVersionPreview || versionHistory.active"
-                    :color-mode="collabConfig.versionDiffColorMode" />
+                    :active="isVersionPreview || versionHistory.active" />
 
                 <!-- Overlay de chargement d'une époque archivée -->
                 <div v-if="versionHistory.epochOverlay.visible" class="ww-rich-text__epoch-overlay">
