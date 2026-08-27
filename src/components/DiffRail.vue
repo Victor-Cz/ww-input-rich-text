@@ -2,12 +2,12 @@
     <!-- Réglette des modifications : carte verticale du document affichée le
          long du bord droit de la zone de texte pendant une comparaison de
          versions. Un rectangle par zone modifiée, à sa position relative dans
-         le document (bicolore quand ajouts et retraits s'y côtoient) ; le
-         curseur situe la partie visible.
+         le document (bicolore quand ajouts et retraits s'y côtoient). La
+         position dans le document est déjà donnée par la barre de défilement
+         native : la réglette ne montre que les modifications.
          Positionnement en `fixed` (coordonnées viewport) : jamais rognée par
          le scroll interne de l'éditeur ni par un conteneur en overflow. -->
     <div v-if="visible" class="ww-diff-rail" :style="railStyle">
-        <div v-if="viewport" class="ww-diff-rail__viewport" :style="viewport"></div>
         <button
             v-for="mark in marks"
             :key="mark.key"
@@ -69,7 +69,6 @@ export default {
         return {
             rail: null, // { top, left, height } en coordonnées viewport
             marks: [],
-            viewport: null, // style de la bande « partie visible », null si tout est visible
         };
     },
     computed: {
@@ -166,7 +165,6 @@ export default {
             if (!this.active || !dom || !dom.isConnected) {
                 this.rail = null;
                 this.marks = [];
-                this.viewport = null;
                 return;
             }
 
@@ -212,16 +210,6 @@ export default {
                     background: bandBackground(band.colors),
                 },
             }));
-
-            // Partie du document actuellement visible : scroll interne de
-            // l'éditeur et/ou scroll de page, selon ce qui défile réellement
-            const winHeight = this.listeners?.win?.innerHeight ?? rect.height;
-            const from = dom.scrollTop + Math.max(0, -rect.top);
-            const to = dom.scrollTop + Math.min(dom.clientHeight, winHeight - rect.top);
-            this.viewport =
-                to - from > 0 && to - from < total
-                    ? { top: `${(from / total) * 100}%`, height: `${((to - from) / total) * 100}%` }
-                    : null;
         },
 
         // Amène la modification dans le premier tiers de la zone visible
@@ -242,27 +230,13 @@ export default {
 </script>
 
 <style scoped>
-/* Réglette sans piste : seuls les repères et le curseur de la partie
-   visible flottent dans la marge. Les teintes neutres sont dérivées de la
-   couleur du texte (color-mix), pour tenir sur fond clair comme sur fond
-   sombre ; la valeur rgba qui précède sert de repli. */
+/* Réglette réduite à ses repères : ni piste, ni curseur de défilement —
+   la barre de défilement native tient déjà ce rôle. */
 .ww-diff-rail {
     position: fixed;
     pointer-events: none;
     z-index: 20;
     animation: ww-diff-rail-in 0.18s ease both;
-}
-
-/* Partie visible : un curseur discret, seul repère continu restant */
-.ww-diff-rail__viewport {
-    position: absolute;
-    right: 0;
-    width: 2px;
-    min-height: 10px;
-    border-radius: 2px;
-    background: rgba(0, 0, 0, 0.2);
-    background: color-mix(in srgb, currentColor 26%, transparent);
-    transition: top 0.12s ease, height 0.12s ease;
 }
 
 /* Repères alignés sur le bord droit, débordant vers le texte ; ils
@@ -312,8 +286,7 @@ export default {
         animation: none;
     }
 
-    .ww-diff-rail__mark,
-    .ww-diff-rail__viewport {
+    .ww-diff-rail__mark {
         transition: none;
     }
 }
