@@ -1,8 +1,9 @@
 <template>
     <!-- Réglette des modifications : carte verticale du document affichée le
          long du bord droit de la zone de texte pendant une comparaison de
-         versions. Chaque bloc marque un passage ajouté/retiré à sa position
-         relative dans le document ; le liseré situe la partie visible.
+         versions. Un rectangle par zone modifiée, à sa position relative dans
+         le document (bicolore quand ajouts et retraits s'y côtoient) ; le
+         liseré, sur le filet vertical, situe la partie visible.
          Positionnement en `fixed` (coordonnées viewport) : jamais rognée par
          le scroll interne de l'éditeur ni par un conteneur en overflow. -->
     <div v-if="visible" class="ww-diff-rail" :style="railStyle">
@@ -12,7 +13,7 @@
             :key="mark.key"
             type="button"
             class="ww-diff-rail__mark"
-            :style="{ top: mark.top + '%', height: mark.height + '%', backgroundColor: mark.color }"
+            :style="mark.style"
             :title="mark.label"
             @click="scrollToMark(mark)"
         ></button>
@@ -20,9 +21,10 @@
 </template>
 
 <script>
-const RAIL_WIDTH = 6; // largeur des blocs de la réglette
-const RAIL_INSET = 6; // écart entre la réglette et le bord droit de l'éditeur
-const MERGE_GAP = 0.6; // % de hauteur en deçà duquel deux repères fusionnent
+const RAIL_WIDTH = 10; // largeur des rectangles
+const MARK_HEIGHT = 3; // hauteur des rectangles (doit suivre la valeur CSS)
+const RAIL_INSET = 4; // écart entre la réglette et le bord droit de l'éditeur
+const MERGE_GAP = 4; // px sur la réglette en deçà desquels deux zones n'en font qu'une
 
 // Teintes sobres, dans l'esprit des indicateurs de diff GitHub
 const DEFAULT_COLORS = { removed: '#cf222e', added: '#1a7f37' };
@@ -41,6 +43,16 @@ function markColor(el, type, colorMode) {
         }
     }
     return DEFAULT_COLORS[type] || DEFAULT_COLORS.added;
+}
+
+/**
+ * Fond du rectangle : la teinte de la nature du changement, ou les deux
+ * moitiés (ajout à gauche, retrait à droite) quand la zone porte les deux.
+ */
+function bandBackground(colors) {
+    const { added, removed } = colors;
+    if (added && removed) return `linear-gradient(90deg, ${added} 0 50%, ${removed} 50% 100%)`;
+    return added || removed || DEFAULT_COLORS.added;
 }
 
 export default {
@@ -162,7 +174,11 @@ export default {
             const total = Math.max(dom.scrollHeight, 1);
             this.rail = { top: rect.top, left: rect.right - RAIL_INSET - RAIL_WIDTH, height: rect.height };
 
-            const marks = [];
+            // Zones modifiées, projetées sur la hauteur de la réglette. Les
+            // passages proches n'en forment qu'une : un ajout et un retrait
+            // au même endroit du texte donnent un seul rectangle bicolore.
+            const scale = rect.height / total;
+            const bands = [];
             let last = null;
             for (const el of dom.querySelectorAll('[data-ychange-type]')) {
                 // Un ancêtre déjà annoté (nœud entier ajouté/retiré) porte le repère
@@ -171,25 +187,31 @@ export default {
                 if (!elRect.height) continue;
                 const type = el.getAttribute('data-ychange-type');
                 const offset = elRect.top - rect.top + dom.scrollTop;
-                const top = (offset / total) * 100;
-                const height = (elRect.height / total) * 100;
-                // Passages voisins de même nature : un seul repère continu
-                if (last && last.type === type && top - (last.top + last.height) < MERGE_GAP) {
-                    last.height = Math.max(last.height, top + height - last.top);
+                const top = offset * scale;
+                const bottom = top + elRect.height * scale;
+                const color = markColor(el, type, this.colorMode);
+                const label = el.getAttribute('data-ychange-label') || '';
+                if (last && top - last.bottom <= MERGE_GAP) {
+                    last.bottom = Math.max(last.bottom, bottom);
+                    last.colors[type] = last.colors[type] || color;
+                    if (label && !last.labels.includes(label)) last.labels.push(label);
                     continue;
                 }
-                last = {
-                    key: marks.length,
-                    type,
-                    top,
-                    height,
-                    offset,
-                    color: markColor(el, type, this.colorMode),
-                    label: el.getAttribute('data-ychange-label') || '',
-                };
-                marks.push(last);
+                last = { top, bottom, offset, colors: { [type]: color }, labels: label ? [label] : [] };
+                bands.push(last);
             }
-            this.marks = marks;
+
+            const maxTop = Math.max(rect.height - MARK_HEIGHT, 0);
+            this.marks = bands.map((band, key) => ({
+                key,
+                offset: band.offset,
+                label: band.labels.join(' · '),
+                style: {
+                    // Rectangle centré sur la zone, borné à la réglette
+                    top: `${Math.min(Math.max((band.top + band.bottom) / 2 - MARK_HEIGHT / 2, 0), maxTop)}px`,
+                    background: bandBackground(band.colors),
+                },
+            }));
 
             // Partie du document actuellement visible : scroll interne de
             // l'éditeur et/ou scroll de page, selon ce qui défile réellement
@@ -220,32 +242,34 @@ export default {
 </script>
 
 <style scoped>
+/* Aucun fond : la réglette n'est qu'un filet vertical, sur lequel se
+   posent les rectangles */
 .ww-diff-rail {
     position: fixed;
-    background: rgba(0, 0, 0, 0.03);
+    background: transparent;
+    border-left: 1px solid rgba(0, 0, 0, 0.09);
     pointer-events: none;
     z-index: 20;
 }
 
-/* Partie visible : simple liseré, il situe le scroll sans concurrencer
-   les blocs de modification */
+/* Partie visible : le filet, simplement assombri sur la portion à l'écran */
 .ww-diff-rail__viewport {
     position: absolute;
-    left: 0;
-    width: 100%;
+    left: -1px;
+    width: 1px;
     min-height: 8px;
-    border-left: 2px solid rgba(0, 0, 0, 0.16);
+    background: rgba(0, 0, 0, 0.22);
 }
 
 .ww-diff-rail__mark {
     position: absolute;
     left: 0;
     width: 100%;
-    min-height: 6px;
+    height: 3px;
     padding: 0;
     border: none;
     border-radius: 1px;
-    opacity: 0.7;
+    opacity: 0.75;
     cursor: pointer;
     pointer-events: auto;
     transition: opacity 0.12s ease;
