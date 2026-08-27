@@ -3,7 +3,7 @@
          long du bord droit de la zone de texte pendant une comparaison de
          versions. Un rectangle par zone modifiée, à sa position relative dans
          le document (bicolore quand ajouts et retraits s'y côtoient) ; le
-         curseur, sur la piste, situe la partie visible.
+         curseur situe la partie visible.
          Positionnement en `fixed` (coordonnées viewport) : jamais rognée par
          le scroll interne de l'éditeur ni par un conteneur en overflow. -->
     <div v-if="visible" class="ww-diff-rail" :style="railStyle">
@@ -242,10 +242,10 @@ export default {
 </script>
 
 <style scoped>
-/* Réglette : une piste fine, façon règle d'aperçu d'éditeur de code. Les
-   teintes neutres sont dérivées de la couleur du texte (color-mix), pour
-   tenir sur fond clair comme sur fond sombre ; la valeur rgba qui précède
-   sert de repli. */
+/* Réglette sans piste : seuls les repères et le curseur de la partie
+   visible flottent dans la marge. Les teintes neutres sont dérivées de la
+   couleur du texte (color-mix), pour tenir sur fond clair comme sur fond
+   sombre ; la valeur rgba qui précède sert de repli. */
 .ww-diff-rail {
     position: fixed;
     pointer-events: none;
@@ -253,17 +253,7 @@ export default {
     animation: ww-diff-rail-in 0.18s ease both;
 }
 
-.ww-diff-rail::before {
-    content: '';
-    position: absolute;
-    inset: 0 0 0 auto;
-    width: 2px;
-    border-radius: 2px;
-    background: rgba(0, 0, 0, 0.07);
-    background: color-mix(in srgb, currentColor 10%, transparent);
-}
-
-/* Partie visible : un curseur sur la piste, comme une barre de défilement */
+/* Partie visible : un curseur discret, seul repère continu restant */
 .ww-diff-rail__viewport {
     position: absolute;
     right: 0;
@@ -275,8 +265,8 @@ export default {
     transition: top 0.12s ease, height 0.12s ease;
 }
 
-/* Repères posés sur la piste, débordant vers le texte ; ils s'allongent au
-   survol plutôt que de s'épaissir. */
+/* Repères alignés sur le bord droit, débordant vers le texte ; ils
+   s'allongent au survol plutôt que de s'épaissir. */
 .ww-diff-rail__mark {
     position: absolute;
     right: 0;
