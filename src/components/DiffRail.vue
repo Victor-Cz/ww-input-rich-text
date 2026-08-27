@@ -1,8 +1,8 @@
 <template>
     <!-- Réglette des modifications : carte verticale du document affichée le
          long du bord droit de la zone de texte pendant une comparaison de
-         versions. Chaque repère marque un passage ajouté/retiré à sa position
-         relative dans le document ; la bande claire situe la partie visible.
+         versions. Chaque bloc marque un passage ajouté/retiré à sa position
+         relative dans le document ; le liseré situe la partie visible.
          Positionnement en `fixed` (coordonnées viewport) : jamais rognée par
          le scroll interne de l'éditeur ni par un conteneur en overflow. -->
     <div v-if="visible" class="ww-diff-rail" :style="railStyle">
@@ -20,22 +20,25 @@
 </template>
 
 <script>
-const RAIL_WIDTH = 4; // épaisseur du trait des repères
+const RAIL_WIDTH = 6; // largeur des blocs de la réglette
 const RAIL_INSET = 6; // écart entre la réglette et le bord droit de l'éditeur
 const MERGE_GAP = 0.6; // % de hauteur en deçà duquel deux repères fusionnent
 
-const DEFAULT_COLORS = { removed: '#dc2626', added: '#16a34a' };
+// Teintes sobres, dans l'esprit des indicateurs de diff GitHub
+const DEFAULT_COLORS = { removed: '#cf222e', added: '#1a7f37' };
 
 /**
- * Couleur pleine du repère, dérivée du fond appliqué au passage modifié
- * (translucide dans le texte, opaque sur la réglette). Couvre le mode
- * « couleurs par auteur » sans le rejouer ici.
+ * Couleur du bloc. En mode « couleurs par auteur », elle est reprise du fond
+ * appliqué au passage modifié (translucide dans le texte, plein ici) ; sinon
+ * les deux teintes sobres ci-dessus, indépendantes du surlignage du texte.
  */
-function markColor(el, type) {
-    const match = /^rgba?\(([^)]+)\)/.exec(el.style?.backgroundColor || '');
-    if (match) {
-        const [r, g, b] = match[1].split(',').map(part => parseFloat(part));
-        if ([r, g, b].every(Number.isFinite)) return `rgb(${r}, ${g}, ${b})`;
+function markColor(el, type, colorMode) {
+    if (colorMode === 'author') {
+        const match = /^rgba?\(([^)]+)\)/.exec(el.style?.backgroundColor || '');
+        if (match) {
+            const [r, g, b] = match[1].split(',').map(part => parseFloat(part));
+            if ([r, g, b].every(Number.isFinite)) return `rgb(${r}, ${g}, ${b})`;
+        }
     }
     return DEFAULT_COLORS[type] || DEFAULT_COLORS.added;
 }
@@ -47,6 +50,8 @@ export default {
         // Vrai pendant un aperçu/comparaison de version : hors de ce mode la
         // réglette n'a rien à montrer et ne mesure rien.
         active: { type: Boolean, default: false },
+        // 'default' (teintes ajouté/retiré) ou 'author' (teinte par auteur)
+        colorMode: { type: String, default: 'default' },
     },
     data() {
         return {
@@ -56,8 +61,11 @@ export default {
         };
     },
     computed: {
+        // Présente pendant tout le mode versionnage, même sans modification :
+        // une réglette vide dit « rien à voir ailleurs », son apparition et sa
+        // disparition ne dépendent pas du contenu du diff.
         visible() {
-            return this.active && !!this.rail && this.marks.length > 0;
+            return this.active && !!this.rail;
         },
         railStyle() {
             if (!this.rail) return null;
@@ -176,7 +184,7 @@ export default {
                     top,
                     height,
                     offset,
-                    color: markColor(el, type),
+                    color: markColor(el, type, this.colorMode),
                     label: el.getAttribute('data-ychange-label') || '',
                 };
                 marks.push(last);
@@ -214,30 +222,30 @@ export default {
 <style scoped>
 .ww-diff-rail {
     position: fixed;
-    border-radius: 2px;
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(0, 0, 0, 0.03);
     pointer-events: none;
     z-index: 20;
 }
 
+/* Partie visible : simple liseré, il situe le scroll sans concurrencer
+   les blocs de modification */
 .ww-diff-rail__viewport {
     position: absolute;
     left: 0;
     width: 100%;
-    min-height: 6px;
-    border-radius: 2px;
-    background: rgba(0, 0, 0, 0.1);
+    min-height: 8px;
+    border-left: 2px solid rgba(0, 0, 0, 0.16);
 }
 
 .ww-diff-rail__mark {
     position: absolute;
     left: 0;
     width: 100%;
-    min-height: 4px;
+    min-height: 6px;
     padding: 0;
     border: none;
-    border-radius: 2px;
-    opacity: 0.75;
+    border-radius: 1px;
+    opacity: 0.7;
     cursor: pointer;
     pointer-events: auto;
     transition: opacity 0.12s ease;
