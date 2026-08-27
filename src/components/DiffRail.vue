@@ -29,7 +29,7 @@ const LINE_GAP = 6; // px de texte au-delà desquels deux lignes modifiées ne s
 const LINE_MERGE = 1; // px entre deux repères projetés en deçà desquels ils n'en font qu'un
 
 // Teintes sobres, dans l'esprit des indicateurs de diff GitHub
-const DEFAULT_COLORS = { removed: '#cf222e', added: '#1a7f37' };
+const DEFAULT_COLORS = { removed: '#e5534b', added: '#2da44e' };
 
 /**
  * Couleur du bloc. En mode « couleurs par auteur », elle est reprise du fond
