@@ -140,6 +140,43 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         }
     };
 
+    // Différencie les sessions simultanées d'un même utilisateur identifié
+    // (deux onglets → deux couleurs de curseur). Même logique de convergence
+    // que pour les anonymes : seule la session au clientID supérieur bouge,
+    // et une couleur attribuée reste figée tant qu'il n'y a pas de conflit.
+    // La couleur de remplacement décale depuis la couleur de base dans la
+    // palette (base+1, base+2, …), garantie distincte des autres sessions.
+    const resolveDuplicateSessionColorCollision = () => {
+        if (isAnonymousLocal() || !provider.value?.awareness) return;
+        const awareness = provider.value.awareness;
+        const myClientId = awareness.clientID;
+        const states = awareness.getStates();
+        const me = states.get(myClientId)?.user;
+        if (!me?.color) return;
+
+        const myKey = String(localUserKey());
+        const siblings = [...states.entries()].filter(
+            ([clientId, state]) =>
+                clientId !== myClientId &&
+                state.user?.color &&
+                String(state.user.id || state.user.name || '') === myKey
+        );
+        const conflict = siblings.some(
+            ([clientId, state]) => state.user.color === me.color && clientId < myClientId
+        );
+        if (!conflict) return;
+
+        const used = new Set(siblings.map(([, state]) => state.user.color));
+        const baseIndex = USER_COLORS.indexOf(colorForUser(myKey));
+        for (let offset = 1; offset < USER_COLORS.length; offset++) {
+            const candidate = USER_COLORS[(baseIndex + offset) % USER_COLORS.length];
+            if (!used.has(candidate)) {
+                awareness.setLocalStateField('user', { ...me, color: candidate });
+                return;
+            }
+        }
+    };
+
     // Couleur déterministe par utilisateur : même id → même couleur,
     // partout (curseurs, liste users, diffs de version) et à chaque session
     const colorForUser = key => {
@@ -321,6 +358,10 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
 
                 // Éviter que deux anonymes partagent la même couleur
                 resolveAnonymousColorCollision();
+
+                // Éviter que deux sessions d'un même utilisateur identifié
+                // partagent la même couleur de curseur
+                resolveDuplicateSessionColorCollision();
 
                 console.log('[Collaboration] Awareness update - Users with colors:', users);
 
@@ -695,13 +736,16 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         return extensions;
     };
 
-    // Mettre à jour le nom d'utilisateur dans awareness
-    // (couleur inchangée pour un utilisateur identifié : elle dépend de l'id)
+    // Mettre à jour le nom d'utilisateur dans awareness. La couleur courante
+    // est préservée (elle peut avoir été réattribuée par un résolveur de
+    // collision) ; fallback sur la couleur dérivée de l'identité
     const updateUserName = newName => {
         if (provider.value?.awareness) {
-            provider.value.awareness.setLocalStateField('user', {
+            const awareness = provider.value.awareness;
+            const current = awareness.getStates().get(awareness.clientID)?.user;
+            awareness.setLocalStateField('user', {
                 name: newName,
-                color: localCursorColor(),
+                color: current?.color || localCursorColor(),
                 id: collabConfig.value.userId || null,
             });
         }
