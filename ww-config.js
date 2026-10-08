@@ -296,6 +296,22 @@ export default {
             },
         },
         {
+            name: 'collab:agent-writing',
+            label: { en: 'On Brispr starts writing', fr: 'Brispr commence à écrire' },
+            event: {
+                agent: '',
+                timestamp: '',
+            },
+        },
+        {
+            name: 'collab:agent-done',
+            label: { en: 'On Brispr done writing (animation finished)', fr: 'Brispr a fini d’écrire (animation terminée)' },
+            event: {
+                agent: '',
+                timestamp: '',
+            },
+        },
+        {
             name: 'version-history:select',
             label: { en: 'On version selected in timeline', fr: 'Version sélectionnée dans la frise' },
             event: {

@@ -4,6 +4,7 @@ import * as Y from 'yjs';
 import Collaboration from '@tiptap/extension-collaboration';
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
 import { YChangeMark, YChangeNodeAttrs } from '../extensions/YChange.js';
+import { AGENT } from '../agent.js';
 
 /**
  * Composable pour gérer la collaboration Hocuspocus/Yjs dans l'éditeur Tiptap
@@ -45,6 +46,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         userCount: 0,
         epoch: null,
         staleEpoch: false,
+        agentWriting: false,
     };
 
     // Helper pour mettre à jour le statut
@@ -180,6 +182,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // Couleur déterministe par utilisateur : même id → même couleur,
     // partout (curseurs, liste users, diffs de version) et à chaque session
     const colorForUser = key => {
+        if (key === AGENT.id) return AGENT.color;
         const str = String(key || 'anonymous');
         let hash = 0;
         for (let i = 0; i < str.length; i++) {
@@ -356,6 +359,12 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 // avec les utilisateurs présents (même clé que PermanentUserData)
                 users.forEach(user => registerUserColor(user.id || user.name));
 
+                // Brispr présent = il est en train d'écrire l'article
+                const agentWriting = users.some(user => user.id === AGENT.id);
+                if (agentWriting !== !!currentStatus.agentWriting) {
+                    updateStatus({ agentWriting });
+                }
+
                 // Éviter que deux anonymes partagent la même couleur
                 resolveAnonymousColorCollision();
 
@@ -504,6 +513,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 localUserKey()
             );
             registerUserColor(localUserKey());
+            // Brispr garde sa couleur dans les diffs, même une fois parti
+            registerUserColor(AGENT.id);
 
             // Nettoyer l'URL WebSocket (enlever les slashes finaux)
             const cleanBaseUrl = collabConfig.value.websocketUrl.replace(/\/+$/, '');
@@ -677,6 +688,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         // objet { userId: name } ou tableau [{ id|user_id, name|display_name }].
         // Lue au moment du rendu : la table peut arriver après le chargement.
         const resolveAuthor = user => {
+            if (user === AGENT.id) return AGENT.name;
             const authors = content.value.versionDiffAuthors;
             if (!authors) return user;
             if (Array.isArray(authors)) {

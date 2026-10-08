@@ -12,6 +12,8 @@
         '--primary-color-40': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '66', // 40%
         '--primary-color-active': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '99', // 60%
         '--primary-color-hover': (content.parameterAiMenuPrimaryColor ?? '#007bff') + 'CC', // 80%
+        '--brispr-color': agentColor,
+        '--brispr-ink': agentColor + '2E', // 18%
         ...cssVariables
     }">
         <template v-if="richEditor">
@@ -259,6 +261,12 @@
                     </div>
                 </div>
 
+                <!-- Rédaction en direct : reprendre le suivi du caret de Brispr -->
+                <button v-if="agentLocked && !followAgent" type="button" class="ww-rich-text__follow-agent"
+                    @click="resumeFollowingAgent">
+                    {{ followAgentLabel }}
+                </button>
+
                 <!-- Link Popover pour afficher/modifier les liens -->
                 <link-popover
                     v-if="richEditor"
@@ -339,6 +347,9 @@ import { SelectionHighlighter } from './extensions/SelectionHighlighter.js';
 import { SeoHighlighter } from './extensions/SeoHighlighter.js';
 import { TextSuggestion } from './extensions/TextSuggestion.js';
 import { TextStrike } from './extensions/TextStrike.js';
+import { AgentReveal } from './extensions/AgentReveal.js';
+import { AGENT } from './agent.js';
+import { getAiTexts } from './i18n/aiUi.js';
 import { CustomImage } from './extensions/CustomImage.js';
 import { SeoLink } from './extensions/SeoLink.js';
 import { sanitizeLinkUrl, sanitizeImageSrc, safeOpenUrl, isDangerousUrl } from './utils/sanitizeUrl.js';
@@ -434,6 +445,7 @@ export default {
                 connectionId: null,
                 users: [],
                 userCount: 0,
+                agentWriting: false,
             })),
             readonly: true,
         });
@@ -594,6 +606,10 @@ export default {
         outlineItems: [], // sommaire courant (avec positions doc, usage interne)
         activeOutlineIndex: -1, // titre visible au scroll (-1 = au-dessus du premier)
         activeHeadingSignature: '', // index:id:texte du titre courant, pour détecter un vrai changement
+        // Rédaction en direct : texte de Brispr encore à dévoiler, suivi du défilement
+        agentRevealing: false,
+        followAgent: true,
+        lastAgentScroll: 0,
     }),
 
     watch: {
@@ -609,6 +625,20 @@ export default {
 
         isEditable(value) {
             this.richEditor.setEditable(value);
+        },
+        agentLocked(locked) {
+            if (locked) {
+                this.followAgent = true;
+                window.addEventListener('wheel', this.stopFollowingAgent, { passive: true });
+                window.addEventListener('touchmove', this.stopFollowingAgent, { passive: true });
+            } else {
+                window.removeEventListener('wheel', this.stopFollowingAgent);
+                window.removeEventListener('touchmove', this.stopFollowingAgent);
+            }
+            this.$emit('trigger-event', {
+                name: locked ? 'collab:agent-writing' : 'collab:agent-done',
+                event: { agent: AGENT.name, timestamp: new Date().toISOString() },
+            });
         },
         variableValue(value, oldValue) {
             if (this.shouldEnableCollaboration) return;
@@ -925,7 +955,18 @@ export default {
                 : this.wwElementState.props.readonly;
         },
         isEditable() {
-            return !this.isReadonly && this.content.editable;
+            return !this.isReadonly && this.content.editable && !this.agentLocked;
+        },
+        // Brispr écrit, ou son texte n'a pas fini de se dévoiler : le collab
+        // refuse déjà les modifications, l'éditeur ne laisse pas taper dans le vide
+        agentLocked() {
+            return !!this.collaborationStatus?.agentWriting || this.agentRevealing;
+        },
+        agentColor() {
+            return AGENT.color;
+        },
+        followAgentLabel() {
+            return getAiTexts().followAgent.replace('{name}', AGENT.name);
         },
         hideMenu() {
             return this.content.hideMenu || this.isReadonly;
@@ -1320,6 +1361,22 @@ export default {
                     }),
                 ];
 
+                // Rédaction en direct : dévoile le texte que Brispr écrit
+                if (this.shouldEnableCollaboration) {
+                    extensions.push(
+                        AgentReveal.configure({
+                            label: AGENT.name,
+                            color: AGENT.color,
+                            shouldAnimate: () =>
+                                !!this.collaborationStatus?.agentWriting && !!this.collaborationStatus?.synced,
+                            onRevealingChange: revealing => {
+                                this.agentRevealing = revealing;
+                            },
+                            onReveal: caret => this.followAgentCaret(caret),
+                        })
+                    );
+                }
+
                 // Ajouter mention si activé
                 if (this.editorConfig.mention.enabled) {
                     extensions.push(
@@ -1673,6 +1730,23 @@ export default {
         },
         openTableContextMenu(event) {
             this.$refs.tableContextMenu?.openAt(event);
+        },
+
+        // Rédaction en direct : le défilement accompagne le caret de Brispr,
+        // jusqu'à ce que l'utilisateur fasse défiler lui-même
+        followAgentCaret(caret) {
+            if (!this.followAgent || !caret?.isConnected) return;
+            const now = Date.now();
+            if (now - this.lastAgentScroll < 250) return;
+            this.lastAgentScroll = now;
+            caret.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        },
+        stopFollowingAgent() {
+            this.followAgent = false;
+        },
+        resumeFollowingAgent() {
+            this.followAgent = true;
+            this.lastAgentScroll = 0;
         },
 
         // AI Menu actions
@@ -2581,6 +2655,9 @@ export default {
     beforeUnmount() {
         this.isDestroying = true;
 
+        window.removeEventListener('wheel', this.stopFollowingAgent);
+        window.removeEventListener('touchmove', this.stopFollowingAgent);
+
         // Nettoyer le debounce en cours
         if (this.debounce) {
             clearTimeout(this.debounce);
@@ -3067,6 +3144,60 @@ export default {
         }
     }
 
+    /* Rédaction en direct (AgentReveal) : texte pas encore dévoilé, encre
+       fraîche (même fondu que TextSuggestion), caret de Brispr */
+    .brispr-pending {
+        display: none !important;
+    }
+
+    .brispr-ink {
+        animation: brispr-ink 1s ease-out;
+    }
+
+    .brispr-caret {
+        position: relative;
+        border-left: 2px solid;
+        margin-left: -1px;
+        margin-right: -1px;
+        pointer-events: none;
+        width: 0;
+        z-index: 99;
+        animation: brispr-caret-pulse 1s ease-in-out infinite;
+    }
+
+    .brispr-caret__label {
+        position: absolute;
+        top: -1.8em;
+        left: -2px;
+        font-size: 12px;
+        font-style: normal;
+        font-weight: 600;
+        line-height: normal;
+        user-select: none;
+        color: #fff;
+        padding: 2px 6px;
+        border-radius: 3px 3px 3px 0;
+        white-space: nowrap;
+        pointer-events: none;
+        z-index: 100;
+    }
+
+    .ww-rich-text__follow-agent {
+        position: sticky;
+        bottom: 16px;
+        align-self: center;
+        z-index: 101;
+        padding: 6px 14px;
+        border: none;
+        border-radius: 999px;
+        background: var(--brispr-color);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
     /* Styles des curseurs de collaboration */
     .collaboration-cursor__caret {
         position: relative;
@@ -3258,5 +3389,24 @@ body.ww-rich-text-table-dragging,
 body.ww-rich-text-table-dragging * {
     cursor: grabbing !important;
     user-select: none !important;
+}
+
+@keyframes brispr-ink {
+    0% {
+        opacity: 0;
+        background-color: var(--brispr-ink);
+    }
+    20% {
+        opacity: 1;
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+@keyframes brispr-caret-pulse {
+    50% {
+        opacity: 0.35;
+    }
 }
 </style>
