@@ -250,6 +250,7 @@ Vous pouvez personnaliser tous les textes affichés dans l'interface du menu AI.
 - **`submitButton`** : Texte du bouton d'application (anciennement "Submit")
 - **`cancelButton`** : Texte du bouton d'annulation
 - **`noTypesMessage`** : Message affiché quand aucun type n'est configuré
+- **`targetLost`** : Message affiché quand le passage sélectionné a été supprimé pendant que l'IA répondait. La réponse n'est alors pas appliquée (actions `replace`, `insert-before`, `insert-after`). Vide : texte intégré, en anglais ou en français selon la langue de l'app
 
 ### Tooltips disponibles
 
