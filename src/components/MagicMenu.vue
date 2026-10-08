@@ -3,6 +3,7 @@
         <!-- Barre d'actions quand une proposition est en attente -->
         <transition name="magic-fade">
             <div class="magic-proposal-actions" v-if="aiResponse && !isLoading">
+                <span class="magic-target-lost" v-if="targetLost">{{ targetLostText }}</span>
                 <button
                     type="button"
                     class="magic-chip magic-reject"
@@ -14,6 +15,7 @@
                     <span>{{ placeholders.cancelButton }}</span>
                 </button>
                 <button
+                    v-if="!targetLost"
                     type="button"
                     class="magic-chip magic-accept"
                     @mousedown.prevent
@@ -92,6 +94,12 @@
 </template>
 
 <script>
+import { useAiTarget } from '../composables/useAiTarget.js';
+import { getAiTexts } from '../i18n/aiUi.js';
+
+// Actions qui portent sur la sélection : sans elle, rien à appliquer
+const SELECTION_ACTIONS = ['replace', 'insert-before', 'insert-after'];
+
 export default {
     name: 'MagicMenu',
     props: {
@@ -149,6 +157,9 @@ export default {
         },
     },
     computed: {
+        targetLostText() {
+            return this.placeholders.targetLost || getAiTexts().targetLost;
+        },
         menuStyleVars() {
             if (!this.buttonColor) {
                 return {};
@@ -214,7 +225,7 @@ export default {
             aiResponse: '',
             isFocused: false,
             storedSelection: null,
-            storedSelectionRange: null,
+            targetLost: false,
             isLoading: false,
             selectedModificationType: null,
             isDropdownOpen: false,
@@ -238,6 +249,10 @@ export default {
             this.selectedModificationType = this.getDefaultTypeKey();
         },
     },
+    created() {
+        // Plage visée, suivie pendant la demande (hors état réactif : objet Yjs)
+        this.aiTarget = useAiTarget(this.richEditor);
+    },
     mounted() {
         document.addEventListener('mousedown', this.onClickOutside);
     },
@@ -245,7 +260,7 @@ export default {
         document.removeEventListener('mousedown', this.onClickOutside);
 
         this.storedSelection = null;
-        this.storedSelectionRange = null;
+        this.aiTarget.release();
         this.richEditor.commands.clearHighlight();
         this.richEditor.commands.clearSuggestion();
         this.richEditor.commands.clearStrike();
@@ -299,7 +314,7 @@ export default {
 
         releaseSelection() {
             this.storedSelection = null;
-            this.storedSelectionRange = null;
+            this.aiTarget.release();
             this.richEditor.commands.clearHighlight();
         },
 
@@ -318,11 +333,11 @@ export default {
 
             if (from !== to) {
                 this.storedSelection = this.richEditor.state.doc.textBetween(from, to);
-                this.storedSelectionRange = { from, to };
+                this.aiTarget.capture(from, to);
                 this.richEditor.commands.highlightRange(from, to);
             } else {
                 this.storedSelection = null;
-                this.storedSelectionRange = null;
+                this.aiTarget.release();
                 this.richEditor.commands.clearHighlight();
             }
         },
@@ -416,10 +431,9 @@ export default {
             this.richEditor.commands.updateSuggestion(formattedResponse, position);
 
             const action = this.modificationTypes[this.selectedModificationType]?.action;
-            if (action === 'replace' && this.storedSelectionRange) {
-                this.richEditor.commands.setStrikeRanges([
-                    { from: this.storedSelectionRange.from, to: this.storedSelectionRange.to },
-                ]);
+            const range = this.aiTarget.range();
+            if (action === 'replace' && range) {
+                this.richEditor.commands.setStrikeRanges([{ from: range.from, to: range.to }]);
             } else if (action === 'replace-all') {
                 this.richEditor.commands.setStrikeRanges([{ from: 0, to: this.getDocumentEnd() }]);
             }
@@ -429,13 +443,14 @@ export default {
 
         getSuggestionPosition() {
             const action = this.modificationTypes[this.selectedModificationType]?.action;
+            const range = this.aiTarget.range();
 
-            if (action === 'replace' && this.storedSelectionRange) {
-                return this.storedSelectionRange.to;
-            } else if (action === 'insert-before' && this.storedSelectionRange) {
-                return this.storedSelectionRange.from;
-            } else if (action === 'insert-after' && this.storedSelectionRange) {
-                return this.storedSelectionRange.to;
+            if (action === 'replace' && range) {
+                return range.to;
+            } else if (action === 'insert-before' && range) {
+                return range.from;
+            } else if (action === 'insert-after' && range) {
+                return range.to;
             } else if (action === 'replace-all') {
                 return this.getDocumentEnd();
             } else if (action === 'append') {
@@ -443,7 +458,7 @@ export default {
             } else if (action === 'prepend') {
                 return 0;
             } else {
-                return this.storedSelectionRange?.to || this.getDocumentEnd();
+                return range?.to || this.getDocumentEnd();
             }
         },
 
@@ -460,7 +475,8 @@ export default {
             this.isFocused = false;
             this.isLoading = false;
             this.storedSelection = null;
-            this.storedSelectionRange = null;
+            this.aiTarget.release();
+            this.targetLost = false;
             this.isDropdownOpen = false;
             this.aiResponse = '';
             this.aiPrompt = '';
@@ -474,18 +490,29 @@ export default {
         applyResponse(response) {
             const action = this.modificationTypes[this.selectedModificationType].action;
 
+            // Plage à jour : le document a pu changer pendant la demande
+            const range = this.aiTarget.range();
+            if (range?.lost && SELECTION_ACTIONS.includes(action)) {
+                // Le passage visé a été supprimé entre-temps : ne rien
+                // appliquer plutôt qu'écrire à un endroit non choisi
+                this.targetLost = true;
+                this.richEditor.commands.clearSuggestion();
+                this.richEditor.commands.clearStrike();
+                return;
+            }
+
             const position = this.getSuggestionPosition();
             const formattedResponse = this.formatSuggestionText(response, position);
 
             switch (action) {
                 case 'replace':
-                    this.replaceSelection(formattedResponse);
+                    this.replaceSelection(formattedResponse, range);
                     break;
                 case 'insert-before':
-                    this.insertBeforeSelection(formattedResponse);
+                    this.insertBeforeSelection(formattedResponse, range);
                     break;
                 case 'insert-after':
-                    this.insertAfterSelection(formattedResponse);
+                    this.insertAfterSelection(formattedResponse, range);
                     break;
                 case 'replace-all':
                     this.replaceAllText(formattedResponse);
@@ -498,7 +525,7 @@ export default {
                     break;
                 default:
                     console.warn('Action non reconnue:', action);
-                    this.replaceSelection(formattedResponse);
+                    this.replaceSelection(formattedResponse, range);
             }
 
             this.$emit('ai-suggestion-applied', {
@@ -507,7 +534,7 @@ export default {
                 modificationType: this.selectedModificationType,
                 action: action,
                 selectedText: this.storedSelection,
-                selectionRange: this.storedSelectionRange,
+                selectionRange: range ? { from: range.from, to: range.to } : null,
                 htmlValue: this.richEditor.getHTML(),
                 timestamp: new Date().toISOString(),
                 position: position,
@@ -524,23 +551,23 @@ export default {
             }, 1500);
         },
 
-        replaceSelection(text) {
-            if (this.storedSelectionRange) {
-                const { from, to } = this.storedSelectionRange;
+        replaceSelection(text, range) {
+            if (range) {
+                const { from, to } = range;
                 this.richEditor.chain().focus().deleteRange({ from, to }).insertContent(text).run();
             }
         },
 
-        insertBeforeSelection(text) {
-            if (this.storedSelectionRange) {
-                const { from } = this.storedSelectionRange;
+        insertBeforeSelection(text, range) {
+            if (range) {
+                const { from } = range;
                 this.richEditor.chain().focus().insertContentAt(from, text).run();
             }
         },
 
-        insertAfterSelection(text) {
-            if (this.storedSelectionRange) {
-                const { to } = this.storedSelectionRange;
+        insertAfterSelection(text, range) {
+            if (range) {
+                const { to } = range;
                 this.richEditor.chain().focus().insertContentAt(to, text).run();
             }
         },
@@ -915,7 +942,17 @@ export default {
 .magic-proposal-actions {
     display: flex;
     justify-content: center;
+    align-items: center;
     gap: 6px;
+}
+
+/* Passage visé supprimé pendant la demande : rien n'a été appliqué */
+.magic-target-lost {
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    color: #b45309;
+    background: rgba(255, 251, 235, 0.9);
 }
 
 .magic-chip {

@@ -1,6 +1,7 @@
 import { Extension } from '@tiptap/core'
 import { Decoration, DecorationSet } from 'prosemirror-view'
 import { Plugin, PluginKey } from 'prosemirror-state'
+import { remoteAwareMapping } from '../utils/remoteMapping.js'
 
 const textSuggestionKey = new PluginKey('textSuggestion')
 
@@ -133,7 +134,7 @@ export const TextSuggestion = Extension.create({
             return DecorationSet.empty
           },
 
-          apply(tr, old) {
+          apply(tr, old, oldState) {
             const meta = tr.getMeta(textSuggestionKey)
             
             if (meta) {
@@ -151,7 +152,7 @@ export const TextSuggestion = Extension.create({
               }
             }
             
-            return old.map(tr.mapping, tr.doc)
+            return old.map(remoteAwareMapping(tr, oldState.doc), tr.doc)
           },
         },
 

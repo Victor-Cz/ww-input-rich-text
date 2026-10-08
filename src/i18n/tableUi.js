@@ -4,6 +4,8 @@
 // réglages `seoLang` / `seoUiLang` qui ne concernent que l'analyse SEO. Repli
 // sur l'anglais pour toute langue non traduite ici.
 
+import { currentLang } from './lang.js';
+
 const TEXTS = {
     en: {
         columnGrip: 'Click for column actions — drag to move it',
@@ -32,14 +34,6 @@ const TEXTS = {
         deleteTable: 'Supprimer le tableau',
     },
 };
-
-/** Langue courante de l'app, normalisée ('fr-FR' → 'fr'). */
-function currentLang() {
-    if (typeof wwLib === 'undefined') return 'en';
-    // Selon le contexte d'exécution, `lang` est une ref ou une chaîne.
-    const lang = wwLib.wwLang?.lang?.value ?? wwLib.wwLang?.lang;
-    return typeof lang === 'string' ? lang.slice(0, 2).toLowerCase() : 'en';
-}
 
 /** Dictionnaire complet dans la langue de l'app (anglais par défaut). */
 export function getTableTexts() {

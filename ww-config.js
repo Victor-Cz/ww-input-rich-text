@@ -3077,6 +3077,16 @@ export default {
                         description:
                             'Text displayed in the modification type dropdown when no type is selected. You can use simple text or formulas starting with "=" for multilingual support.',
                     },
+                    targetLost: {
+                        label: {
+                            en: 'Passage Removed Message',
+                        },
+                        type: 'Text',
+                        bindable: true,
+                        defaultValue: '',
+                        description:
+                            'Message displayed when the selected passage was removed while the AI was answering (nothing is applied). Empty: built-in text in the app language (English, French).',
+                    },
                 },
             },
             defaultValue: {

@@ -1,6 +1,7 @@
 import { Extension } from '@tiptap/core'
 import { Decoration, DecorationSet } from 'prosemirror-view'
 import { Plugin, PluginKey } from 'prosemirror-state'
+import { remoteAwareMapping } from '../utils/remoteMapping.js'
 
 const selectionHighlighterKey = new PluginKey('selectionHighlighter')
 
@@ -24,11 +25,11 @@ export const SelectionHighlighter = Extension.create({
             return DecorationSet.empty
           },
 
-          apply(tr, oldDecoSet, oldState, newState) {
+          apply(tr, oldDecoSet, oldState) {
             const meta = tr.getMeta(selectionHighlighterKey)
 
             if (!meta) {
-              return oldDecoSet.map(tr.mapping, tr.doc)
+              return oldDecoSet.map(remoteAwareMapping(tr, oldState.doc), tr.doc)
             }
 
             const { from, to, color } = meta

@@ -1,6 +1,7 @@
 import { Extension } from '@tiptap/core'
 import { Decoration, DecorationSet } from 'prosemirror-view'
 import { Plugin, PluginKey } from 'prosemirror-state'
+import { remoteAwareMapping } from '../utils/remoteMapping.js'
 
 const strikeKey = new PluginKey('textStrike')
 
@@ -33,7 +34,7 @@ export const TextStrike = Extension.create({
             return DecorationSet.create(instance.doc, decorations)
           },
 
-          apply(tr, old) {
+          apply(tr, old, oldState) {
             const meta = tr.getMeta(strikeKey)
             if (meta && Array.isArray(meta.ranges)) {
               const decorations = meta.ranges.map(({ from, to }) =>
@@ -44,7 +45,7 @@ export const TextStrike = Extension.create({
               )
               return DecorationSet.create(tr.doc, decorations)
             }
-            return old.map(tr.mapping, tr.doc)
+            return old.map(remoteAwareMapping(tr, oldState.doc), tr.doc)
           },
         },
 
