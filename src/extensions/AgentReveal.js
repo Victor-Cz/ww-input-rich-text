@@ -82,10 +82,11 @@ export const AgentReveal = Extension.create({
     addOptions() {
         return {
             label: 'Brispr',
-            color: '#7611FA',
-            // Rythme de TextSuggestion : quelques mots toutes les 50 ms
+            /** SVG de l'icône à côté du nom ('' : pas d'icône). La couleur vient de --brispr-color */
+            icon: () => '',
+            // Deux mots toutes les 50 ms : un peu plus posé que TextSuggestion
             tickMs: 50,
-            wordsPerTick: 3,
+            wordsPerTick: 2,
             // L'animation ne traîne jamais plus loin derrière le contenu reçu
             maxLagMs: 10000,
             // Brispr parti : le reste se dévoile vite
@@ -103,12 +104,22 @@ export const AgentReveal = Extension.create({
 
         const caret = document.createElement('span');
         caret.className = 'brispr-caret';
-        caret.style.borderColor = options.color;
         const caretLabel = document.createElement('span');
         caretLabel.className = 'brispr-caret__label';
-        caretLabel.style.backgroundColor = options.color;
-        caretLabel.textContent = options.label;
+        const caretIcon = document.createElement('span');
+        caretIcon.className = 'brispr-caret__icon';
+        caretLabel.append(caretIcon, options.label);
         caret.append(caretLabel);
+
+        // L'icône peut arriver après coup (bibliothèque d'icônes asynchrone) :
+        // relue à chaque mise à jour, réécrite seulement si elle a changé
+        let caretIconSvg = null;
+        const syncIcon = () => {
+            const svg = options.icon() || '';
+            if (svg === caretIconSvg) return;
+            caretIconSvg = svg;
+            caretIcon.innerHTML = svg;
+        };
 
         return [
             new Plugin({
@@ -211,7 +222,10 @@ export const AgentReveal = Extension.create({
                             revealing = pending.length > 0;
                             options.onRevealingChange(revealing);
                         }
-                        if (revealing) options.onReveal(caret);
+                        if (revealing) {
+                            syncIcon();
+                            options.onReveal(caret);
+                        }
                     };
 
                     return {

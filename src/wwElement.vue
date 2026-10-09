@@ -13,7 +13,6 @@
         '--primary-color-active': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '99', // 60%
         '--primary-color-hover': (content.parameterAiMenuPrimaryColor ?? '#007bff') + 'CC', // 80%
         '--brispr-color': agentColor,
-        '--brispr-ink': agentColor + '2E', // 18%
         ...cssVariables
     }">
         <template v-if="richEditor">
@@ -261,12 +260,6 @@
                     </div>
                 </div>
 
-                <!-- Rédaction en direct : reprendre le suivi du caret de Brispr -->
-                <button v-if="agentLocked && !followAgent" type="button" class="ww-rich-text__follow-agent"
-                    @click="resumeFollowingAgent">
-                    {{ followAgentLabel }}
-                </button>
-
                 <!-- Link Popover pour afficher/modifier les liens -->
                 <link-popover
                     v-if="richEditor"
@@ -348,8 +341,7 @@ import { SeoHighlighter } from './extensions/SeoHighlighter.js';
 import { TextSuggestion } from './extensions/TextSuggestion.js';
 import { TextStrike } from './extensions/TextStrike.js';
 import { AgentReveal } from './extensions/AgentReveal.js';
-import { AGENT } from './agent.js';
-import { getAiTexts } from './i18n/aiUi.js';
+import { AGENT, AGENT_ICON_SVG } from './agent.js';
 import { CustomImage } from './extensions/CustomImage.js';
 import { SeoLink } from './extensions/SeoLink.js';
 import { sanitizeLinkUrl, sanitizeImageSrc, safeOpenUrl, isDangerousUrl } from './utils/sanitizeUrl.js';
@@ -364,6 +356,22 @@ function extractMentions(acc, currentNode) {
     } else {
         return acc;
     }
+}
+
+// Rédaction en direct : un défilement de l'utilisateur suspend le suivi du
+// caret de Brispr, qui reprend après ce délai sans défilement
+const AGENT_FOLLOW_RESUME_MS = 3000;
+// Bande où le suivi garde le caret, en fraction de la hauteur visible : il
+// y reste plutôt que de longer le bord de l'écran
+const AGENT_FOLLOW_BAND = { top: 0.3, bottom: 0.6 };
+
+/** Hauteur visible de ce qui fait défiler `el` : conteneur défilant le plus proche, sinon la fenêtre */
+function scrollViewportHeight(el) {
+    for (let node = el.parentElement; node && node !== document.body; node = node.parentElement) {
+        const { overflowY } = getComputedStyle(node);
+        if (/auto|scroll|overlay/.test(overflowY) && node.scrollHeight > node.clientHeight) return node.clientHeight;
+    }
+    return window.innerHeight;
 }
 
 const TAGS_MAP = {
@@ -606,10 +614,11 @@ export default {
         outlineItems: [], // sommaire courant (avec positions doc, usage interne)
         activeOutlineIndex: -1, // titre visible au scroll (-1 = au-dessus du premier)
         activeHeadingSignature: '', // index:id:texte du titre courant, pour détecter un vrai changement
-        // Rédaction en direct : texte de Brispr encore à dévoiler, suivi du défilement
+        // Rédaction en direct : texte de Brispr encore à dévoiler, suivi du défilement, icône
         agentRevealing: false,
-        followAgent: true,
+        agentFollowPausedUntil: 0,
         lastAgentScroll: 0,
+        agentIconSvg: AGENT_ICON_SVG,
     }),
 
     watch: {
@@ -626,14 +635,20 @@ export default {
         isEditable(value) {
             this.richEditor.setEditable(value);
         },
+        'content.agentIcon': {
+            immediate: true,
+            handler: 'resolveAgentIcon',
+        },
         agentLocked(locked) {
             if (locked) {
-                this.followAgent = true;
-                window.addEventListener('wheel', this.stopFollowingAgent, { passive: true });
-                window.addEventListener('touchmove', this.stopFollowingAgent, { passive: true });
+                this.agentFollowPausedUntil = 0;
+                window.addEventListener('wheel', this.pauseFollowingAgent, { passive: true });
+                window.addEventListener('touchmove', this.pauseFollowingAgent, { passive: true });
             } else {
-                window.removeEventListener('wheel', this.stopFollowingAgent);
-                window.removeEventListener('touchmove', this.stopFollowingAgent);
+                window.removeEventListener('wheel', this.pauseFollowingAgent);
+                window.removeEventListener('touchmove', this.pauseFollowingAgent);
+                // Brispr reste encore un moment dans la liste des utilisateurs
+                this.releaseAgent();
             }
             this.$emit('trigger-event', {
                 name: locked ? 'collab:agent-writing' : 'collab:agent-done',
@@ -963,10 +978,12 @@ export default {
             return !!this.collaborationStatus?.agentWriting || this.agentRevealing;
         },
         agentColor() {
-            return AGENT.color;
+            return this.content.agentColor || AGENT.color;
         },
-        followAgentLabel() {
-            return getAiTexts().followAgent.replace('{name}', AGENT.name);
+        // Suivi du caret de Brispr (agentFollow) : toujours, en lecture seule, jamais
+        followsAgent() {
+            const mode = this.content.agentFollow ?? 'always';
+            return mode === 'always' || (mode === 'readonly' && (this.isReadonly || !this.content.editable));
         },
         hideMenu() {
             return this.content.hideMenu || this.isReadonly;
@@ -1366,7 +1383,7 @@ export default {
                     extensions.push(
                         AgentReveal.configure({
                             label: AGENT.name,
-                            color: AGENT.color,
+                            icon: () => this.agentIconSvg,
                             shouldAnimate: () =>
                                 !!this.collaborationStatus?.agentWriting && !!this.collaborationStatus?.synced,
                             onRevealingChange: revealing => {
@@ -1732,21 +1749,35 @@ export default {
             this.$refs.tableContextMenu?.openAt(event);
         },
 
-        // Rédaction en direct : le défilement accompagne le caret de Brispr,
-        // jusqu'à ce que l'utilisateur fasse défiler lui-même
+        // Rédaction en direct : le défilement accompagne le caret de Brispr
+        // (selon agentFollow), sauf juste après un défilement de l'utilisateur
         followAgentCaret(caret) {
-            if (!this.followAgent || !caret?.isConnected) return;
+            if (!this.followsAgent || !caret?.isConnected) return;
             const now = Date.now();
-            if (now - this.lastAgentScroll < 250) return;
+            if (now < this.agentFollowPausedUntil || now - this.lastAgentScroll < 250) return;
             this.lastAgentScroll = now;
+            // Marges de défilement : 'nearest' ramène alors le caret dans la
+            // bande centrale, et non juste à l'écran
+            const height = scrollViewportHeight(caret);
+            caret.style.scrollMarginTop = `${Math.round(height * AGENT_FOLLOW_BAND.top)}px`;
+            caret.style.scrollMarginBottom = `${Math.round(height * (1 - AGENT_FOLLOW_BAND.bottom))}px`;
             caret.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         },
-        stopFollowingAgent() {
-            this.followAgent = false;
+        pauseFollowingAgent() {
+            this.agentFollowPausedUntil = Date.now() + AGENT_FOLLOW_RESUME_MS;
         },
-        resumeFollowingAgent() {
-            this.followAgent = true;
-            this.lastAgentScroll = 0;
+        // Icône de Brispr : celle du paramètre (bibliothèque d'icônes WeWeb), sinon l'étincelle
+        async resolveAgentIcon(name) {
+            let svg = '';
+            if (name) {
+                try {
+                    svg = (await wwLib.useIcons?.().getIcon(name)) || '';
+                } catch {
+                    // Icône introuvable : l'étincelle
+                }
+            }
+            // Une icône choisie entre-temps l'emporte
+            if (name === this.content.agentIcon) this.agentIconSvg = svg || AGENT_ICON_SVG;
         },
 
         // AI Menu actions
@@ -2655,8 +2686,8 @@ export default {
     beforeUnmount() {
         this.isDestroying = true;
 
-        window.removeEventListener('wheel', this.stopFollowingAgent);
-        window.removeEventListener('touchmove', this.stopFollowingAgent);
+        window.removeEventListener('wheel', this.pauseFollowingAgent);
+        window.removeEventListener('touchmove', this.pauseFollowingAgent);
 
         // Nettoyer le debounce en cours
         if (this.debounce) {
@@ -2692,6 +2723,10 @@ export default {
 <style lang="scss">
 .ww-rich-text {
     --menu-color: unset;
+    /* Teintes de Brispr, dérivées de --brispr-color (paramètre agentColor,
+       peut-être une couleur de thème : pas de suffixe hex) */
+    --brispr-ink: color-mix(in srgb, var(--brispr-color) 18%, transparent);
+    --brispr-caret-dim: color-mix(in srgb, var(--brispr-color) 35%, transparent);
     display: flex;
     flex-direction: column;
     min-height: 150px;
@@ -3154,9 +3189,10 @@ export default {
         animation: brispr-ink 1s ease-out;
     }
 
+    /* Seule la barre pulse : l'étiquette reste pleine */
     .brispr-caret {
         position: relative;
-        border-left: 2px solid;
+        border-left: 2px solid var(--brispr-color);
         margin-left: -1px;
         margin-right: -1px;
         pointer-events: none;
@@ -3169,6 +3205,10 @@ export default {
         position: absolute;
         top: -1.8em;
         left: -2px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background-color: var(--brispr-color);
         font-size: 12px;
         font-style: normal;
         font-weight: 600;
@@ -3182,20 +3222,20 @@ export default {
         z-index: 100;
     }
 
-    .ww-rich-text__follow-agent {
-        position: sticky;
-        bottom: 16px;
-        align-self: center;
-        z-index: 101;
-        padding: 6px 14px;
-        border: none;
-        border-radius: 999px;
-        background: var(--brispr-color);
-        color: #fff;
-        font-size: 13px;
-        font-weight: 500;
-        cursor: pointer;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    .brispr-caret__icon {
+        display: inline-flex;
+        width: 12px;
+        height: 12px;
+
+        &:empty {
+            display: none;
+        }
+
+        svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
     }
 
     /* Styles des curseurs de collaboration */
@@ -3406,7 +3446,7 @@ body.ww-rich-text-table-dragging * {
 
 @keyframes brispr-caret-pulse {
     50% {
-        opacity: 0.35;
+        border-left-color: var(--brispr-caret-dim);
     }
 }
 </style>

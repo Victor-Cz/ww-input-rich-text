@@ -72,6 +72,8 @@ export default {
                 'timelineSelectedColor',
                 'epochLoadButtonText',
             ],
+            'agentInfobox',
+            ['agentColor', 'agentIcon', 'agentFollow', 'agentLingerDelay'],
             'formInfobox',
             ['fieldName', 'customValidation', 'validation'],
             'readonly',
@@ -3254,6 +3256,16 @@ export default {
             },
             hidden: content => !content.enableCollaboration,
         },
+        agentInfobox: {
+            type: 'InfoBox',
+            section: 'settings',
+            options: {
+                variant: 'info',
+                title: 'Rédaction en direct',
+                content: 'Apparence de Brispr quand il écrit l’article dans l’éditeur, et suivi de son caret.',
+            },
+            hidden: content => !content.enableCollaboration,
+        },
         mentionInfobox: {
             type: 'InfoBox',
             section: 'settings',
@@ -3417,6 +3429,75 @@ export default {
             defaultValue: 2000,
             bindable: true,
             hidden: content => !content.enableCollaboration,
+        },
+        agentColor: {
+            section: 'settings',
+            label: { en: 'Brispr color', fr: 'Couleur de Brispr' },
+            type: 'Color',
+            defaultValue: '#7611FA',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            propertyHelp: {
+                tooltip: 'Caret, freshly written text, users list and version diffs',
+            },
+            /* wwEditor:end */
+        },
+        agentIcon: {
+            section: 'settings',
+            label: { en: 'Brispr icon', fr: 'Icône de Brispr' },
+            type: 'SystemIcon',
+            defaultValue: '',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            propertyHelp: {
+                tooltip: 'Shown next to the name above the caret. Empty: sparkle',
+            },
+            /* wwEditor:end */
+        },
+        agentFollow: {
+            section: 'settings',
+            label: { en: 'Follow Brispr while writing', fr: 'Suivre Brispr pendant l’écriture' },
+            type: 'TextSelect',
+            options: {
+                options: [
+                    { value: 'always', label: { en: 'Always', fr: 'Toujours' } },
+                    { value: 'readonly', label: { en: 'Only when read-only', fr: 'Uniquement en lecture seule' } },
+                    { value: 'never', label: { en: 'Never', fr: 'Jamais' } },
+                ],
+            },
+            defaultValue: 'always',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            propertyHelp: {
+                tooltip:
+                    'Scrolls to keep the caret around the middle of the screen. Paused while the user scrolls, resumes after a few seconds without scrolling',
+            },
+            /* wwEditor:end */
+        },
+        agentLingerDelay: {
+            section: 'settings',
+            label: { en: 'Keep Brispr in users after writing (s)', fr: 'Garder Brispr dans les utilisateurs après écriture (s)' },
+            type: 'Number',
+            options: {
+                min: 0,
+                max: 600,
+                step: 1,
+            },
+            defaultValue: 10,
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            propertyHelp: {
+                tooltip: 'Counted once his text has finished revealing (collaborationStatus.users, collab:awareness-update)',
+            },
+            /* wwEditor:end */
         },
         maxConnectionAttempts: {
             section: 'settings',

@@ -55,6 +55,9 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         setCollaborationStatus(currentStatus);
     };
 
+    // Couleur de Brispr : paramètre du composant, prioritaire sur celle du collab
+    const agentColor = () => content.value.agentColor || AGENT.color;
+
     // Mémorise l'époque courante et la propage aux paramètres de reconnexion :
     // si le serveur compacte le document pendant une coupure, la reconnexion
     // avec une époque périmée sera rejetée (stale-epoch) au lieu de fusionner
@@ -182,7 +185,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // Couleur déterministe par utilisateur : même id → même couleur,
     // partout (curseurs, liste users, diffs de version) et à chaque session
     const colorForUser = key => {
-        if (key === AGENT.id) return AGENT.color;
+        if (key === AGENT.id) return agentColor();
         const str = String(key || 'anonymous');
         let hash = 0;
         for (let i = 0; i < str.length; i++) {
@@ -198,7 +201,64 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     const registerUserColor = key => {
         if (!key) return;
         const dark = colorForUser(key);
-        ychangeColorMapping.set(String(key), { light: `${dark}26`, dark });
+        // La couleur de Brispr est un paramètre : peut-être pas un hex (couleur de thème)
+        const light = /^#[0-9a-f]{6}$/i.test(dark) ? `${dark}26` : `color-mix(in srgb, ${dark} 15%, transparent)`;
+        ychangeColorMapping.set(String(key), { light, dark });
+    };
+    watch(agentColor, () => registerUserColor(AGENT.id));
+
+    // Brispr reste dans la liste des utilisateurs après son départ : le temps
+    // que son texte finisse de se dévoiler (releaseAgent, appelé par
+    // l'éditeur), puis agentLingerDelay secondes
+    let lingeringAgent = null;
+    let agentLingerTimer = null;
+
+    // Utilisateurs présents d'après l'awareness, Brispr avec la couleur du paramètre
+    const readUsers = () =>
+        Array.from(provider.value?.awareness?.getStates().values() ?? [])
+            .filter(state => state.user)
+            .map(state => ({
+                name: state.user.name,
+                color: state.user.id === AGENT.id ? agentColor() : state.user.color,
+                id: state.user.id || null,
+            }));
+
+    // Publie la liste (statut + collab:awareness-update), avec Brispr tant
+    // qu'il s'attarde après son départ
+    const publishUsers = (users = readUsers()) => {
+        if (lingeringAgent && !users.some(user => user.id === AGENT.id)) {
+            users = [...users, { ...lingeringAgent, color: agentColor() }];
+        }
+
+        updateStatus({
+            users,
+            userCount: users.length,
+        });
+
+        emit('trigger-event', {
+            name: 'collab:awareness-update',
+            event: {
+                users,
+                count: users.length,
+                timestamp: new Date().toISOString(),
+            },
+        });
+    };
+
+    const clearAgentLinger = () => {
+        clearTimeout(agentLingerTimer);
+        agentLingerTimer = null;
+    };
+
+    const releaseAgent = () => {
+        if (!lingeringAgent || currentStatus.agentWriting) return;
+        clearAgentLinger();
+        const delay = Number(content.value.agentLingerDelay ?? 10) * 1000;
+        agentLingerTimer = setTimeout(() => {
+            agentLingerTimer = null;
+            lingeringAgent = null;
+            publishUsers();
+        }, Math.max(0, delay));
     };
 
     // Configuration des event listeners du provider
@@ -344,23 +404,20 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         // Awareness (présence des utilisateurs)
         if (provider.value.awareness) {
             provider.value.awareness.on('change', () => {
-                const states = Array.from(provider.value.awareness.getStates().values());
-
-                // On récupère tout l'objet user pour être sûr d'avoir 'name' ET 'color'
-                const users = states
-                    .filter(state => state.user)
-                    .map(state => ({
-                        name: state.user.name,
-                        color: state.user.color, // <-- On s'assure que c'est bien mappé ici
-                        id: state.user.id || null,
-                    }));
+                const users = readUsers();
 
                 // Alimenter le mapping de couleurs des diffs de version
                 // avec les utilisateurs présents (même clé que PermanentUserData)
                 users.forEach(user => registerUserColor(user.id || user.name));
 
-                // Brispr présent = il est en train d'écrire l'article
-                const agentWriting = users.some(user => user.id === AGENT.id);
+                // Brispr présent = il est en train d'écrire l'article. Gardé
+                // pour rester affiché un moment après son départ
+                const agent = users.find(user => user.id === AGENT.id);
+                if (agent) {
+                    lingeringAgent = agent;
+                    clearAgentLinger();
+                }
+                const agentWriting = !!agent;
                 if (agentWriting !== !!currentStatus.agentWriting) {
                     updateStatus({ agentWriting });
                 }
@@ -374,19 +431,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
 
                 console.log('[Collaboration] Awareness update - Users with colors:', users);
 
-                updateStatus({
-                    users,
-                    userCount: users.length,
-                });
-
-                emit('trigger-event', {
-                    name: 'collab:awareness-update',
-                    event: {
-                        users,
-                        count: users.length,
-                        timestamp: new Date().toISOString(),
-                    },
-                });
+                publishUsers(users);
             });
         }
 
@@ -588,6 +633,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         currentEpoch = null;
         isCollaborating.value = false;
         connectionAttempts.value = 0;
+        clearAgentLinger();
+        lingeringAgent = null;
 
         // Réinitialiser l'état local et le statut externe
         currentStatus = {
@@ -602,6 +649,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             userCount: 0,
             epoch: null,
             staleEpoch: false,
+            agentWriting: false,
         };
         setCollaborationStatus(currentStatus);
     };
@@ -831,6 +879,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
 
     // Cleanup automatique
     onBeforeUnmount(() => {
+        clearAgentLinger();
         if (provider.value) {
             provider.value.destroy();
         }
@@ -859,6 +908,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         updateUserName,
         getRandomColor,
         colorForUser,
+        releaseAgent,
         sendSaveSignal,
         sendCreateVersionSignal,
         getEpoch,
