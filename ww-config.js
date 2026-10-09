@@ -73,7 +73,7 @@ export default {
                 'epochLoadButtonText',
             ],
             'agentInfobox',
-            ['agentColor', 'agentIcon', 'agentFollow', 'agentLingerDelay'],
+            ['agentColor', 'agentIcon', 'agentWritingSpeed', 'agentFollow', 'agentLingerDelay'],
             'formInfobox',
             ['fieldName', 'customValidation', 'validation'],
             'readonly',
@@ -3454,7 +3454,27 @@ export default {
             /* eslint-disable-next-line */
             /* wwEditor:start */
             propertyHelp: {
-                tooltip: 'Shown next to the name above the caret. Empty: sparkle',
+                tooltip: 'Shown next to the name above the caret. Empty: no icon',
+            },
+            /* wwEditor:end */
+        },
+        agentWritingSpeed: {
+            section: 'settings',
+            label: { en: 'Brispr writing speed (words/s)', fr: 'Vitesse d’écriture de Brispr (mots/s)' },
+            type: 'Number',
+            options: {
+                min: 1,
+                max: 200,
+                step: 1,
+            },
+            defaultValue: 40,
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            propertyHelp: {
+                tooltip:
+                    'Pace at which his text is revealed. Speeds up when more than 10 s behind what he has written, and once he is done',
             },
             /* wwEditor:end */
         },

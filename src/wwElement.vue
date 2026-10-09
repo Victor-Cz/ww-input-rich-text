@@ -341,7 +341,7 @@ import { SeoHighlighter } from './extensions/SeoHighlighter.js';
 import { TextSuggestion } from './extensions/TextSuggestion.js';
 import { TextStrike } from './extensions/TextStrike.js';
 import { AgentReveal } from './extensions/AgentReveal.js';
-import { AGENT, AGENT_ICON_SVG } from './agent.js';
+import { AGENT } from './agent.js';
 import { CustomImage } from './extensions/CustomImage.js';
 import { SeoLink } from './extensions/SeoLink.js';
 import { sanitizeLinkUrl, sanitizeImageSrc, safeOpenUrl, isDangerousUrl } from './utils/sanitizeUrl.js';
@@ -618,7 +618,7 @@ export default {
         agentRevealing: false,
         agentFollowPausedUntil: 0,
         lastAgentScroll: 0,
-        agentIconSvg: AGENT_ICON_SVG,
+        agentIconSvg: '',
     }),
 
     watch: {
@@ -1384,6 +1384,7 @@ export default {
                         AgentReveal.configure({
                             label: AGENT.name,
                             icon: () => this.agentIconSvg,
+                            wordsPerSecond: () => Math.max(1, Number(this.content.agentWritingSpeed) || 40),
                             shouldAnimate: () =>
                                 !!this.collaborationStatus?.agentWriting && !!this.collaborationStatus?.synced,
                             onRevealingChange: revealing => {
@@ -1766,18 +1767,18 @@ export default {
         pauseFollowingAgent() {
             this.agentFollowPausedUntil = Date.now() + AGENT_FOLLOW_RESUME_MS;
         },
-        // Icône de Brispr : celle du paramètre (bibliothèque d'icônes WeWeb), sinon l'étincelle
+        // Icône de Brispr : celle du paramètre (bibliothèque d'icônes WeWeb), sinon aucune
         async resolveAgentIcon(name) {
             let svg = '';
             if (name) {
                 try {
                     svg = (await wwLib.useIcons?.().getIcon(name)) || '';
                 } catch {
-                    // Icône introuvable : l'étincelle
+                    // Icône introuvable : pas d'icône
                 }
             }
             // Une icône choisie entre-temps l'emporte
-            if (name === this.content.agentIcon) this.agentIconSvg = svg || AGENT_ICON_SVG;
+            if (name === this.content.agentIcon) this.agentIconSvg = svg;
         },
 
         // AI Menu actions

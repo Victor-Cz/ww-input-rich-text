@@ -84,9 +84,9 @@ export const AgentReveal = Extension.create({
             label: 'Brispr',
             /** SVG de l'icône à côté du nom ('' : pas d'icône). La couleur vient de --brispr-color */
             icon: () => '',
-            // Deux mots toutes les 50 ms : un peu plus posé que TextSuggestion
             tickMs: 50,
-            wordsPerTick: 2,
+            /** Vitesse de dévoilement, en mots par seconde */
+            wordsPerSecond: () => 40,
             // L'animation ne traîne jamais plus loin derrière le contenu reçu
             maxLagMs: 10000,
             // Brispr parti : le reste se dévoile vite
@@ -127,11 +127,12 @@ export const AgentReveal = Extension.create({
 
                 state: {
                     init() {
-                        return { pending: [], ink: [] };
+                        // credit : fraction de mot reportée d'un tick au suivant
+                        return { pending: [], ink: [], credit: 0 };
                     },
 
                     apply(tr, value, oldState, newState) {
-                        let { pending, ink } = value;
+                        let { pending, ink, credit } = value;
                         const now = Date.now();
 
                         if (tr.docChanged) {
@@ -165,12 +166,20 @@ export const AgentReveal = Extension.create({
                             if (pending.length) {
                                 const doc = newState.doc;
                                 const remaining = pending.reduce((n, r) => n + countWords(doc, r.from, r.to), 0);
-                                const lagMs = options.shouldAnimate() ? options.maxLagMs : options.flushMs;
-                                let budget = Math.max(
-                                    options.wordsPerTick,
-                                    Math.ceil(remaining / (lagMs / options.tickMs))
+                                const writing = options.shouldAnimate();
+                                const lagMs = writing ? options.maxLagMs : options.flushMs;
+                                // Mots de ce tick : la vitesse réglée, ou plus pour ne pas
+                                // dépasser le retard permis (et au moins un par tick une
+                                // fois Brispr parti). La fraction passe au tick suivant
+                                // (moins d'un mot par tick aux vitesses lentes)
+                                credit += Math.max(
+                                    (options.wordsPerSecond() * options.tickMs) / 1000,
+                                    (remaining * options.tickMs) / lagMs,
+                                    writing ? 0 : 1
                                 );
-                                pending = pending.map(r => ({ ...r }));
+                                let budget = Math.floor(credit);
+                                credit -= budget;
+                                if (budget > 0) pending = pending.map(r => ({ ...r }));
                                 while (budget > 0 && pending.length) {
                                     const head = pending[0];
                                     const words = countWords(doc, head.from, head.to);
@@ -181,9 +190,13 @@ export const AgentReveal = Extension.create({
                                     if (head.from >= head.to) pending = pending.slice(1);
                                 }
                             }
+                            // Tout est dévoilé : le prochain texte repart sans avance
+                            if (!pending.length) credit = 0;
                         }
 
-                        return pending === value.pending && ink === value.ink ? value : { pending, ink };
+                        return pending === value.pending && ink === value.ink && credit === value.credit
+                            ? value
+                            : { pending, ink, credit };
                     },
                 },
 
