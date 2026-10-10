@@ -22,9 +22,10 @@ export default {
             en: 'Rich text',
         },
         navigator: {
-            groups: ['Menu', 'Image', 'Link'],
+            groups: ['Header', 'Menu', 'Image', 'Link'],
         },
         customStylePropertiesOrder: [
+            'showHeader',
             'customMenu',
             'menuColor',
             'editorPadding',
@@ -820,6 +821,19 @@ export default {
             type: 'OnOff',
             defaultValue: false,
             bindable: true,
+        },
+        showHeader: {
+            label: {
+                en: 'Header',
+                fr: 'En-tête',
+            },
+            type: 'OnOff',
+            defaultValue: false,
+            bindable: true,
+            description: {
+                en: 'Adds a container above the menu. The header, the menu and the text scroll together inside the element (give it a height), and the menu sticks to the top once the header has scrolled away.',
+                fr: "Ajoute un conteneur au-dessus du menu. L'en-tête, le menu et le texte défilent ensemble dans l'élément (donnez-lui une hauteur), et le menu reste collé en haut une fois l'en-tête passé.",
+            },
         },
         customMenu: {
             label: {
@@ -2042,6 +2056,25 @@ export default {
             navigator: {
                 group: 'Menu',
                 hidden: content => !content.customMenu,
+            },
+        },
+        headerElement: {
+            hidden: true,
+            defaultValue: {
+                isWwObject: true,
+                type: 'ww-flexbox',
+                state: {
+                    name: 'Header container',
+                    style: {
+                        default: {
+                            width: '100%',
+                        },
+                    },
+                },
+            },
+            navigator: {
+                group: 'Header',
+                hidden: content => !content.showHeader,
             },
         },
         imageLayoutElement: {

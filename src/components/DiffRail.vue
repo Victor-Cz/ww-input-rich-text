@@ -74,6 +74,15 @@ function offsetWithin(el, host) {
 }
 
 /**
+ * Ce qui fait défiler le texte : l'éditeur lui-même, ou l'enveloppe qui le
+ * fait défiler avec l'en-tête et le menu quand l'en-tête est actif.
+ */
+function scrollerOf(dom) {
+    const wrapper = dom.closest('.ww-rich-text__scroll');
+    return wrapper?.classList.contains('-header') ? wrapper : dom;
+}
+
+/**
  * Rectangles ligne à ligne du contenu d'un élément : un passage modifié qui
  * court sur trois lignes en donne trois, comme les lignes d'un diff. Le
  * rectangle du bloc sert de repli (élément sans contenu sélectionnable).
@@ -168,6 +177,9 @@ export default {
             if (win.ResizeObserver) {
                 this.resizeObserver = new win.ResizeObserver(this.onViewChange);
                 this.resizeObserver.observe(dom);
+                // Avec en-tête, la zone visible suit le composant, pas le texte
+                const host = dom.closest('.ww-rich-text');
+                if (host) this.resizeObserver.observe(host);
             }
             // Changement de version affichée : le rendu du diff passe par une
             // transaction ProseMirror
@@ -204,7 +216,8 @@ export default {
         measure() {
             const dom = this.editor?.view?.dom;
             const host = dom?.closest?.('.ww-rich-text');
-            const offset = host && dom.isConnected ? offsetWithin(dom, host) : null;
+            const scroller = dom && scrollerOf(dom);
+            const offset = host && dom.isConnected ? offsetWithin(scroller, host) : null;
             if (!this.active || !offset) {
                 this.rail = null;
                 this.marks = [];
@@ -217,30 +230,31 @@ export default {
             // lui disputer les clics.
             this.rail = {
                 top: offset.top,
-                left: offset.left + dom.clientWidth - RAIL_INSET - RAIL_WIDTH,
-                height: dom.clientHeight,
+                left: offset.left + scroller.clientWidth - RAIL_INSET - RAIL_WIDTH,
+                height: scroller.clientHeight,
             };
 
             // Les repères sont exprimés en px dans la réglette : le défilement
             // ne les déplace pas. On ne remesure les lignes qu'au changement de
             // contenu ou de gabarit (la largeur commande les retours à la ligne).
-            const signature = `${dom.scrollHeight}|${dom.clientHeight}|${dom.clientWidth}`;
+            const signature = `${scroller.scrollHeight}|${scroller.clientHeight}|${scroller.clientWidth}`;
             if (!this.marksDirty && signature === this.marksSignature) return;
             this.marksSignature = signature;
             this.marksDirty = false;
-            this.marks = this.buildMarks(dom);
+            this.marks = this.buildMarks(dom, scroller);
         },
 
         // Un repère par ligne de texte modifiée, projeté sur la hauteur de la
-        // réglette : trois lignes changées = trois traits.
-        buildMarks(dom) {
-            const total = Math.max(dom.scrollHeight, 1);
-            const scale = dom.clientHeight / total;
-            const rect = dom.getBoundingClientRect();
+        // réglette : trois lignes changées = trois traits. Les modifications
+        // viennent du texte, la géométrie de ce qui le fait défiler.
+        buildMarks(dom, scroller) {
+            const total = Math.max(scroller.scrollHeight, 1);
+            const scale = scroller.clientHeight / total;
+            const rect = scroller.getBoundingClientRect();
             // Canvas zoomé (éditeur WeWeb) : les rectangles sont à l'échelle du
             // rendu, les positions de scroll en pixels CSS. Ce rapport ramène
             // les premiers dans le repère des secondes.
-            const zoom = dom.offsetWidth ? rect.width / dom.offsetWidth : 1;
+            const zoom = scroller.offsetWidth ? rect.width / scroller.offsetWidth : 1;
 
             const lines = [];
             for (const el of dom.querySelectorAll('[data-ychange-type]')) {
@@ -251,8 +265,8 @@ export default {
                 const label = el.getAttribute('data-ychange-label') || '';
                 for (const lineRect of lineRects(el)) {
                     lines.push({
-                        top: (lineRect.top - rect.top) / zoom + dom.scrollTop,
-                        bottom: (lineRect.bottom - rect.top) / zoom + dom.scrollTop,
+                        top: (lineRect.top - rect.top) / zoom + scroller.scrollTop,
+                        bottom: (lineRect.bottom - rect.top) / zoom + scroller.scrollTop,
                         type,
                         color,
                         label,
@@ -284,13 +298,13 @@ export default {
             // Les lignes modifiées qui se suivent dans le texte forment un
             // trait continu (la longueur dit combien de lignes), comme la
             // colonne d'un diff ; les autres restent des repères séparés.
-            const maxTop = Math.max(dom.clientHeight - MARK_HEIGHT, 0);
+            const maxTop = Math.max(scroller.clientHeight - MARK_HEIGHT, 0);
             const marks = [];
             let mark = null;
             for (const current of rows) {
                 const key = Object.keys(current.colors).sort().join('+');
                 const top = Math.min(Math.max(current.top * scale, 0), maxTop);
-                const bottom = Math.max(Math.min(current.bottom * scale, dom.clientHeight), top + MARK_HEIGHT);
+                const bottom = Math.max(Math.min(current.bottom * scale, scroller.clientHeight), top + MARK_HEIGHT);
                 const follows = mark && current.top - mark.rowBottom <= LINE_GAP;
                 // Document long : des lignes éloignées peuvent se projeter au
                 // même endroit — les fondre évite des traits superposés
@@ -333,14 +347,15 @@ export default {
         scrollToMark(mark) {
             const dom = this.editor?.view?.dom;
             if (!dom) return;
-            if (dom.scrollHeight > dom.clientHeight + 1) {
-                dom.scrollTo({ top: Math.max(mark.offset - dom.clientHeight / 3, 0), behavior: 'smooth' });
+            const scroller = scrollerOf(dom);
+            if (scroller.scrollHeight > scroller.clientHeight + 1) {
+                scroller.scrollTo({ top: Math.max(mark.offset - scroller.clientHeight / 3, 0), behavior: 'smooth' });
                 return;
             }
             const win = dom.ownerDocument?.defaultView;
             if (!win) return;
-            const rect = dom.getBoundingClientRect();
-            const zoom = dom.offsetWidth ? rect.width / dom.offsetWidth : 1;
+            const rect = scroller.getBoundingClientRect();
+            const zoom = scroller.offsetWidth ? rect.width / scroller.offsetWidth : 1;
             win.scrollBy({ top: rect.top + mark.offset * zoom - win.innerHeight / 3, behavior: 'smooth' });
         },
     },

@@ -16,6 +16,12 @@
         ...cssVariables
     }">
         <template v-if="richEditor">
+                <!-- En-tête : l'en-tête, le menu et le texte défilent ensemble, le
+                     menu reste collé en haut une fois l'en-tête passé. Sans
+                     en-tête, ces deux enveloppes s'effacent (display: contents) -->
+                <div class="ww-rich-text__scroll" :class="{ '-header': hasHeader }">
+                <wwElement class="ww-rich-text__header" v-if="hasHeader" v-bind="content.headerElement" />
+                <div class="ww-rich-text__sticky" ref="stickyBar">
                 <!-- Mode historique : le menu n'est jamais masqué par le plugin
                      (l'utilisateur pilote sa visibilité via isVersionPreview) ;
                      la frise apparaît par-dessus le slot, ou dans le conteneur
@@ -237,8 +243,10 @@
                         <span class="ww-rich-text__outline-entry">{{ entry.text }}</span>
                     </template>
                 </div>
+                </div>
 
                 <editor-content class="ww-rich-text__input" :editor="richEditor" :style="richStyles" />
+                </div>
 
                 <!-- Réglette des modifications : carte du document le long du
                      bord droit, active pendant une comparaison de versions -->
@@ -693,6 +701,27 @@ export default {
             },
             immediate: true,
         },
+        // Conteneur d'en-tête créé à la première activation (éléments existants)
+        'content.showHeader': {
+            async handler(value) {
+                if (value && !this.content.headerElement) {
+                    const element = await this.createElement('ww-flexbox', {
+                        _state: {
+                            name: 'Header container',
+                            style: {
+                                default: {
+                                    width: '100%',
+                                },
+                            },
+                        },
+                    });
+                    this.$emit('update:content:effect', {
+                        headerElement: element,
+                    });
+                }
+            },
+            immediate: true,
+        },
         // Auto-create imageLayoutElement when useImageLayout is enabled
         'content.useImageLayout': {
             async handler(value) {
@@ -1062,6 +1091,9 @@ export default {
                 { label: 'Heading 6', value: 6, active: this.richEditor.isActive('heading', { level: 6 }) },
             ];
         },
+        hasHeader() {
+            return !!this.content.showHeader && !!this.content.headerElement;
+        },
         menuStyles() {
             return {
                 '--menu-color': this.content.menuColor,
@@ -1071,8 +1103,9 @@ export default {
         richStyles() {
             return {
                 display: 'flex',
-                flex: 1,
-                overflow: 'auto',
+                // En-tête : c'est l'enveloppe qui défile, le texte y prend sa hauteur
+                flex: this.hasHeader ? '1 0 auto' : 1,
+                overflow: this.hasHeader ? 'visible' : 'auto',
                 // H1
                 '--h1-fontSize': this.content.h1.fontSize,
                 '--h1-fontFamily': this.content.h1.fontFamily,
@@ -1457,6 +1490,12 @@ export default {
                     }
                 }
 
+                // En-tête : le menu collé en haut couvre le début de la zone qui
+                // défile. Seuil et marge du défilement de ProseMirror passent sous
+                // lui, pour que le curseur ne s'y cache pas. Accesseurs : la
+                // hauteur est relue à chaque défilement.
+                const stickyHeight = () => (this.hasHeader ? this.$refs.stickyBar?.offsetHeight || 0 : 0);
+
                 this.richEditor = new Editor({
                     content: initialContent,
                     editable: this.isEditable,
@@ -1506,6 +1545,22 @@ export default {
                     editorProps: {
                         attributes: {
                             spellcheck: (this.content.enableSpellcheck ?? true) ? 'true' : 'false',
+                        },
+                        scrollThreshold: {
+                            get top() {
+                                return stickyHeight();
+                            },
+                            right: 0,
+                            bottom: 0,
+                            left: 0,
+                        },
+                        scrollMargin: {
+                            get top() {
+                                return stickyHeight() + 5;
+                            },
+                            right: 5,
+                            bottom: 5,
+                            left: 5,
                         },
                         handleClickOn: (_view, _pos, node) => {
                             if (node.type.name === 'mention') {
@@ -2507,7 +2562,10 @@ export default {
         getOutlineRefTop() {
             const dom = this.richEditor?.view?.dom;
             if (!dom) return this.outlineOffset;
-            return Math.max(dom.getBoundingClientRect().top, 0) + this.outlineOffset;
+            // En-tête : le menu collé en haut masque le début de la zone qui
+            // défile, la ligne passe sous lui
+            const stickyBottom = this.hasHeader ? this.$refs.stickyBar?.getBoundingClientRect().bottom || 0 : 0;
+            return Math.max(dom.getBoundingClientRect().top, stickyBottom, 0) + this.outlineOffset;
         },
 
         getHeadingElement(item) {
@@ -3315,6 +3373,55 @@ export default {
     left: auto;
     right: 0;
     border-radius: 3px 3px 0 3px;
+}
+
+/* ===== En-tête =====
+   Sans en-tête, les deux enveloppes s'effacent : menu, indicateur et texte
+   restent des enfants directs de la colonne, comme avant. Avec, l'enveloppe
+   devient la zone qui défile (le texte ne défile plus lui-même) et le menu
+   colle en haut une fois l'en-tête passé. */
+.ww-rich-text__scroll,
+.ww-rich-text__sticky {
+    display: contents;
+}
+
+.ww-rich-text__scroll.-header {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    /* Les éléments en absolu du texte défilent avec lui */
+    position: relative;
+
+    > .ww-rich-text__header {
+        flex-shrink: 0;
+    }
+
+    > .ww-rich-text__sticky {
+        display: block;
+        flex-shrink: 0;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    /* Sélecteurs enfants : un rich text posé dans l'en-tête garde les siens */
+
+    /* Collé avec le menu : l'indicateur n'a plus à coller de lui-même */
+    > .ww-rich-text__sticky > .ww-rich-text__outline {
+        position: relative;
+    }
+
+    /* La marge sous le menu laisserait voir le texte défiler entre les deux */
+    > .ww-rich-text__sticky > .ww-rich-text__menu-slot > .ww-rich-text__menu {
+        margin-bottom: 0;
+    }
+
+    > .ww-rich-text__input > .ProseMirror {
+        height: auto;
+        overflow: visible;
+    }
 }
 
 /* ===== Mode historique =====

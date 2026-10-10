@@ -33,6 +33,7 @@ A versatile rich text editor enabling text content creation with formatting opti
 - hideMenu: boolean - Hide formatting menu. Default: false
 - parameterTableTools: boolean - Table hover handles (select/move rows & columns) and right click menu. Edition only (ignored when readonly). Default: true
 - wrapMenu: boolean - Wrap formatting menu. Default: false
+- showHeader: boolean - Show a header container above the menu. The header, the menu and the text then scroll together inside the element (needs a height) and the menu sticks to the top once the header has scrolled away. Default: false
 - customMenu: boolean - Use custom menu. Default: false
 - menuColor: string - Menu color. Default: "#000000ad"
 - fieldName: string - Form field name. Default: ""
@@ -49,6 +50,7 @@ A versatile rich text editor enabling text content creation with formatting opti
 - table: object - Table styles (borderColor, borderWidth, headerBgColor, headerColor, pairCellBgColor, oddCellBgColor, cellColor, cellPaddingX, cellPaddingY, handleColor)
 
 ***Slots:***
+- headerElement: (element) ww-div - Optional header element (above the menu, scrolls with the text)
 - customMenuElement: (element) ww-div - Optional custom menu element
 
 ***Events:***
