@@ -2034,9 +2034,10 @@ export default {
                 ok = this.renderVersionCompare(snapshot, reference, { emptyReference: !reference });
             }
 
-            // Mode historique : la frise (téléportée ou non) et currentVersion
-            // suivent la version comparée, sans réémettre version-history:select
-            if (ok && followed && vh.active) {
+            // La frise (téléportée ou non) et currentVersion suivent la version
+            // comparée, historique ouvert ou non (il la gardera à l'ouverture),
+            // sans réémettre version-history:select
+            if (ok && followed) {
                 this.dismissEpochOverlay();
                 this.followTimelineCursor(followed);
             }
@@ -2224,11 +2225,17 @@ export default {
 
         hideVersionPreview() {
             if (!this.richEditor) return;
+            // Hors historique, plus aucune version n'est affichée
+            if (!this.versionHistory.active) {
+                this.versionHistory.selectedId = null;
+                this.setCurrentVersion(null);
+            }
             // Sortie d'un aperçu d'archive : rebrancher l'éditeur sur le
             // document vivant
             if (this.isArchivePreview()) {
                 this.exitArchivePreview();
                 this.loadEditor();
+                this.versionHistory.loadedArchiveEpoch = null;
                 return;
             }
             const binding = ySyncPluginKey.getState(this.richEditor.view.state)?.binding;
@@ -2316,10 +2323,16 @@ export default {
             try {
                 await this.refreshVersionList();
                 vh.loadingList = false;
-                // Sélection initiale seulement si le doc est synchronisé ;
-                // sinon le watcher collaborationStatus.synced s'en chargera
+                // Une version déjà affichée (action compare, avant ou pendant
+                // l'ouverture) reste sélectionnée. Sinon la dernière, seulement
+                // si le doc est synchronisé ; sinon le watcher
+                // collaborationStatus.synced s'en chargera
+                const shown =
+                    this.isVersionPreview && vh.selectedId ? vh.versions.find(v => v.id === vh.selectedId) : null;
                 const latest = vh.versions[0];
-                if (latest && this.collaborationStatus?.synced) {
+                if (shown) {
+                    this.followTimelineCursor(shown);
+                } else if (latest && this.collaborationStatus?.synced) {
                     await this.selectTimelineVersion(latest);
                 }
                 return true;
