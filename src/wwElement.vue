@@ -1950,6 +1950,25 @@ export default {
          *   l'historique — le même diff que la sélection dans la frise.
          */
         async showVersionCompare(snapshot = null, prevSnapshot = null) {
+            // Un id de version est accepté à la place d'un snapshot. Version
+            // d'une époque archivée : comparée dans son archive, comme la frise
+            let archived = null;
+            try {
+                const shown = await this.findVersionById(snapshot);
+                const previous = await this.findVersionById(prevSnapshot);
+                if (shown) snapshot = shown.snapshot;
+                if (previous) prevSnapshot = previous.snapshot;
+                const { liveEpoch } = await this.getVersionList();
+                if (shown && shown.epoch !== liveEpoch) archived = shown;
+            } catch (e) {
+                console.error('[Versions] Compare failed:', e);
+                this.$emit('trigger-event', {
+                    name: 'collab:error',
+                    event: { error: 'version-compare', message: e.message, timestamp: new Date().toISOString() },
+                });
+                return false;
+            }
+
             let reference = prevSnapshot;
             if (!reference) {
                 try {
@@ -1959,11 +1978,47 @@ export default {
                     reference = null;
                 }
             }
+            if (archived) {
+                try {
+                    let binary = this.epochBinaryCache[archived.epoch];
+                    if (!binary) {
+                        const res = await this.collabApiFetch(
+                            `/documents/${encodeURIComponent(this.collabConfig.documentId)}/epochs/${archived.epoch}`
+                        );
+                        binary = res.binary_data;
+                        this.epochBinaryCache[archived.epoch] = binary;
+                    }
+                    return this.showArchiveVersionCompare(binary, snapshot, reference);
+                } catch (e) {
+                    console.error('[Versions] Epoch load failed:', e);
+                    this.$emit('trigger-event', {
+                        name: 'collab:error',
+                        event: { error: 'epoch-load', message: e.message, timestamp: new Date().toISOString() },
+                    });
+                    return false;
+                }
+            }
             // Aucune référence trouvée : l'activation du mode doit rester
             // visible — comparer au document vide (tout apparaît en ajout),
             // comme avant. La frise, elle, garde le rendu sans annotations
             // pour une version sans prédécesseur.
             return this.renderVersionCompare(snapshot, reference, { emptyReference: !reference });
+        },
+
+        // Version désignée par son id (uuid) ; null pour un snapshot ou rien.
+        // Liste rechargée une fois si l'id n'y est pas (version toute récente)
+        async findVersionById(value) {
+            if (!value || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) {
+                return null;
+            }
+            const { versions } = await this.getVersionList();
+            let version = versions.find(v => v.id === value);
+            if (!version) {
+                await this.refreshVersionList();
+                version = this.versionHistory.versions.find(v => v.id === value);
+            }
+            if (!version?.snapshot) throw new Error(`Version introuvable : ${value}`);
+            return version;
         },
 
         // Historique de versions (trié desc) : celui déjà chargé, sinon l'API

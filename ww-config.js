@@ -595,7 +595,7 @@ export default {
             action: 'showVersionCompare',
             args: [
                 {
-                    name: 'Snapshot (newer state, empty = current)',
+                    name: 'Version id or snapshot (newer state, empty = current)',
                     type: 'Text',
                     optional: true,
                     options: {
@@ -603,7 +603,7 @@ export default {
                     },
                 },
                 {
-                    name: 'Previous snapshot (reference state)',
+                    name: 'Previous version id or snapshot (empty = previous version)',
                     type: 'Text',
                     optional: true,
                     options: {
