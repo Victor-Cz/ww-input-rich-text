@@ -519,10 +519,19 @@ export default {
         });
 
         // Versions du document (triées desc, même forme que currentVersion),
-        // chargées dès la synchro et rafraîchies à chaque version créée
+        // chargées dès la synchro et rafraîchies à chaque version créée ou publiée
         const { value: versions, setValue: _setVersions } = wwLib.wwVariable.useComponentVariable({
             uid: props.uid,
             name: 'versions',
+            type: 'array',
+            defaultValue: [],
+            readonly: true,
+        });
+
+        // Toutes les personnes qui ont modifié le document (cumul des versions)
+        const { value: contributors, setValue: _setContributors } = wwLib.wwVariable.useComponentVariable({
+            uid: props.uid,
+            name: 'contributors',
             type: 'array',
             defaultValue: [],
             readonly: true,
@@ -543,6 +552,7 @@ export default {
         const setIsVersionPreview = (...args) => { if (!_isDestroyed) _setIsVersionPreview(...args); };
         const setCurrentVersion = (...args) => { if (!_isDestroyed) _setCurrentVersion(...args); };
         const setVersions = (...args) => { if (!_isDestroyed) _setVersions(...args); };
+        const setContributors = (...args) => { if (!_isDestroyed) _setContributors(...args); };
 
 
         /* wwEditor:start */
@@ -604,6 +614,8 @@ export default {
             setCurrentVersion,
             versions,
             setVersions,
+            contributors,
+            setContributors,
             randomUid,
             /* wwEditor:start */
             createElement,
@@ -620,6 +632,8 @@ export default {
             active: false,
             loadingList: false,
             versions: [],
+            // Toutes les personnes qui ont modifié le document (réponse API)
+            contributors: [],
             selectedId: null,
             liveEpoch: null,
             loadedArchiveEpoch: null,
@@ -871,8 +885,15 @@ export default {
                 this.refreshVersionList().catch(e => console.warn('[Versions] Failed to load version list:', e));
             }
         },
-        // Nouvelle version créée (par n'importe quel participant)
-        versionCreatedCount() {
+        // Noms des auteurs arrivés ou modifiés après le chargement de la liste
+        'content.versionDiffAuthors': {
+            deep: true,
+            handler() {
+                this.updateVersionVariables();
+            },
+        },
+        // Versions créées ou publiées (par n'importe quel participant)
+        versionsChangedCount() {
             this.refreshVersionList().catch(e => console.warn('[Versions] Failed to refresh version list:', e));
         },
         // Époque périmée (document compacté côté serveur pendant une coupure) :
@@ -1961,13 +1982,34 @@ export default {
             const vh = this.versionHistory;
             vh.versions = res.versions || [];
             vh.liveEpoch = res.currentEpoch ?? null;
-            this.setVersions(vh.versions.map(v => this.toVersionInfo(v)));
+            vh.contributors = res.contributors || [];
+            this.updateVersionVariables();
         },
 
         resetVersionList() {
             this.versionHistory.versions = [];
             this.versionHistory.liveEpoch = null;
-            this.setVersions([]);
+            this.versionHistory.contributors = [];
+            this.updateVersionVariables();
+        },
+
+        // Variables versions / contributors (et currentVersion, dont le
+        // statut a pu changer), noms résolus via versionDiffAuthors
+        updateVersionVariables() {
+            const vh = this.versionHistory;
+            this.setVersions(vh.versions.map(v => this.toVersionInfo(v)));
+            this.setContributors(
+                vh.contributors.map(c => ({
+                    user: c.user ?? null,
+                    name: c.user ? this.resolveAuthor(c.user) : null,
+                    inserted: c.inserted,
+                    deleted: c.deleted,
+                    versions: c.versions,
+                    lastModifiedAt: c.lastModifiedAt ?? null,
+                }))
+            );
+            const selected = vh.selectedId && vh.versions.find(v => v.id === vh.selectedId);
+            if (selected) this.setCurrentVersion(this.toVersionInfo(selected));
         },
 
         // Référence par défaut du compare : la version qui précède celle
@@ -2271,8 +2313,13 @@ export default {
             this.setCurrentVersion(this.toVersionInfo(version));
         },
 
-        // Forme exposée d'une version (variables currentVersion et versions)
+        // Forme exposée d'une version (variables currentVersion et versions).
+        // inserted / deleted : caractères ajoutés / retirés depuis la version
+        // précédente (null si pas encore calculés), détaillés par auteur
+        // (user null = modification non attribuée). status : live, draft,
+        // publishing ou error selon les publications
         toVersionInfo(version) {
+            const publication = version.publication;
             return {
                 id: version.id,
                 versionNumber: version.version_number,
@@ -2282,6 +2329,23 @@ export default {
                 createdAt: version.created_at ?? null,
                 createdBy: version.created_by ?? null,
                 createdByName: version.created_by_name ?? null,
+                status: version.status ?? 'draft',
+                publication: publication
+                    ? {
+                          status: publication.status,
+                          error: publication.error ?? null,
+                          contentVerified: publication.contentVerified ?? true,
+                          updatedAt: publication.updatedAt ?? null,
+                      }
+                    : null,
+                inserted: version.stats?.inserted ?? null,
+                deleted: version.stats?.deleted ?? null,
+                authors: (version.stats?.authors || []).map(a => ({
+                    user: a.user ?? null,
+                    name: a.user ? this.resolveAuthor(a.user) : null,
+                    inserted: a.inserted,
+                    deleted: a.deleted,
+                })),
             };
         },
 

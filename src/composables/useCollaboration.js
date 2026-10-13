@@ -27,9 +27,9 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // époque courante du document (compaction côté serveur)
     let permanentUserDataInstance = null;
     let currentEpoch = null;
-    // Incrémenté à chaque version créée côté serveur (diffusé à tous les
-    // clients) : le composant s'en sert pour rafraîchir la liste des versions
-    const versionCreatedCount = ref(0);
+    // Incrémenté quand le serveur signale un changement des versions
+    // (création, publication) : le composant recharge alors la liste
+    const versionsChangedCount = ref(0);
 
     // Aperçu d'archive : document d'une époque passée chargé temporairement
     // à la place du document vivant, pour le diff annoté des vieilles versions
@@ -479,7 +479,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 } else if (data.action === 'epoch') {
                     setEpoch(data.epoch);
                 } else if (data.action === 'version-created') {
-                    if (data.created) versionCreatedCount.value++;
+                    if (data.created) versionsChangedCount.value++;
                     emit('trigger-event', {
                         name: 'collab:version-created',
                         event: {
@@ -490,6 +490,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                             timestamp: new Date().toISOString(),
                         },
                     });
+                } else if (data.action === 'versions-changed') {
+                    versionsChangedCount.value++;
                 } else if (data.action === 'content-replaced') {
                     emit('trigger-event', {
                         name: 'collab:content-replaced',
@@ -698,6 +700,25 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         };
     };
 
+    // Résolution id → nom des auteurs (infobulle des diffs, statistiques
+    // des versions), via la propriété bindable versionDiffAuthors. Deux
+    // formats acceptés : objet { userId: name } ou tableau
+    // [{ id|user_id, name|display_name }]. Lue à l'usage : la table peut
+    // arriver après le chargement.
+    const resolveAuthor = user => {
+        if (user === AGENT.id) return AGENT.name;
+        const authors = content.value.versionDiffAuthors;
+        if (!authors) return user;
+        if (Array.isArray(authors)) {
+            const found = authors.find(a => a && (a.id === user || a.user_id === user));
+            return found?.name || found?.display_name || user;
+        }
+        if (typeof authors === 'object' && authors[user]) {
+            return authors[user];
+        }
+        return user;
+    };
+
     // Obtenir les extensions Tiptap pour la collaboration
     const getCollaborationExtensions = () => {
         console.log('[Collaboration] getCollaborationExtensions called:', {
@@ -735,23 +756,6 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         // (ychangeColorMapping), fallback sur la palette pour les inconnus
         const ychangeColors = USER_COLORS.map(dark => ({ light: `${dark}26`, dark }));
 
-        // Résolution id → nom pour l'infobulle des diffs de versions, via la
-        // propriété bindable versionDiffAuthors. Deux formats acceptés :
-        // objet { userId: name } ou tableau [{ id|user_id, name|display_name }].
-        // Lue au moment du rendu : la table peut arriver après le chargement.
-        const resolveAuthor = user => {
-            if (user === AGENT.id) return AGENT.name;
-            const authors = content.value.versionDiffAuthors;
-            if (!authors) return user;
-            if (Array.isArray(authors)) {
-                const found = authors.find(a => a && (a.id === user || a.user_id === user));
-                return found?.name || found?.display_name || user;
-            }
-            if (typeof authors === 'object' && authors[user]) {
-                return authors[user];
-            }
-            return user;
-        };
         const ychangeOptions = {
             colorMode: collabConfig.value.versionDiffColorMode,
             resolveAuthor,
@@ -899,7 +903,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         isCollaborating,
         collabConfig,
         shouldEnableCollaboration,
-        versionCreatedCount,
+        versionsChangedCount,
 
         // Méthodes
         initializeCollaboration,
@@ -918,6 +922,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         sendCreateVersionSignal,
         getEpoch,
         getPermanentUserData,
+        resolveAuthor,
         enterArchivePreview,
         exitArchivePreview,
         isArchivePreview,
