@@ -518,6 +518,16 @@ export default {
             readonly: true,
         });
 
+        // Versions du document (triées desc, même forme que currentVersion),
+        // chargées dès la synchro et rafraîchies à chaque version créée
+        const { value: versions, setValue: _setVersions } = wwLib.wwVariable.useComponentVariable({
+            uid: props.uid,
+            name: 'versions',
+            type: 'array',
+            defaultValue: [],
+            readonly: true,
+        });
+
         // Wrap setters to silently ignore calls after variable cleanup
         let _isDestroyed = false;
         onBeforeUnmount(() => { _isDestroyed = true; });
@@ -532,6 +542,7 @@ export default {
         const setCurrentHeading = (...args) => { if (!_isDestroyed) _setCurrentHeading(...args); };
         const setIsVersionPreview = (...args) => { if (!_isDestroyed) _setIsVersionPreview(...args); };
         const setCurrentVersion = (...args) => { if (!_isDestroyed) _setCurrentVersion(...args); };
+        const setVersions = (...args) => { if (!_isDestroyed) _setVersions(...args); };
 
 
         /* wwEditor:start */
@@ -591,6 +602,8 @@ export default {
             setIsVersionPreview,
             currentVersion,
             setCurrentVersion,
+            versions,
+            setVersions,
             randomUid,
             /* wwEditor:start */
             createElement,
@@ -796,6 +809,8 @@ export default {
         },
         // Watchers de collaboration
         'collabConfig.documentId'(newId, oldId) {
+            // La liste appartient à l'ancien document
+            if (newId !== oldId) this.resetVersionList();
             if (newId !== oldId && this.collabConfig.autoConnect && this.shouldEnableCollaboration) {
                 this.initializeCollaboration();
                 // Recharger l'éditeur pour inclure les extensions de collaboration
@@ -840,6 +855,8 @@ export default {
         },
         // La sélection initiale attend que le document soit synchronisé
         // (cas d'un binding déjà à true au chargement de la page)
+        // Hors historique, la liste des versions est chargée dès la synchro
+        // pour alimenter la variable versions
         'collaborationStatus.synced'(synced) {
             if (!synced) return;
             const vh = this.versionHistory;
@@ -850,6 +867,13 @@ export default {
             if (vh.active && !vh.selectedId && vh.versions.length) {
                 this.selectTimelineVersion(vh.versions[0]);
             }
+            if (!vh.active) {
+                this.refreshVersionList().catch(e => console.warn('[Versions] Failed to load version list:', e));
+            }
+        },
+        // Nouvelle version créée (par n'importe quel participant)
+        versionCreatedCount() {
+            this.refreshVersionList().catch(e => console.warn('[Versions] Failed to refresh version list:', e));
         },
         // Époque périmée (document compacté côté serveur pendant une coupure) :
         // l'état Yjs local est inutilisable, on repart d'un document vierge
@@ -1924,11 +1948,26 @@ export default {
         // Historique de versions (trié desc) : celui déjà chargé, sinon l'API
         async getVersionList() {
             const vh = this.versionHistory;
-            if (vh.versions.length) return { versions: vh.versions, liveEpoch: vh.liveEpoch };
-            const res = await this.collabApiFetch(
-                `/documents/${encodeURIComponent(this.collabConfig.documentId)}/versions`
-            );
-            return { versions: res.versions || [], liveEpoch: res.currentEpoch ?? null };
+            if (!vh.versions.length) await this.refreshVersionList();
+            return { versions: vh.versions, liveEpoch: vh.liveEpoch };
+        },
+
+        // Charge la liste des versions (frise + variable versions). Une
+        // réponse arrivée après un changement de document est ignorée
+        async refreshVersionList() {
+            const documentId = this.collabConfig.documentId;
+            const res = await this.collabApiFetch(`/documents/${encodeURIComponent(documentId)}/versions`);
+            if (documentId !== this.collabConfig.documentId) return;
+            const vh = this.versionHistory;
+            vh.versions = res.versions || [];
+            vh.liveEpoch = res.currentEpoch ?? null;
+            this.setVersions(vh.versions.map(v => this.toVersionInfo(v)));
+        },
+
+        resetVersionList() {
+            this.versionHistory.versions = [];
+            this.versionHistory.liveEpoch = null;
+            this.setVersions([]);
         },
 
         // Référence par défaut du compare : la version qui précède celle
@@ -2129,11 +2168,7 @@ export default {
             vh.active = true;
             vh.loadingList = true;
             try {
-                const res = await this.collabApiFetch(
-                    `/documents/${encodeURIComponent(this.collabConfig.documentId)}/versions`
-                );
-                vh.versions = res.versions || [];
-                vh.liveEpoch = res.currentEpoch ?? null;
+                await this.refreshVersionList();
                 vh.loadingList = false;
                 // Sélection initiale seulement si le doc est synchronisé ;
                 // sinon le watcher collaborationStatus.synced s'en chargera
@@ -2233,7 +2268,12 @@ export default {
         // émis qu'au rendu réel (markTimelineSelection)
         followTimelineCursor(version) {
             this.versionHistory.selectedId = version.id;
-            this.setCurrentVersion({
+            this.setCurrentVersion(this.toVersionInfo(version));
+        },
+
+        // Forme exposée d'une version (variables currentVersion et versions)
+        toVersionInfo(version) {
+            return {
                 id: version.id,
                 versionNumber: version.version_number,
                 epoch: version.epoch,
@@ -2242,7 +2282,7 @@ export default {
                 createdAt: version.created_at ?? null,
                 createdBy: version.created_by ?? null,
                 createdByName: version.created_by_name ?? null,
-            });
+            };
         },
 
         markTimelineSelection(version) {

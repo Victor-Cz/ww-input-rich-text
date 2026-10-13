@@ -27,6 +27,9 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // époque courante du document (compaction côté serveur)
     let permanentUserDataInstance = null;
     let currentEpoch = null;
+    // Incrémenté à chaque version créée côté serveur (diffusé à tous les
+    // clients) : le composant s'en sert pour rafraîchir la liste des versions
+    const versionCreatedCount = ref(0);
 
     // Aperçu d'archive : document d'une époque passée chargé temporairement
     // à la place du document vivant, pour le diff annoté des vieilles versions
@@ -476,6 +479,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 } else if (data.action === 'epoch') {
                     setEpoch(data.epoch);
                 } else if (data.action === 'version-created') {
+                    if (data.created) versionCreatedCount.value++;
                     emit('trigger-event', {
                         name: 'collab:version-created',
                         event: {
@@ -895,6 +899,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         isCollaborating,
         collabConfig,
         shouldEnableCollaboration,
+        versionCreatedCount,
 
         // Méthodes
         initializeCollaboration,
