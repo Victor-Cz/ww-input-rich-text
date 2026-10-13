@@ -3390,6 +3390,9 @@ export default {
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    /* Défilement vertical seulement : ce qui déborde sur le côté (menu trop
+       large…) ne doit pas élargir la zone qui défile */
+    overflow-x: hidden;
     overflow-y: auto;
     /* Les éléments en absolu du texte défilent avec lui */
     position: relative;
@@ -3421,6 +3424,9 @@ export default {
     > .ww-rich-text__input > .ProseMirror {
         height: auto;
         overflow: visible;
+        /* Plus défilant, le texte retrouverait la largeur minimale de son
+           contenu (tableau large…) et déborderait au lieu de s'y adapter */
+        min-width: 0;
     }
 }
 
