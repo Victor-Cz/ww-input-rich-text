@@ -1950,16 +1950,13 @@ export default {
          *   l'historique — le même diff que la sélection dans la frise.
          */
         async showVersionCompare(snapshot = null, prevSnapshot = null) {
-            // Un id de version est accepté à la place d'un snapshot. Version
-            // d'une époque archivée : comparée dans son archive, comme la frise
-            let archived = null;
+            // Un id de version est accepté à la place d'un snapshot
+            let shown = null;
             try {
-                const shown = await this.findVersionById(snapshot);
+                shown = await this.findVersionById(snapshot);
                 const previous = await this.findVersionById(prevSnapshot);
                 if (shown) snapshot = shown.snapshot;
                 if (previous) prevSnapshot = previous.snapshot;
-                const { liveEpoch } = await this.getVersionList();
-                if (shown && shown.epoch !== liveEpoch) archived = shown;
             } catch (e) {
                 console.error('[Versions] Compare failed:', e);
                 this.$emit('trigger-event', {
@@ -1967,6 +1964,20 @@ export default {
                     event: { error: 'version-compare', message: e.message, timestamp: new Date().toISOString() },
                 });
                 return false;
+            }
+
+            // Version affichée retrouvée aussi par son snapshot (la dernière
+            // pour l'état courant) : la frise la sélectionne, et une version
+            // d'une époque archivée est comparée dans son archive
+            let liveEpoch = null;
+            try {
+                const list = await this.getVersionList();
+                liveEpoch = list.liveEpoch;
+                if (!shown) {
+                    shown = (snapshot ? list.versions.find(v => v.snapshot === snapshot) : list.versions[0]) ?? null;
+                }
+            } catch (e) {
+                console.warn('[Versions] Version list unavailable:', e);
             }
 
             let reference = prevSnapshot;
@@ -1978,17 +1989,21 @@ export default {
                     reference = null;
                 }
             }
-            if (archived) {
+
+            const vh = this.versionHistory;
+            let ok;
+            if (snapshot && shown && liveEpoch !== null && shown.epoch !== liveEpoch) {
                 try {
-                    let binary = this.epochBinaryCache[archived.epoch];
+                    let binary = this.epochBinaryCache[shown.epoch];
                     if (!binary) {
                         const res = await this.collabApiFetch(
-                            `/documents/${encodeURIComponent(this.collabConfig.documentId)}/epochs/${archived.epoch}`
+                            `/documents/${encodeURIComponent(this.collabConfig.documentId)}/epochs/${shown.epoch}`
                         );
                         binary = res.binary_data;
-                        this.epochBinaryCache[archived.epoch] = binary;
+                        this.epochBinaryCache[shown.epoch] = binary;
                     }
-                    return this.showArchiveVersionCompare(binary, snapshot, reference);
+                    ok = this.showArchiveVersionCompare(binary, snapshot, reference);
+                    if (ok) vh.loadedArchiveEpoch = shown.epoch;
                 } catch (e) {
                     console.error('[Versions] Epoch load failed:', e);
                     this.$emit('trigger-event', {
@@ -1997,12 +2012,27 @@ export default {
                     });
                     return false;
                 }
+            } else {
+                // Une archive était affichée : retour au document vivant
+                if (this.isArchivePreview()) {
+                    this.exitArchivePreview();
+                    this.loadEditor();
+                    vh.loadedArchiveEpoch = null;
+                }
+                // Aucune référence trouvée : l'activation du mode doit rester
+                // visible — comparer au document vide (tout apparaît en ajout),
+                // comme avant. La frise, elle, garde le rendu sans annotations
+                // pour une version sans prédécesseur.
+                ok = this.renderVersionCompare(snapshot, reference, { emptyReference: !reference });
             }
-            // Aucune référence trouvée : l'activation du mode doit rester
-            // visible — comparer au document vide (tout apparaît en ajout),
-            // comme avant. La frise, elle, garde le rendu sans annotations
-            // pour une version sans prédécesseur.
-            return this.renderVersionCompare(snapshot, reference, { emptyReference: !reference });
+
+            // Mode historique : la frise (téléportée ou non) et currentVersion
+            // suivent la version affichée, sans réémettre version-history:select
+            if (ok && shown && vh.active) {
+                this.dismissEpochOverlay();
+                this.followTimelineCursor(shown);
+            }
+            return ok;
         },
 
         // Version désignée par son id (uuid) ; null pour un snapshot ou rien.
