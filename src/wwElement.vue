@@ -640,6 +640,9 @@ export default {
             epochOverlay: { visible: false, targetEpoch: null, loading: false, pendingVersion: null, returnId: null },
         },
         epochBinaryCache: {},
+        // Snapshots déjà reçus, par id de version (immuables) : la liste
+        // légère rechargée en fond ne les efface pas
+        versionSnapshots: {},
         // Conteneur externe de la frise (résolu depuis timelineContainerSelector)
         timelineTargetEl: null,
         // Surveillance de l'attache de la frise pendant l'historique
@@ -2044,34 +2047,45 @@ export default {
             const { versions } = await this.getVersionList();
             let version = versions.find(v => v.id === value);
             if (!version) {
-                await this.refreshVersionList();
+                await this.refreshVersionList({ snapshots: true });
                 version = this.versionHistory.versions.find(v => v.id === value);
             }
             if (!version?.snapshot) throw new Error(`Version introuvable : ${value}`);
             return version;
         },
 
-        // Historique de versions (trié desc) : celui déjà chargé, sinon l'API
+        // Historique de versions (trié desc) avec les snapshots : celui déjà
+        // chargé, sinon l'API
         async getVersionList() {
             const vh = this.versionHistory;
-            if (!vh.versions.length) await this.refreshVersionList();
+            if (!vh.versions.length || vh.versions.some(v => !v.snapshot)) {
+                await this.refreshVersionList({ snapshots: true });
+            }
             return { versions: vh.versions, liveEpoch: vh.liveEpoch };
         },
 
-        // Charge la liste des versions (frise + variable versions). Une
-        // réponse arrivée après un changement de document est ignorée
-        async refreshVersionList() {
+        // Charge la liste des versions (frise + variable versions). Les
+        // snapshots, lourds, ne sont demandés que pour l'historique ouvert
+        // (ou un compare) ; ceux déjà reçus restent en cache. Une réponse
+        // arrivée après un changement de document est ignorée
+        async refreshVersionList({ snapshots = this.versionHistory.active } = {}) {
             const documentId = this.collabConfig.documentId;
-            const res = await this.collabApiFetch(`/documents/${encodeURIComponent(documentId)}/versions`);
+            const res = await this.collabApiFetch(
+                `/documents/${encodeURIComponent(documentId)}/versions${snapshots ? '?snapshots=true' : ''}`
+            );
             if (documentId !== this.collabConfig.documentId) return;
             const vh = this.versionHistory;
-            vh.versions = res.versions || [];
+            vh.versions = (res.versions || []).map(v => {
+                if (v.snapshot) this.versionSnapshots[v.id] = v.snapshot;
+                return { ...v, snapshot: v.snapshot ?? this.versionSnapshots[v.id] ?? null };
+            });
             vh.liveEpoch = res.currentEpoch ?? null;
             vh.contributors = res.contributors || [];
             this.updateVersionVariables();
         },
 
         resetVersionList() {
+            this.versionSnapshots = {};
             this.versionHistory.versions = [];
             this.versionHistory.liveEpoch = null;
             this.versionHistory.contributors = [];
