@@ -1955,9 +1955,10 @@ export default {
         async showVersionCompare(snapshot = null, prevSnapshot = null) {
             // Un id de version est accepté à la place d'un snapshot
             let shown = null;
+            let previous = null;
             try {
                 shown = await this.findVersionById(snapshot);
-                const previous = await this.findVersionById(prevSnapshot);
+                previous = await this.findVersionById(prevSnapshot);
                 if (shown) snapshot = shown.snapshot;
                 if (previous) prevSnapshot = previous.snapshot;
             } catch (e) {
@@ -1969,16 +1970,20 @@ export default {
                 return false;
             }
 
-            // Version affichée retrouvée aussi par son snapshot (la dernière
-            // pour l'état courant) : la frise la sélectionne, et une version
-            // d'une époque archivée est comparée dans son archive
+            // Versions retrouvées aussi par leur snapshot : une version d'une
+            // époque archivée est comparée dans son archive, et la frise suit
+            // la version affichée — ou, pour l'état courant comparé à une
+            // version, cette version de référence (sinon la dernière)
             let liveEpoch = null;
+            let followed = null;
             try {
                 const list = await this.getVersionList();
                 liveEpoch = list.liveEpoch;
-                if (!shown) {
-                    shown = (snapshot ? list.versions.find(v => v.snapshot === snapshot) : list.versions[0]) ?? null;
+                if (!shown && snapshot) shown = list.versions.find(v => v.snapshot === snapshot) ?? null;
+                if (!previous && prevSnapshot) {
+                    previous = list.versions.find(v => v.snapshot === prevSnapshot) ?? null;
                 }
+                followed = snapshot ? shown : previous ?? list.versions[0] ?? null;
             } catch (e) {
                 console.warn('[Versions] Version list unavailable:', e);
             }
@@ -2030,10 +2035,10 @@ export default {
             }
 
             // Mode historique : la frise (téléportée ou non) et currentVersion
-            // suivent la version affichée, sans réémettre version-history:select
-            if (ok && shown && vh.active) {
+            // suivent la version comparée, sans réémettre version-history:select
+            if (ok && followed && vh.active) {
                 this.dismissEpochOverlay();
-                this.followTimelineCursor(shown);
+                this.followTimelineCursor(followed);
             }
             return ok;
         },
