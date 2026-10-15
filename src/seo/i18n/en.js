@@ -350,6 +350,8 @@ export default {
         messages: {
             good: 'The meta title is {value} characters long, that is good.',
             warning: 'The meta title is {value} characters: aim for 40-60.',
+            tooShort: 'The meta title is {value} characters: it is too short, aim for at least 40.',
+            tooLong: 'The meta title is {value} characters: it is too long, aim for 60 max.',
             bad: 'The meta title is {value} characters: it will be truncated in SERPs.',
         },
     },
@@ -370,6 +372,8 @@ export default {
         messages: {
             good: 'The meta description is {value} characters long, that is good.',
             warning: 'The meta description is {value} characters: aim for 121-156.',
+            tooShort: 'The meta description is {value} characters: it is too short, aim for at least 121.',
+            tooLong: 'The meta description is {value} characters: it is too long, aim for 156 max.',
             bad: 'The meta description is {value} characters: it will be truncated.',
         },
     },

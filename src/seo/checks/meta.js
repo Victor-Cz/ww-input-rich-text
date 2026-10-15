@@ -45,15 +45,19 @@ function metaTitleKeyword(title, phrases, stopWords, matchOptions) {
     return makeCheck('metaTitleKeyword', 'meta', (found.length / words.length) * 60, 'scattered');
 }
 
-// Zone optimale ~40-60 caractères (approximation des 600 px Yoast) ;
-// proportionnel en dessous, -5/caractère au-delà (tronqué en SERP)
+// Zone optimale ~40-60 caractères (approximation des 600 px Yoast). Hors zone,
+// jamais "good" (plafonné à 79, 'warning') : proportionnel en dessous ('bad'
+// jusqu'à 15), -5/caractère au-delà de 60 ('bad' dès 73, tronqué en SERP)
 function metaTitleLength(title) {
     const length = title.length;
     let score;
-    if (length < 40) score = ratioScore(length, 40);
+    if (length < 40) score = Math.min(79, ratioScore(length, 40));
     else if (length <= 60) score = 100;
-    else score = Math.max(0, 100 - (length - 60) * 5);
-    return makeCheck('metaTitleLength', 'meta', score, length);
+    else score = Math.min(79, 100 - (length - 60) * 5);
+    const check = makeCheck('metaTitleLength', 'meta', score, length);
+    if (length < 40) check.messageKey = 'tooShort';
+    else if (length > 60 && check.status === 'warning') check.messageKey = 'tooLong';
+    return check;
 }
 
 // value : nombre de signaux présents (0-3) parmi chiffre / power word / sentiment.
@@ -78,13 +82,16 @@ function metaDescriptionChecks(options, phrases, matchOptions) {
     }
 
     const length = description.length;
-    // Zone optimale 121-156 caractères ; proportionnel en dessous,
-    // -8/caractère au-delà de 156 (tronquée en SERP)
+    // Zone optimale 121-156 caractères. Hors zone, jamais "good" (plafonné à 79,
+    // 'warning') : proportionnel en dessous ('bad' jusqu'à 48), -8/caractère
+    // au-delà de 156 ('bad' dès 164, tronquée en SERP)
     let lengthScore;
-    if (length < 121) lengthScore = ratioScore(length, 121);
+    if (length < 121) lengthScore = Math.min(79, ratioScore(length, 121));
     else if (length <= 156) lengthScore = 100;
-    else lengthScore = Math.max(0, 100 - (length - 156) * 8);
+    else lengthScore = Math.min(79, 100 - (length - 156) * 8);
     const lengthCheck = makeCheck('metaDescriptionLength', 'meta', lengthScore, length);
+    if (length < 121) lengthCheck.messageKey = 'tooShort';
+    else if (length > 156 && lengthCheck.status === 'warning') lengthCheck.messageKey = 'tooLong';
 
     if (!phrases.length) return [lengthCheck, notApplicable('metaDescriptionKeyword', 'meta')];
 

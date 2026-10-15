@@ -350,6 +350,8 @@ export default {
         messages: {
             good: 'Le meta title fait {value} caractères, c’est bon.',
             warning: 'Le meta title fait {value} caractères : visez 40-60.',
+            tooShort: 'Le meta title fait {value} caractères : c’est trop court, visez au moins 40.',
+            tooLong: 'Le meta title fait {value} caractères : c’est trop long, visez 60 maximum.',
             bad: 'Le meta title fait {value} caractères : il sera tronqué en SERP.',
         },
     },
@@ -370,6 +372,8 @@ export default {
         messages: {
             good: 'La meta description fait {value} caractères, c’est bon.',
             warning: 'La meta description fait {value} caractères : visez 121-156.',
+            tooShort: 'La meta description fait {value} caractères : c’est trop court, visez au moins 121.',
+            tooLong: 'La meta description fait {value} caractères : c’est trop long, visez 156 maximum.',
             bad: 'La meta description fait {value} caractères : elle sera tronquée.',
         },
     },
