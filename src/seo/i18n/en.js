@@ -244,7 +244,7 @@ export default {
         objective: 'Keyphrase in the H1',
         messages: {
             good: 'The keyphrase appears in the H1 heading.',
-            warning: 'The keyphrase is only partly in the H1: some of its words are missing.',
+            warning: 'The keyphrase does not fully appear in the H1 (missing or separated words).',
             bad: 'The keyphrase does not appear in the H1 heading.',
             na: 'No H1 heading in the content.',
         },
@@ -255,7 +255,7 @@ export default {
         objective: 'Keyphrase in the 1st paragraph',
         messages: {
             good: 'The keyphrase appears in the introduction.',
-            warning: 'The keyphrase is only partly in the introduction: put all its words in one sentence.',
+            warning: 'The keyphrase does not fully appear in the introduction (missing or separated words).',
             bad: 'The keyphrase does not appear in the introduction.',
         },
     },
@@ -339,7 +339,7 @@ export default {
         messages: {
             good: 'The keyphrase is present at the beginning of the meta title.',
             late: 'The keyphrase is in the meta title: place it in the first half.',
-            warning: 'The keyphrase is only partly in the meta title: some of its words are missing.',
+            warning: 'The keyphrase does not fully appear in the meta title (missing or separated words).',
             bad: 'The keyphrase is missing from the meta title.',
         },
     },

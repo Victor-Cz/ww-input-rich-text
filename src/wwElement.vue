@@ -1332,7 +1332,8 @@ export default {
                 uiLang: this.content.seoUiLang,
                 wordLists: this.content.seoWordLists,
                 expectH1: this.content.seoExpectH1,
-                fullLemma: this.content.seoFullLemmatizer,
+                keywordMatching: this.content.seoKeywordMatching,
+                secondaryMatching: this.content.seoSecondaryKeywordsMatching,
             };
         },
     },

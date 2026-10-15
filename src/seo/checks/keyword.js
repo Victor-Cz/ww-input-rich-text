@@ -1,17 +1,20 @@
-import { findKeywordInBlock, findPhrasesInBlock, findPhrasesInModel, mergeRanges } from '../extractors.js';
+import { findKeywordInBlock, findKeywordInModel, findPhrasesInBlock, mergeRanges } from '../extractors.js';
 import { decreasingScore, makeCheck, notApplicable, ratioScore } from '../result.js';
 import { contentWords, findPhraseMatches } from '../textUtils.js';
 
 // Catégorie "keyword" — nécessite `seoKeyword`.
 // Partout, « le mot-clé » = le principal OU un de ses synonymes (`context.phrases`),
-// avec tolérance casse / accents / pluriels simples (voir textUtils). Il est
-// trouvé dès que tous ses mots significatifs sont dans une même phrase, dans
-// n'importe quel ordre (findKeywordMatches).
+// avec tolérance casse / accents / pluriels simples (voir textUtils), trouvé
+// selon le mode de correspondance réglé (findKeywordMatches).
 
 export function keywordChecks(context) {
     // `keywordMatches` : calculées une fois dans analyzeSeo (partagées avec stats)
     const { model, phrases, wordLists, matchOptions, keywordMatches } = context;
-    const secondaryKeywordsCheck = secondaryKeywords(model, context.options.secondaryKeywords, matchOptions);
+    const secondaryKeywordsCheck = secondaryKeywords(
+        model,
+        context.options.secondaryKeywords,
+        context.secondaryMatchOptions
+    );
     if (!phrases.length) {
         return [
             ...['keyphraseLength', 'keywordInIntroduction', 'keywordDensity', 'keywordDistribution']
@@ -33,15 +36,15 @@ export function keywordChecks(context) {
 // Cible ≥ 70 %, proportionnel en dessous. na sans secondaires fournis.
 // value : % des secondaires présents ; occurrences surlignables.
 // `terms` : détail terme par terme (exposé dans seo.keywords.secondary).
-function secondaryKeywords(model, secondaries, matchOptions) {
+function secondaryKeywords(model, secondaries, secondaryMatchOptions) {
     if (!secondaries.length) {
         const check = notApplicable('secondaryKeywords', 'keyword');
         check.terms = [];
         return check;
     }
     const terms = secondaries.map(term => {
-        const ranges = findPhrasesInModel(model, [term], matchOptions);
-        return { term, count: ranges.length, found: ranges.length > 0, ranges };
+        const { count, ranges } = findKeywordInModel(model, [term], secondaryMatchOptions);
+        return { term, count, found: count > 0, ranges };
     });
     const foundCount = terms.filter(term => term.found).length;
     const percent = Math.round((foundCount / secondaries.length) * 100);
@@ -65,9 +68,8 @@ function keyphraseLength(keyword, stopWords) {
     return makeCheck('keyphraseLength', 'keyword', score, words.length);
 }
 
-// Tous les mots du mot-clé dans une même phrase du 1er paragraphe → 100 ;
-// sinon proportionnel aux mots significatifs présents (tous, mais répartis
-// sur plusieurs phrases → 60).
+// Mot-clé trouvé dans le 1er paragraphe → 100 ; sinon proportionnel aux
+// mots significatifs présents (tous, mais pas réunis → 60).
 // value : 'full' | 'scattered' | 'missing'
 function keywordInIntroduction(model, phrases, stopWords, matchOptions) {
     const intro = model.paragraphs.find(paragraph => paragraph.words > 0);

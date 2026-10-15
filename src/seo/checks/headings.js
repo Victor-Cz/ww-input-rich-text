@@ -1,6 +1,6 @@
 import { findKeywordInBlock, findPhrasesInBlock } from '../extractors.js';
 import { decreasingScore, makeCheck, notApplicable, ratioScore } from '../result.js';
-import { contentWords, findPhraseMatches, includesAnyPhrase } from '../textUtils.js';
+import { contentWords, findPhraseMatches, hasKeyword } from '../textUtils.js';
 
 // Catégorie "headings" — contenu des titres (H1-H6) : longueur et présence
 // des mots-clés. La structure des titres (headingHierarchy — unicité du H1 +
@@ -12,7 +12,7 @@ export function headingsChecks(context) {
         headingLength(model),
         keywordInH1(model, phrases, wordLists.stopWords, matchOptions),
         keywordInSubheadings(model, phrases, matchOptions),
-        secondaryInSubheadings(model, context.options.secondaryKeywords, matchOptions),
+        secondaryInSubheadings(model, context.options.secondaryKeywords, context.secondaryMatchOptions),
     ];
 }
 
@@ -31,9 +31,8 @@ function headingLength(model) {
     );
 }
 
-// Mot-clé dans le titre H1 : tous ses mots, dans n'importe quel ordre → 100 ;
-// une partie seulement → proportionnel (max 60) ; absent → 0 (le H1 est
-// surligné pour le localiser).
+// Mot-clé dans le titre H1 : trouvé → 100 ; une partie de ses mots seulement →
+// proportionnel (max 60) ; absent → 0 (le H1 est surligné pour le localiser).
 // na sans mot-clé ou sans H1. value : 'full' | 'scattered' | 'missing'
 function keywordInH1(model, phrases, stopWords, matchOptions) {
     if (!phrases.length) return notApplicable('keywordInH1', 'headings');
@@ -80,20 +79,20 @@ function keywordInSubheadings(model, phrases, matchOptions) {
 
 // Cible : ≥ 50 % des mots-clés secondaires dans au moins un sous-titre — proportionnel.
 // na sans secondaires ou sans sous-titre. value : % de secondaires couverts.
-function secondaryInSubheadings(model, secondaries, matchOptions) {
+function secondaryInSubheadings(model, secondaries, secondaryMatchOptions) {
     if (!secondaries.length) return notApplicable('secondaryInSubheadings', 'headings');
     const subheadings = model.headings.filter(heading => heading.level >= 2);
     if (!subheadings.length) return notApplicable('secondaryInSubheadings', 'headings', 0);
 
     const covered = secondaries.filter(keyword =>
-        subheadings.some(heading => includesAnyPhrase(heading.text, [keyword], matchOptions))
+        subheadings.some(heading => hasKeyword(heading.text, [keyword], secondaryMatchOptions))
     );
     const percent = Math.round((covered.length / secondaries.length) * 100);
     const score = ratioScore(percent, 50);
 
     // Surligner les occurrences des mots-clés secondaires dans les sous-titres,
     // pas le sous-titre entier
-    const ranges = subheadings.flatMap(heading => findPhrasesInBlock(heading, covered, matchOptions));
+    const ranges = subheadings.flatMap(heading => findKeywordInBlock(heading, covered, secondaryMatchOptions).ranges);
     const check = makeCheck('secondaryInSubheadings', 'headings', score, percent, ranges);
     if (covered.length === 0) check.messageKey = 'none';
     return check;

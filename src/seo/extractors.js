@@ -162,9 +162,9 @@ export function mapOffsetToPos(block, offset) {
 }
 
 /**
- * Mot-clé principal (+ synonymes) dans un bloc → { count, ranges } en
- * positions doc : tous ses mots dans une même phrase, dans n'importe quel
- * ordre (voir findKeywordMatches). Un titre compte comme une seule phrase.
+ * Mot-clé dans un bloc → { count, ranges } en positions doc, selon le mode de
+ * correspondance `opts.mode` (voir findKeywordMatches). Un titre compte comme
+ * une seule phrase.
  */
 export function findKeywordInBlock(block, phrases, opts = {}) {
     const singleSentence = block.type === 'heading';
@@ -178,7 +178,7 @@ export function findKeywordInBlock(block, phrases, opts = {}) {
     };
 }
 
-/** Mot-clé principal (+ synonymes) dans tous les blocs texte du modèle. */
+/** Mot-clé dans tous les blocs texte du modèle → { count, ranges }. */
 export function findKeywordInModel(model, phrases, opts = {}) {
     const result = { count: 0, ranges: [] };
     for (const block of model.blocks) {
@@ -192,7 +192,7 @@ export function findKeywordInModel(model, phrases, opts = {}) {
 
 /**
  * Occurrences exactes (mots contigus, dans l'ordre) d'une des phrases dans un
- * bloc → plages doc. Sert aux mots-clés secondaires et aux mots isolés.
+ * bloc → plages doc. Sert aux mots isolés du mot-clé (« en partie présent »).
  */
 export function findPhrasesInBlock(block, phrases, opts = {}) {
     const ranges = [];
@@ -205,16 +205,6 @@ export function findPhrasesInBlock(block, phrases, opts = {}) {
         }
     }
     return dedupeRanges(ranges);
-}
-
-/** Occurrences dans tous les blocs texte du modèle. */
-export function findPhrasesInModel(model, phrases, opts = {}) {
-    const ranges = [];
-    for (const block of model.blocks) {
-        if (block.isCode) continue;
-        ranges.push(...findPhrasesInBlock(block, phrases, opts));
-    }
-    return mergeRanges(ranges);
 }
 
 /** Plages dédoublonnées et triées dans l'ordre du document. */

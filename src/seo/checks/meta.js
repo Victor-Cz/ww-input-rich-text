@@ -24,9 +24,9 @@ function metaTitleChecks(options, phrases, wordLists, matchOptions) {
     ];
 }
 
-// Présence ET position en un seul check : tous les mots du mot-clé (n'importe
-// quel ordre), le 1er dans la 1re moitié → 100 ; tous mais tardifs → 70 ;
-// une partie seulement → proportionnel (max 60) ; absent → 0.
+// Présence ET position en un seul check : mot-clé trouvé et commençant dans la
+// 1re moitié → 100 ; trouvé mais tardif → 70 ; une partie de ses mots
+// seulement → proportionnel (max 60) ; absent → 0.
 // value : 'start' | 'late' | 'scattered' | 'missing'
 function metaTitleKeyword(title, phrases, stopWords, matchOptions) {
     if (!phrases.length) return notApplicable('metaTitleKeyword', 'meta');

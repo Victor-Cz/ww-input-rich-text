@@ -16,6 +16,19 @@ function getObjectPropertyPathOptions(basePropertyKey, { content }) {
 
 import { textOptions } from './src/settings';
 
+// Modes de correspondance des mots-clés SEO (voir findKeywordMatches)
+const MATCHING_OPTIONS = [
+    { value: 'exact', label: { en: 'Exact phrase', fr: 'Expression exacte' } },
+    {
+        value: 'stopWords',
+        label: { en: 'Small words ignored (the, of…), same order', fr: 'Petits mots ignorés (de, la, des…), ordre conservé' },
+    },
+    {
+        value: 'anyOrder',
+        label: { en: 'All words in one sentence, any order', fr: 'Tous les mots dans une même phrase, n’importe quel ordre' },
+    },
+];
+
 export default {
     editor: {
         label: {
@@ -150,13 +163,14 @@ export default {
                 'enableSeoAnalysis',
                 'seoKeyword',
                 'seoKeywordSynonyms',
+                'seoKeywordMatching',
                 'seoSecondaryKeywords',
+                'seoSecondaryKeywordsMatching',
                 'seoMetaTitle',
                 'seoMetaDescription',
                 'seoLang',
                 'seoUiLang',
                 'seoExpectH1',
-                'seoFullLemmatizer',
                 'seoHighlightColor',
                 'seoWordLists',
             ],
@@ -1054,6 +1068,22 @@ export default {
             },
             /* wwEditor:end */
         },
+        seoKeywordMatching: {
+            section: 'settings',
+            label: { en: 'SEO: focus keyword matching', fr: 'SEO : correspondance du mot-clé principal' },
+            type: 'TextSelect',
+            options: { options: MATCHING_OPTIONS },
+            defaultValue: 'anyOrder',
+            bindable: true,
+            hidden: content => !content.enableSeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'string',
+                tooltip:
+                    'How the focus keyword (and its synonyms) is found in the text: "exact" (the phrase as written), "stopWords" (same order, small words like "de", "la", "des" ignored: "notes frais" matches "notes de frais") or "anyOrder" (all words in one sentence, any order: "Indy synchronisation bancaire" matches "la synchronisation bancaire d\'Indy"). Case, accents and plurals are always tolerated.',
+            },
+            /* wwEditor:end */
+        },
         seoSecondaryKeywords: {
             section: 'settings',
             label: { en: 'SEO: secondary keywords', fr: 'SEO : mots-clés secondaires' },
@@ -1066,6 +1096,22 @@ export default {
             bindingValidation: {
                 type: 'array',
                 tooltip: 'Related keywords scored separately from the focus keyword. Array of strings or comma-separated string.',
+            },
+            /* wwEditor:end */
+        },
+        seoSecondaryKeywordsMatching: {
+            section: 'settings',
+            label: { en: 'SEO: secondary keywords matching', fr: 'SEO : correspondance des mots-clés secondaires' },
+            type: 'TextSelect',
+            options: { options: MATCHING_OPTIONS },
+            defaultValue: 'exact',
+            bindable: true,
+            hidden: content => !content.enableSeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'string',
+                tooltip:
+                    'How each secondary keyword is found in the text: "exact" (the phrase as written), "stopWords" (same order, small words like "de", "la", "des" ignored: "notes frais" matches "notes de frais") or "anyOrder" (all words in one sentence, any order: "Indy synchronisation bancaire" matches "la synchronisation bancaire d\'Indy"). Case, accents and plurals are always tolerated.',
             },
             /* wwEditor:end */
         },
@@ -1175,21 +1221,6 @@ export default {
             bindingValidation: {
                 type: 'boolean',
                 tooltip: 'Turn on if the H1 title is written inside the editor (off when the page provides it).',
-            },
-            /* wwEditor:end */
-        },
-        seoFullLemmatizer: {
-            section: 'settings',
-            label: { en: 'SEO: full lemmatizer', fr: 'SEO : lemmatiseur complet' },
-            type: 'OnOff',
-            defaultValue: false,
-            bindable: true,
-            hidden: content => !content.enableSeoAnalysis,
-            /* wwEditor:start */
-            bindingValidation: {
-                type: 'boolean',
-                tooltip:
-                    'Secondary keywords: match keyword-tool queries against their natural form: ignore stop words (articles, prepositions) and agreement on both sides, and allow stop words between content words. E.g. the raw query "comparatif solution verification identite" matches "comparatif des solutions de vérification d\'identité". The focus keyword always matches this way, in any word order.',
             },
             /* wwEditor:end */
         },

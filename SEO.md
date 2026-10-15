@@ -20,13 +20,14 @@ contenu, immédiate quand une entrée SEO change.
 | --- | --- | --- |
 | `seoKeyword` | Text | Mot-clé principal (un seul) |
 | `seoKeywordSynonyms` | Array | Variantes proches, équivalentes au principal dans tous les checks |
+| `seoKeywordMatching` | Select (bindable) | Correspondance du mot-clé principal (+ synonymes) : `exact`, `stopWords` ou `anyOrder` (défaut) — voir plus bas |
 | `seoSecondaryKeywords` | Array | Mots-clés secondaires (sujets connexes), scorés à part |
+| `seoSecondaryKeywordsMatching` | Select (bindable) | Correspondance des mots-clés secondaires : `exact` (défaut), `stopWords` ou `anyOrder` |
 | `seoMetaTitle` / `seoMetaDescription` | Text | Metas de la page, scorées si fournies (catégorie `meta`) |
 | `seoSiteDomain` | Text | Domaine ou URL complète du site (`https://www.monsite.com/page` accepté) — distingue liens internes/externes ; les URL relatives sont internes |
 | `seoLang` | Select | `en` (défaut) ou `fr` — langue d'analyse (listes de mots, seuils, heuristiques) |
 | `seoUiLang` | Select | Langue des textes exposés (titles, descriptions, messages) — suit `seoLang` par défaut |
 | `seoExpectH1` | OnOff | Le H1 est-il écrit dans l'éditeur (off si la page le fournit) |
-| `seoFullLemmatizer` | OnOff (bindable) | Mots-clés secondaires : mode « requête outil SEO » — ignore mots vides et accords des deux côtés et autorise des mots vides entre les mots de contenu, pour qu'une requête brute (`comparatif solution vérification identité`) matche sa forme naturelle (`comparatif des solutions de vérification d'identité`). Off = matching strict (tokens contigus) |
 | `seoHighlightColor` | Color | Couleur par défaut du surlignage (`highlightSeoCheck`) ; l'argument `Color` de l'action la surcharge par appel |
 | `seoWordLists` | Object (binding) | Surcharge des listes : `{ stopWords, genericAnchors, powerWords, sentimentWords, transitionWords, complexWords }` |
 
@@ -42,32 +43,41 @@ noms, cas dominant en SEO ; quelques sur-racinisations sont assumées
 (« national » ≈ « nation »), et le redoublement de consonne anglais (run/running)
 n'est pas géré.
 
-**Mot-clé principal (et synonymes) : tous ses mots dans une même phrase, dans
-n'importe quel ordre.** Le mot-clé est une requête de recherche, pas une
-expression qu'on écrit telle quelle : comme Yoast, une phrase le contient dès
-qu'elle réunit tous ses mots significatifs (mots vides ignorés). Ainsi
-`Indy synchronisation bancaire` est trouvé dans « la synchronisation bancaire
-d'Indy ». La règle vaut partout où le principal est cherché : occurrences,
-densité, introduction, répartition, H1, sous-titres, alt d'images, ancres de
-liens, meta title et meta description. Une phrase compte autant d'occurrences que
-son mot le moins répété ; le surlignage montre les mots trouvés. Des mots
-répartis sur plusieurs phrases ne comptent pas comme une occurrence (l'intro, le
-H1 et le meta title les notent alors « en partie présents »).
+### Correspondance des mots-clés
+
+Trois modes, du plus strict au plus souple, réglables séparément pour le
+principal (`seoKeywordMatching`) et pour les secondaires
+(`seoSecondaryKeywordsMatching`). Les « petits mots » (mots vides : le, la, de,
+des, d', un, et, pour… — liste par langue, surchargeable via
+`seoWordLists.stopWords`) sont des mots grammaticaux sans sens propre.
+
+| Mode | Règle | `notes frais` dans « notes de frais » | `Indy synchronisation bancaire` dans « la synchronisation bancaire d'Indy » |
+| --- | --- | --- | --- |
+| `exact` | L'expression telle quelle, mots contigus dans l'ordre | ✗ | ✗ |
+| `stopWords` | Même ordre, petits mots ignorés des deux côtés et tolérés entre les mots | ✓ | ✗ |
+| `anyOrder` | Tous les mots significatifs dans une même phrase, n'importe quel ordre | ✓ | ✓ |
+
+`stopWords` sert aux requêtes brutes des outils SEO (`comparatif solution
+vérification identité` → « comparatif des solutions de vérification
+d'identité ») ; un mot de contenu **étranger** intercalé rompt toujours le match.
+
+`anyOrder` (défaut du principal) traite le mot-clé comme une requête de
+recherche, pas une expression qu'on écrit telle quelle — comme Yoast. Une phrase
+compte autant d'occurrences que son mot le moins répété (principal et synonymes
+ne se cumulent pas) ; le surlignage montre les mots trouvés. Des mots répartis
+sur plusieurs phrases ne comptent pas ; un titre, une ancre, un alt ou le meta
+title comptent comme une seule phrase.
+
+Le mode du principal vaut partout où il est cherché : occurrences, densité,
+introduction, répartition, H1, sous-titres, alt d'images, ancres de liens, meta
+title et meta description. Quand il n'est pas trouvé mais qu'une partie de ses
+mots l'est, l'intro, le H1 et le meta title le notent « en partie présent ».
 
 Une phrase se termine par `.` `!` `?` ou `…` suivi d'un espace (ou en fin de
 texte). Ne coupent pas : un point sans espace après (`2.5`, `indy.fr`), un point
 après une abréviation (`vs.`, `M.`, `cf.`, `e.g.`…), un point ou `…` suivi d'une
 minuscule (`etc. et`, `hésite… puis`). Ce découpage sert aussi aux checks de
 lisibilité (longueur des phrases, transitions, voix passive…).
-
-Pour les **mots-clés secondaires**, le matching reste une suite de mots dans
-l'ordre. Avec **`seoFullLemmatizer`** activé, il passe en mode « requête outil
-SEO » : les mots vides (articles, prépositions, accords) sont ignorés **des deux
-côtés** et peuvent s'intercaler entre les mots de contenu. Une requête normalisée
-issue d'un outil de mots-clés (`comparatif solution vérification identité`) est
-alors reconnue dans sa réalisation naturelle (`comparatif des solutions de
-vérification d'identité`) — la cible reste la même, seule la surface change. Un
-mot de contenu **étranger** intercalé rompt toujours le match.
 
 ## Scoring
 

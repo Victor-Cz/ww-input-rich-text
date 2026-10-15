@@ -144,7 +144,7 @@ function getStopSet(stopWords) {
  * Retourne des index [start, end) dans le texte d'origine (normalizeText
  * préserve la longueur 1:1).
  *
- * `opts.fullLemma` (avec `opts.stopWords`) active le mode « requête outil SEO » :
+ * `opts.fullLemma` (avec `opts.stopWords`, mode 'stopWords' de findKeywordMatches) :
  * les mots vides (articles, prépositions, accords) sont ignorés des DEUX côtés,
  * et des mots vides peuvent s'intercaler entre les mots de contenu. Ainsi la
  * requête brute « comparatif solution verification identite » matche sa forme
@@ -179,11 +179,6 @@ export function findPhraseMatches(text, phrase, opts = {}) {
     return matches;
 }
 
-/** Au moins une occurrence d'une des phrases dans le texte. */
-export function includesAnyPhrase(text, phrases, opts = {}) {
-    return (phrases || []).some(phrase => findPhraseMatches(text, phrase, opts).length > 0);
-}
-
 // Racines uniques des mots significatifs d'une phrase-clé (mots vides retirés ;
 // une phrase-clé faite uniquement de mots vides les garde tous).
 function keyphraseStems(phrase, stopSet) {
@@ -192,21 +187,45 @@ function keyphraseStems(phrase, stopSet) {
     return [...new Set((content.length ? content : tokens).map(token => token.stem))];
 }
 
+// Modes de correspondance d'un mot-clé (réglables séparément pour le principal
+// et pour les secondaires), du plus strict au plus souple.
+export const MATCHING_MODES = ['exact', 'stopWords', 'anyOrder'];
+
 /**
- * Trouve le mot-clé principal (ou un de ses synonymes) dans un texte. Le mot-clé
- * est une requête de recherche, pas une expression figée : comme Yoast, une
- * phrase le contient dès qu'elle réunit TOUS ses mots significatifs, dans
- * n'importe quel ordre (mots vides ignorés, racines comparées). Ainsi
- * « Indy synchronisation bancaire » est trouvé dans « la synchronisation
- * bancaire d'Indy ».
- * Une phrase compte autant d'occurrences que son mot le moins répété ; entre le
- * principal et ses synonymes, on garde le meilleur (pas de double compte).
- * `opts.singleSentence` : texte court (titre, ancre, alt) traité comme une
- * seule phrase — sinon le point de « vs. » ou « 2.5 » le couperait en deux.
- * Retourne { count, ranges } : ranges = les mots trouvés, index [start, end)
- * dans le texte, des mots qui se suivent formant une seule plage.
+ * Trouve un mot-clé (le principal + ses synonymes, ou un secondaire) dans un
+ * texte, selon `opts.mode` (racines comparées dans tous les cas : casse,
+ * accents et flexions tolérés) :
+ * - 'exact' (défaut) : l'expression telle quelle, mots contigus dans l'ordre ;
+ * - 'stopWords' : idem, mais les mots vides (de, la, des…) sont ignorés des
+ *   deux côtés (voir findPhraseMatches) ;
+ * - 'anyOrder' : le mot-clé est une requête de recherche, pas une expression
+ *   figée. Comme Yoast, une phrase le contient dès qu'elle réunit TOUS ses mots
+ *   significatifs, dans n'importe quel ordre (mots vides ignorés). Ainsi
+ *   « Indy synchronisation bancaire » est trouvé dans « la synchronisation
+ *   bancaire d'Indy ». Une phrase compte autant d'occurrences que son mot le
+ *   moins répété ; entre le principal et ses synonymes, on garde le meilleur.
+ *   `opts.singleSentence` : texte court (titre, ancre, alt) traité comme une
+ *   seule phrase, sinon le point de « vs. » ou « 2.5 » le couperait en deux.
+ * Retourne { count, ranges } : index [start, end) dans le texte — l'expression
+ * entière, ou en 'anyOrder' les mots trouvés (des mots qui se suivent formant
+ * une seule plage).
  */
 export function findKeywordMatches(text, phrases, opts = {}) {
+    if (opts.mode !== 'anyOrder') {
+        const phraseOptions = { stopWords: opts.stopWords, fullLemma: opts.mode === 'stopWords' };
+        const seen = new Set();
+        const ranges = (phrases || [])
+            .flatMap(phrase => findPhraseMatches(text, phrase, phraseOptions))
+            .filter(range => {
+                const key = `${range.start}-${range.end}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            })
+            .sort((a, b) => a.start - b.start);
+        return { count: ranges.length, ranges };
+    }
+
     const stopSet = getStopSet(opts.stopWords);
     const keyphrases = (phrases || []).map(phrase => keyphraseStems(phrase, stopSet)).filter(stems => stems.length);
     const result = { count: 0, ranges: [] };
@@ -247,7 +266,7 @@ export function findKeywordMatches(text, phrases, opts = {}) {
     return result;
 }
 
-/** Le mot-clé principal (ou un synonyme) est-il dans ce texte court (ancre, alt) ? */
+/** Le mot-clé est-il dans ce texte court (titre, ancre, alt) ? */
 export function hasKeyword(text, phrases, opts = {}) {
     return findKeywordMatches(text, phrases, { ...opts, singleSentence: true }).count > 0;
 }

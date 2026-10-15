@@ -6,6 +6,7 @@ import { metaChecks } from './checks/meta.js';
 import { fleschReadingScore, readabilityChecks } from './checks/readability.js';
 import { structureChecks } from './checks/structure.js';
 import { extractModel, findKeywordInModel } from './extractors.js';
+import { MATCHING_MODES } from './textUtils.js';
 import { getCategoryLabels, getLabels, getMessage } from './i18n/index.js';
 import { aggregateScore, capGrade, categoryScores, checkWeight, criticalIssues, gradeFromScore } from './scoring.js';
 import { getWordLists } from './wordlists.js';
@@ -15,7 +16,8 @@ import { getWordLists } from './wordlists.js';
  *
  * @param {Node} doc - document ProseMirror (editor.state.doc)
  * @param {Object} rawOptions - { keyword, synonyms, secondaryKeywords, metaTitle,
- *   metaDescription, slug, siteDomain, lang, wordLists, expectH1 }
+ *   metaDescription, slug, siteDomain, lang, wordLists, expectH1, keywordMatching,
+ *   secondaryMatching }
  * @returns {{ result: Object, rangesMap: Object }} - `result` est la valeur exposée
  *   dans la variable `seo` ; `rangesMap` associe chaque check id (et chaque id de
  *   mot-clé secondaire, `secondaryKeyword:<terme>`) à ses plages doc pour le
@@ -27,16 +29,16 @@ export function analyzeSeo(doc, rawOptions = {}) {
     const model = extractModel(doc);
 
     const phrases = options.keyword ? [options.keyword, ...options.synonyms] : [];
-    // Options de matching des mots-clés, partagées par tous les checks. En mode
-    // « lemmatiseur complet », les mots vides des mots-clés secondaires sont
-    // ignorés des deux côtés (le principal les ignore toujours).
-    const matchOptions = { stopWords: wordLists.stopWords, fullLemma: options.fullLemma };
+    // Options de matching, partagées par tous les checks : une pour le mot-clé
+    // principal (+ synonymes), une pour les secondaires — chacune son mode.
+    const matchOptions = { stopWords: wordLists.stopWords, mode: options.keywordMatching };
+    const secondaryMatchOptions = { stopWords: wordLists.stopWords, mode: options.secondaryMatching };
     // Occurrences du mot-clé (+ synonymes) dans tout le document, { count, ranges } :
     // calculées une seule fois, partagées entre les checks keyword et les stats.
     const keywordMatches = phrases.length
         ? findKeywordInModel(model, phrases, matchOptions)
         : { count: 0, ranges: [] };
-    const context = { model, options, phrases, wordLists, matchOptions, keywordMatches };
+    const context = { model, options, phrases, wordLists, matchOptions, secondaryMatchOptions, keywordMatches };
 
     const checks = [
         ...structureChecks(context),
@@ -148,8 +150,9 @@ function normalizeOptions(raw) {
         uiLang: raw.uiLang === 'fr' || raw.uiLang === 'en' ? raw.uiLang : lang,
         wordLists: raw.wordLists && typeof raw.wordLists === 'object' ? raw.wordLists : null,
         expectH1: !!raw.expectH1,
-        // Matching « requête outil SEO » : ignore mots vides et accords des deux côtés
-        fullLemma: !!raw.fullLemma,
+        // Correspondance des mots-clés : 'exact' | 'stopWords' | 'anyOrder'
+        keywordMatching: MATCHING_MODES.includes(raw.keywordMatching) ? raw.keywordMatching : 'anyOrder',
+        secondaryMatching: MATCHING_MODES.includes(raw.secondaryMatching) ? raw.secondaryMatching : 'exact',
     };
 }
 
