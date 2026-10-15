@@ -20,7 +20,10 @@
                      menu reste collé en haut une fois l'en-tête passé. Sans
                      en-tête, ces deux enveloppes s'effacent (display: contents) -->
                 <div class="ww-rich-text__scroll" :class="{ '-header': hasHeader }">
-                <wwElement class="ww-rich-text__header" v-if="hasHeader" v-bind="content.headerElement" />
+                <div class="ww-rich-text__header" :class="{ '-aligned': content.headerAlignText ?? true }"
+                    v-if="hasHeader">
+                    <wwElement v-bind="content.headerElement" />
+                </div>
                 <div class="ww-rich-text__sticky" ref="stickyBar">
                 <!-- Mode historique : le menu n'est jamais masqué par le plugin
                      (l'utilisateur pilote sa visibilité via isVersionPreview) ;
@@ -3620,6 +3623,13 @@ export default {
 
     > .ww-rich-text__header {
         flex-shrink: 0;
+
+        /* Même colonne que le texte : marges de l'éditeur, largeur max
+           centrée (calcul identique au padding de .ProseMirror) */
+        &.-aligned {
+            padding-right: max(var(--editor-padding-right, 12px), calc((100% - var(--editor-max-width, 100%)) / 2));
+            padding-left: max(var(--editor-padding-left, 12px), calc((100% - var(--editor-max-width, 100%)) / 2));
+        }
     }
 
     > .ww-rich-text__sticky {

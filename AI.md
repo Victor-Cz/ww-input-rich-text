@@ -34,6 +34,7 @@ A versatile rich text editor enabling text content creation with formatting opti
 - parameterTableTools: boolean - Table hover handles (select/move rows & columns) and right click menu. Edition only (ignored when readonly). Default: true
 - wrapMenu: boolean - Wrap formatting menu. Default: false
 - showHeader: boolean - Show a header container above the menu. The header, the menu and the text then scroll together inside the element (needs a height) and the menu sticks to the top once the header has scrolled away. Default: false
+- headerAlignText: boolean - Header takes the width and position of the text column (editorPadding, editorMaxWidth). Off = full-width header. Default: true
 - customMenu: boolean - Use custom menu. Default: false
 - menuColor: string - Menu color. Default: "#000000ad"
 - fieldName: string - Form field name. Default: ""

@@ -26,6 +26,7 @@ export default {
         },
         customStylePropertiesOrder: [
             'showHeader',
+            'headerAlignText',
             'customMenu',
             'menuColor',
             'editorPadding',
@@ -833,6 +834,20 @@ export default {
             description: {
                 en: 'Adds a container above the menu. The header, the menu and the text scroll together inside the element (give it a height), and the menu sticks to the top once the header has scrolled away.',
                 fr: "Ajoute un conteneur au-dessus du menu. L'en-tête, le menu et le texte défilent ensemble dans l'élément (donnez-lui une hauteur), et le menu reste collé en haut une fois l'en-tête passé.",
+            },
+        },
+        headerAlignText: {
+            label: {
+                en: 'Align header with text',
+                fr: "Aligner l'en-tête sur le texte",
+            },
+            type: 'OnOff',
+            defaultValue: true,
+            bindable: true,
+            hidden: content => !content.showHeader,
+            description: {
+                en: 'The header takes the width and position of the text column (Editor padding, Text max width). Turn off for a full-width header, e.g. a cover image.',
+                fr: "L'en-tête prend la largeur et la position de la colonne de texte (Editor padding, Largeur max du texte). Désactiver pour un en-tête pleine largeur, par exemple une image de couverture.",
             },
         },
         customMenu: {
