@@ -1,5 +1,5 @@
 import { makeCheck, notApplicable, ratioScore } from '../result.js';
-import { contentWords, findPhraseMatches, normalizeText, splitWords } from '../textUtils.js';
+import { contentWords, findKeywordMatches, findPhraseMatches, normalizeText, splitWords } from '../textUtils.js';
 
 // Catégorie "meta" — meta title + meta description, scorés uniquement si
 // les entrées correspondantes sont fournies. Pas de plages (hors éditeur).
@@ -24,15 +24,16 @@ function metaTitleChecks(options, phrases, wordLists, matchOptions) {
     ];
 }
 
-// Présence ET position en un seul check : match exact dans la 1re moitié → 100 ;
-// exact mais tardif → 70 ; mots dispersés → proportionnel (tous → 60) ; absent → 0.
+// Présence ET position en un seul check : tous les mots du mot-clé (n'importe
+// quel ordre), le 1er dans la 1re moitié → 100 ; tous mais tardifs → 70 ;
+// une partie seulement → proportionnel (max 60) ; absent → 0.
 // value : 'start' | 'late' | 'scattered' | 'missing'
 function metaTitleKeyword(title, phrases, stopWords, matchOptions) {
     if (!phrases.length) return notApplicable('metaTitleKeyword', 'meta');
 
-    const matches = phrases.flatMap(phrase => findPhraseMatches(title, phrase, matchOptions));
-    if (matches.length) {
-        const firstStart = Math.min(...matches.map(match => match.start));
+    const { ranges } = findKeywordMatches(title, phrases, { ...matchOptions, singleSentence: true });
+    if (ranges.length) {
+        const firstStart = ranges[0].start;
         const inFirstHalf = firstStart <= title.length / 2;
         const check = makeCheck('metaTitleKeyword', 'meta', inFirstHalf ? 100 : 70, inFirstHalf ? 'start' : 'late');
         if (!inFirstHalf) check.messageKey = 'late';
@@ -95,7 +96,7 @@ function metaDescriptionChecks(options, phrases, matchOptions) {
 
     if (!phrases.length) return [lengthCheck, notApplicable('metaDescriptionKeyword', 'meta')];
 
-    const occurrences = phrases.reduce((sum, phrase) => sum + findPhraseMatches(description, phrase, matchOptions).length, 0);
+    const occurrences = findKeywordMatches(description, phrases, matchOptions).count;
     // 1-2 occurrences → 100 ; absent → 0 ; -40 par occurrence au-delà de 2
     let keywordScore;
     if (occurrences === 0) keywordScore = 0;

@@ -1,4 +1,4 @@
-import { findPhrasesInBlock } from '../extractors.js';
+import { findKeywordInBlock, findPhrasesInBlock } from '../extractors.js';
 import { decreasingScore, makeCheck, notApplicable, ratioScore } from '../result.js';
 import { contentWords, findPhraseMatches, includesAnyPhrase } from '../textUtils.js';
 
@@ -31,17 +31,18 @@ function headingLength(model) {
     );
 }
 
-// Mot-clé dans le titre H1 : phrase complète → 100 ; mots dispersés →
-// proportionnel (max 60) ; absent → 0 (le H1 est surligné pour le localiser).
+// Mot-clé dans le titre H1 : tous ses mots, dans n'importe quel ordre → 100 ;
+// une partie seulement → proportionnel (max 60) ; absent → 0 (le H1 est
+// surligné pour le localiser).
 // na sans mot-clé ou sans H1. value : 'full' | 'scattered' | 'missing'
 function keywordInH1(model, phrases, stopWords, matchOptions) {
     if (!phrases.length) return notApplicable('keywordInH1', 'headings');
     const h1 = model.headings.find(heading => heading.level === 1);
     if (!h1) return notApplicable('keywordInH1', 'headings');
 
-    const fullMatches = findPhrasesInBlock(h1, phrases, matchOptions);
-    if (fullMatches.length) {
-        return makeCheck('keywordInH1', 'headings', 100, 'full', fullMatches);
+    const fullMatch = findKeywordInBlock(h1, phrases, matchOptions);
+    if (fullMatch.count) {
+        return makeCheck('keywordInH1', 'headings', 100, 'full', fullMatch.ranges);
     }
 
     const words = contentWords(phrases[0], stopWords);
@@ -61,14 +62,16 @@ function keywordInSubheadings(model, phrases, matchOptions) {
     const subheadings = model.headings.filter(heading => heading.level === 2 || heading.level === 3);
     if (!subheadings.length) return notApplicable('keywordInSubheadings', 'headings', 0);
 
-    const matched = subheadings.filter(heading => includesAnyPhrase(heading.text, phrases, matchOptions));
+    const matched = subheadings
+        .map(heading => findKeywordInBlock(heading, phrases, matchOptions))
+        .filter(match => match.count > 0);
     const percent = Math.round((matched.length / subheadings.length) * 100);
     let score;
     if (percent < 30) score = ratioScore(percent, 30);
     else if (percent <= 75) score = 100;
     else score = Math.max(50, 100 - (percent - 75) * 2);
     // Surligner les occurrences du mot-clé dans les sous-titres, pas le sous-titre entier
-    const ranges = matched.flatMap(heading => findPhrasesInBlock(heading, phrases, matchOptions));
+    const ranges = matched.flatMap(match => match.ranges);
     const check = makeCheck('keywordInSubheadings', 'headings', score, percent, ranges);
     // 'bad' couvre « aucun » (0 %) ET « trop peu » (1-29 %) : message dédié au 0 %
     if (matched.length === 0) check.messageKey = 'none';

@@ -244,7 +244,7 @@ export default {
         objective: 'Mot-clé dans le H1',
         messages: {
             good: 'Le mot-clé apparaît dans le titre H1.',
-            warning: 'Les mots du mot-clé sont dans le H1 mais dispersés.',
+            warning: 'Le mot-clé n’est que partiellement dans le H1 : il manque certains de ses mots.',
             bad: 'Le mot-clé n’apparaît pas dans le titre H1.',
             na: 'Pas de titre H1 dans le contenu.',
         },
@@ -255,7 +255,7 @@ export default {
         objective: 'Mot-clé dans le 1er paragraphe',
         messages: {
             good: 'Le mot-clé apparaît dans l’introduction.',
-            warning: 'Les mots du mot-clé sont dans l’introduction mais dispersés.',
+            warning: 'Le mot-clé n’est que partiellement dans l’introduction : réunissez tous ses mots dans une même phrase.',
             bad: 'Le mot-clé n’apparaît pas dans l’introduction.',
         },
     },
@@ -339,7 +339,7 @@ export default {
         messages: {
             good: 'Le mot-clé est présent au début du meta title.',
             late: 'Le mot-clé est dans le meta title : placez-le dans la première moitié.',
-            warning: 'Les mots du mot-clé sont dans le meta title mais séparés.',
+            warning: 'Le mot-clé n’est que partiellement dans le meta title : il manque certains de ses mots.',
             bad: 'Le mot-clé est absent du meta title.',
         },
     },

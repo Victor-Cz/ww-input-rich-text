@@ -1,5 +1,5 @@
 import { makeCheck, notApplicable, ratioScore } from '../result.js';
-import { contentWords, findPhraseMatches, includesAnyPhrase } from '../textUtils.js';
+import { contentWords, findPhraseMatches, hasKeyword } from '../textUtils.js';
 
 // Catégorie "images" — mot-clé requis uniquement pour keywordInImageAlt.
 
@@ -35,7 +35,7 @@ function keywordInImageAlt(model, phrases, stopWords, matchOptions) {
     const words = contentWords(phrases[0], stopWords);
     const matched = model.images.filter(image => {
         if (!image.alt) return false;
-        if (includesAnyPhrase(image.alt, phrases, matchOptions)) return true;
+        if (hasKeyword(image.alt, phrases, matchOptions)) return true;
         if (!words.length) return false;
         const found = words.filter(word => findPhraseMatches(image.alt, word, matchOptions).length > 0);
         return found.length / words.length >= 0.5;

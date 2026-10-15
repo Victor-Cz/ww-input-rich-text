@@ -1,4 +1,4 @@
-import { countWords, splitSentences, findPhraseMatches } from './textUtils.js';
+import { countWords, splitSentences, findKeywordMatches, findPhraseMatches } from './textUtils.js';
 
 // Extraction d'un modèle intermédiaire depuis le document ProseMirror,
 // en une seule traversée. Toutes les positions sont des positions doc,
@@ -162,8 +162,37 @@ export function mapOffsetToPos(block, offset) {
 }
 
 /**
- * Occurrences d'une des phrases-clés dans un bloc → plages doc.
- * `phrases` = [principal, ...synonymes].
+ * Mot-clé principal (+ synonymes) dans un bloc → { count, ranges } en
+ * positions doc : tous ses mots dans une même phrase, dans n'importe quel
+ * ordre (voir findKeywordMatches). Un titre compte comme une seule phrase.
+ */
+export function findKeywordInBlock(block, phrases, opts = {}) {
+    const singleSentence = block.type === 'heading';
+    const { count, ranges } = findKeywordMatches(block.text, phrases, { ...opts, singleSentence });
+    return {
+        count,
+        ranges: ranges.map(range => ({
+            from: mapOffsetToPos(block, range.start),
+            to: mapOffsetToPos(block, range.end),
+        })),
+    };
+}
+
+/** Mot-clé principal (+ synonymes) dans tous les blocs texte du modèle. */
+export function findKeywordInModel(model, phrases, opts = {}) {
+    const result = { count: 0, ranges: [] };
+    for (const block of model.blocks) {
+        if (block.isCode) continue;
+        const match = findKeywordInBlock(block, phrases, opts);
+        result.count += match.count;
+        result.ranges.push(...match.ranges);
+    }
+    return result;
+}
+
+/**
+ * Occurrences exactes (mots contigus, dans l'ordre) d'une des phrases dans un
+ * bloc → plages doc. Sert aux mots-clés secondaires et aux mots isolés.
  */
 export function findPhrasesInBlock(block, phrases, opts = {}) {
     const ranges = [];

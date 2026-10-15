@@ -1,14 +1,16 @@
-import { findPhrasesInBlock, findPhrasesInModel, mergeRanges } from '../extractors.js';
+import { findKeywordInBlock, findPhrasesInBlock, findPhrasesInModel, mergeRanges } from '../extractors.js';
 import { decreasingScore, makeCheck, notApplicable, ratioScore } from '../result.js';
 import { contentWords, findPhraseMatches } from '../textUtils.js';
 
 // Catégorie "keyword" — nécessite `seoKeyword`.
 // Partout, « le mot-clé » = le principal OU un de ses synonymes (`context.phrases`),
-// avec tolérance casse / accents / pluriels simples (voir textUtils).
+// avec tolérance casse / accents / pluriels simples (voir textUtils). Il est
+// trouvé dès que tous ses mots significatifs sont dans une même phrase, dans
+// n'importe quel ordre (findKeywordMatches).
 
 export function keywordChecks(context) {
-    // `occurrences` : calculées une fois dans analyzeSeo (partagées avec stats)
-    const { model, phrases, wordLists, matchOptions, occurrences } = context;
+    // `keywordMatches` : calculées une fois dans analyzeSeo (partagées avec stats)
+    const { model, phrases, wordLists, matchOptions, keywordMatches } = context;
     const secondaryKeywordsCheck = secondaryKeywords(model, context.options.secondaryKeywords, matchOptions);
     if (!phrases.length) {
         return [
@@ -21,8 +23,8 @@ export function keywordChecks(context) {
     return [
         keyphraseLength(context.options.keyword, wordLists.stopWords),
         keywordInIntroduction(model, phrases, wordLists.stopWords, matchOptions),
-        keywordDensity(model, occurrences),
-        keywordDistribution(model, occurrences),
+        keywordDensity(model, keywordMatches),
+        keywordDistribution(model, keywordMatches),
         secondaryKeywordsCheck,
     ];
 }
@@ -63,16 +65,17 @@ function keyphraseLength(keyword, stopWords) {
     return makeCheck('keyphraseLength', 'keyword', score, words.length);
 }
 
-// Phrase-clé complète dans le 1er paragraphe → 100 ;
-// sinon proportionnel aux mots significatifs présents (tous dispersés → 60).
+// Tous les mots du mot-clé dans une même phrase du 1er paragraphe → 100 ;
+// sinon proportionnel aux mots significatifs présents (tous, mais répartis
+// sur plusieurs phrases → 60).
 // value : 'full' | 'scattered' | 'missing'
 function keywordInIntroduction(model, phrases, stopWords, matchOptions) {
     const intro = model.paragraphs.find(paragraph => paragraph.words > 0);
     if (!intro) return notApplicable('keywordInIntroduction', 'keyword');
 
-    const fullMatches = findPhrasesInBlock(intro, phrases, matchOptions);
-    if (fullMatches.length) {
-        return makeCheck('keywordInIntroduction', 'keyword', 100, 'full', fullMatches);
+    const fullMatch = findKeywordInBlock(intro, phrases, matchOptions);
+    if (fullMatch.count) {
+        return makeCheck('keywordInIntroduction', 'keyword', 100, 'full', fullMatch.ranges);
     }
 
     const words = contentWords(phrases[0], stopWords);
@@ -88,33 +91,32 @@ function keywordInIntroduction(model, phrases, stopWords, matchOptions) {
 // Zone optimale 0,5-3 % → 100 ; proportionnel en dessous (0,4 % → 80) ;
 // au-delà, décroît jusqu'à 0 à 5 % (keyword stuffing).
 // value : densité en % (occurrences via matchCount / stats).
-function keywordDensity(model, occurrences) {
+function keywordDensity(model, keywordMatches) {
     const words = model.wordCount;
     if (!words) return notApplicable('keywordDensity', 'keyword', 0);
-    const count = occurrences.length;
-    const ranges = occurrences;
+    const count = keywordMatches.count;
     const density = Math.round((count / words) * 10000) / 100;
 
+    let score;
     if (words < 100) {
         // Texte court : la densité en % n'est pas significative, on compte les occurrences
-        let score;
         if (count === 0) score = 0;
         else if (count <= 2) score = 100;
         else score = Math.max(0, 100 - (count - 2) * 50);
-        return makeCheck('keywordDensity', 'keyword', score, density, ranges);
-    }
-
-    let score;
-    if (density < 0.5) score = ratioScore(density, 0.5);
+    } else if (density < 0.5) score = ratioScore(density, 0.5);
     else if (density <= 3) score = 100;
     else score = decreasingScore(density, 3, 5);
-    return makeCheck('keywordDensity', 'keyword', score, density, ranges);
+
+    const check = makeCheck('keywordDensity', 'keyword', score, density, keywordMatches.ranges);
+    check.matchCount = count;
+    return check;
 }
 
 // Yoast Premium (simplifié) : présence du mot-clé dans les 4 quarts du texte
-function keywordDistribution(model, occurrences) {
-    if (model.sentences.length < 15 || occurrences.length < 2) {
-        return notApplicable('keywordDistribution', 'keyword', occurrences.length);
+function keywordDistribution(model, keywordMatches) {
+    const { count, ranges } = keywordMatches;
+    if (model.sentences.length < 15 || count < 2) {
+        return notApplicable('keywordDistribution', 'keyword', count);
     }
     const textBlocks = model.blocks.filter(block => !block.isCode);
     const start = textBlocks[0].from;
@@ -122,9 +124,11 @@ function keywordDistribution(model, occurrences) {
     const span = Math.max(1, end - start);
 
     const quarters = new Set(
-        occurrences.map(range => Math.min(3, Math.floor(((range.from - start) / span) * 4)))
+        ranges.map(range => Math.min(3, Math.floor(((range.from - start) / span) * 4)))
     );
     // Présence dans 3 des 4 quarts du texte = bien réparti
     const score = ratioScore(quarters.size, 3);
-    return makeCheck('keywordDistribution', 'keyword', score, quarters.size, occurrences);
+    const check = makeCheck('keywordDistribution', 'keyword', score, quarters.size, ranges);
+    check.matchCount = count;
+    return check;
 }

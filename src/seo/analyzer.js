@@ -5,7 +5,7 @@ import { classifyLinks, linksChecks } from './checks/links.js';
 import { metaChecks } from './checks/meta.js';
 import { fleschReadingScore, readabilityChecks } from './checks/readability.js';
 import { structureChecks } from './checks/structure.js';
-import { extractModel, findPhrasesInModel } from './extractors.js';
+import { extractModel, findKeywordInModel } from './extractors.js';
 import { getCategoryLabels, getLabels, getMessage } from './i18n/index.js';
 import { aggregateScore, capGrade, categoryScores, checkWeight, criticalIssues, gradeFromScore } from './scoring.js';
 import { getWordLists } from './wordlists.js';
@@ -28,12 +28,15 @@ export function analyzeSeo(doc, rawOptions = {}) {
 
     const phrases = options.keyword ? [options.keyword, ...options.synonyms] : [];
     // Options de matching des mots-clés, partagées par tous les checks. En mode
-    // « lemmatiseur complet », les mots vides sont ignorés des deux côtés.
+    // « lemmatiseur complet », les mots vides des mots-clés secondaires sont
+    // ignorés des deux côtés (le principal les ignore toujours).
     const matchOptions = { stopWords: wordLists.stopWords, fullLemma: options.fullLemma };
-    // Occurrences du mot-clé (+ synonymes) dans tout le document : calculées une
-    // seule fois, partagées entre les checks keyword et les stats.
-    const occurrences = phrases.length ? findPhrasesInModel(model, phrases, matchOptions) : [];
-    const context = { model, options, phrases, wordLists, matchOptions, occurrences };
+    // Occurrences du mot-clé (+ synonymes) dans tout le document, { count, ranges } :
+    // calculées une seule fois, partagées entre les checks keyword et les stats.
+    const keywordMatches = phrases.length
+        ? findKeywordInModel(model, phrases, matchOptions)
+        : { count: 0, ranges: [] };
+    const context = { model, options, phrases, wordLists, matchOptions, keywordMatches };
 
     const checks = [
         ...structureChecks(context),
@@ -55,7 +58,9 @@ export function analyzeSeo(doc, rawOptions = {}) {
     const exposedChecks = checks.map(check => {
         rangesMap[check.id] = check.ranges || [];
         const labels = getLabels(check.id, options.uiLang);
-        const matchCount = (check.ranges || []).length;
+        // Par défaut une plage = une occurrence ; les checks du mot-clé principal
+        // surlignent ses mots un par un et donnent leur propre compte.
+        const matchCount = check.matchCount ?? (check.ranges || []).length;
         return {
             id: check.id,
             title: labels.title,
@@ -97,13 +102,13 @@ export function analyzeSeo(doc, rawOptions = {}) {
             };
         }),
         checks: exposedChecks,
-        stats: buildStats(model, options, occurrences),
+        stats: buildStats(model, options, keywordMatches),
         keywords: {
             main: phrases.length
                 ? {
                       term: options.keyword,
-                      occurrences: occurrences.length,
-                      density: keywordDensity(occurrences, model),
+                      occurrences: keywordMatches.count,
+                      density: keywordDensity(keywordMatches, model),
                   }
                 : null,
             secondary: secondaryTerms.map(({ term, count, found }) => ({
@@ -124,8 +129,8 @@ function secondaryKeywordId(term) {
 }
 
 // Densité du mot-clé principal (+ synonymes), en % arrondi à 2 décimales
-function keywordDensity(occurrences, model) {
-    return model.wordCount ? Math.round((occurrences.length / model.wordCount) * 10000) / 100 : 0;
+function keywordDensity(keywordMatches, model) {
+    return model.wordCount ? Math.round((keywordMatches.count / model.wordCount) * 10000) / 100 : 0;
 }
 
 function normalizeOptions(raw) {
@@ -159,7 +164,7 @@ function cleanStringArray(value) {
     return value.map(item => String(item ?? '').trim()).filter(Boolean);
 }
 
-function buildStats(model, options, occurrences) {
+function buildStats(model, options, keywordMatches) {
     const headings = { h1: 0, h2: 0, h3: 0, h4: 0, h5: 0, h6: 0 };
     for (const heading of model.headings) {
         const key = `h${heading.level}`;
@@ -180,8 +185,8 @@ function buildStats(model, options, occurrences) {
         imagesWithoutAlt: model.images.filter(image => !image.alt).length,
         internalLinks: internal.length,
         externalLinks: external.length,
-        keywordOccurrences: occurrences.length,
-        keywordDensity: keywordDensity(occurrences, model),
+        keywordOccurrences: keywordMatches.count,
+        keywordDensity: keywordDensity(keywordMatches, model),
         fleschScore: fleschReadingScore(model, options.lang),
         readingTimeMinutes: Math.max(1, Math.round(model.wordCount / 200)),
     };

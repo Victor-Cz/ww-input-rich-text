@@ -184,6 +184,74 @@ export function includesAnyPhrase(text, phrases, opts = {}) {
     return (phrases || []).some(phrase => findPhraseMatches(text, phrase, opts).length > 0);
 }
 
+// Racines uniques des mots significatifs d'une phrase-clé (mots vides retirés ;
+// une phrase-clé faite uniquement de mots vides les garde tous).
+function keyphraseStems(phrase, stopSet) {
+    const tokens = tokenizeCached(phrase);
+    const content = tokens.filter(token => !stopSet.has(token.raw));
+    return [...new Set((content.length ? content : tokens).map(token => token.stem))];
+}
+
+/**
+ * Trouve le mot-clé principal (ou un de ses synonymes) dans un texte. Le mot-clé
+ * est une requête de recherche, pas une expression figée : comme Yoast, une
+ * phrase le contient dès qu'elle réunit TOUS ses mots significatifs, dans
+ * n'importe quel ordre (mots vides ignorés, racines comparées). Ainsi
+ * « Indy synchronisation bancaire » est trouvé dans « la synchronisation
+ * bancaire d'Indy ».
+ * Une phrase compte autant d'occurrences que son mot le moins répété ; entre le
+ * principal et ses synonymes, on garde le meilleur (pas de double compte).
+ * `opts.singleSentence` : texte court (titre, ancre, alt) traité comme une
+ * seule phrase — sinon le point de « vs. » ou « 2.5 » le couperait en deux.
+ * Retourne { count, ranges } : ranges = les mots trouvés, index [start, end)
+ * dans le texte, des mots qui se suivent formant une seule plage.
+ */
+export function findKeywordMatches(text, phrases, opts = {}) {
+    const stopSet = getStopSet(opts.stopWords);
+    const keyphrases = (phrases || []).map(phrase => keyphraseStems(phrase, stopSet)).filter(stems => stems.length);
+    const result = { count: 0, ranges: [] };
+    if (!keyphrases.length) return result;
+
+    const tokens = tokenizeCached(text);
+    let index = 0;
+    const sentences = opts.singleSentence ? [{ start: 0, end: text.length }] : splitSentences(text);
+    for (const sentence of sentences) {
+        // Tokens et phrases sont dans l'ordre du texte : un seul parcours
+        while (index < tokens.length && tokens[index].start < sentence.start) index++;
+        const first = index;
+        while (index < tokens.length && tokens[index].end <= sentence.end) index++;
+        const sentenceTokens = tokens.slice(first, index);
+
+        const stemCounts = new Map();
+        for (const token of sentenceTokens) stemCounts.set(token.stem, (stemCounts.get(token.stem) || 0) + 1);
+        let best = 0;
+        const foundStems = new Set();
+        for (const stems of keyphrases) {
+            const occurrences = Math.min(...stems.map(stem => stemCounts.get(stem) || 0));
+            if (!occurrences) continue;
+            best = Math.max(best, occurrences);
+            for (const stem of stems) foundStems.add(stem);
+        }
+        if (!best) continue;
+
+        result.count += best;
+        let previous = -2;
+        for (let position = 0; position < sentenceTokens.length; position++) {
+            const token = sentenceTokens[position];
+            if (!foundStems.has(token.stem)) continue;
+            if (position === previous + 1) result.ranges[result.ranges.length - 1].end = token.end;
+            else result.ranges.push({ start: token.start, end: token.end });
+            previous = position;
+        }
+    }
+    return result;
+}
+
+/** Le mot-clé principal (ou un synonyme) est-il dans ce texte court (ancre, alt) ? */
+export function hasKeyword(text, phrases, opts = {}) {
+    return findKeywordMatches(text, phrases, { ...opts, singleSentence: true }).count > 0;
+}
+
 /**
  * Compte approximatif des syllabes d'un mot (groupes de voyelles sur le mot
  * normalisé, e muet final retiré). Suffisant pour un score Flesch indicatif.

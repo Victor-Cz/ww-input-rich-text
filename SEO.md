@@ -26,7 +26,7 @@ contenu, immédiate quand une entrée SEO change.
 | `seoLang` | Select | `en` (défaut) ou `fr` — langue d'analyse (listes de mots, seuils, heuristiques) |
 | `seoUiLang` | Select | Langue des textes exposés (titles, descriptions, messages) — suit `seoLang` par défaut |
 | `seoExpectH1` | OnOff | Le H1 est-il écrit dans l'éditeur (off si la page le fournit) |
-| `seoFullLemmatizer` | OnOff (bindable) | Mode « requête outil SEO » : ignore mots vides et accords des deux côtés et autorise des mots vides entre les mots de contenu, pour qu'une requête brute (`comparatif solution vérification identité`) matche sa forme naturelle (`comparatif des solutions de vérification d'identité`). Off = matching strict (tokens contigus) |
+| `seoFullLemmatizer` | OnOff (bindable) | Mots-clés secondaires : mode « requête outil SEO » — ignore mots vides et accords des deux côtés et autorise des mots vides entre les mots de contenu, pour qu'une requête brute (`comparatif solution vérification identité`) matche sa forme naturelle (`comparatif des solutions de vérification d'identité`). Off = matching strict (tokens contigus) |
 | `seoHighlightColor` | Color | Couleur par défaut du surlignage (`highlightSeoCheck`) ; l'argument `Color` de l'action la surcharge par appel |
 | `seoWordLists` | Object (binding) | Surcharge des listes : `{ stopWords, genericAnchors, powerWords, sentimentWords, transitionWords, complexWords }` |
 
@@ -42,7 +42,20 @@ noms, cas dominant en SEO ; quelques sur-racinisations sont assumées
 (« national » ≈ « nation »), et le redoublement de consonne anglais (run/running)
 n'est pas géré.
 
-Avec **`seoFullLemmatizer`** activé, le matching passe en mode « requête outil
+**Mot-clé principal (et synonymes) : tous ses mots dans une même phrase, dans
+n'importe quel ordre.** Le mot-clé est une requête de recherche, pas une
+expression qu'on écrit telle quelle : comme Yoast, une phrase le contient dès
+qu'elle réunit tous ses mots significatifs (mots vides ignorés). Ainsi
+`Indy synchronisation bancaire` est trouvé dans « la synchronisation bancaire
+d'Indy ». La règle vaut partout où le principal est cherché : occurrences,
+densité, introduction, répartition, H1, sous-titres, alt d'images, ancres de
+liens, meta title et meta description. Une phrase compte autant d'occurrences que
+son mot le moins répété ; le surlignage montre les mots trouvés. Des mots
+répartis sur plusieurs phrases ne comptent pas comme une occurrence (l'intro, le
+H1 et le meta title les notent alors « en partie présents »).
+
+Pour les **mots-clés secondaires**, le matching reste une suite de mots dans
+l'ordre. Avec **`seoFullLemmatizer`** activé, il passe en mode « requête outil
 SEO » : les mots vides (articles, prépositions, accords) sont ignorés **des deux
 côtés** et peuvent s'intercaler entre les mots de contenu. Une requête normalisée
 issue d'un outil de mots-clés (`comparatif solution vérification identité`) est

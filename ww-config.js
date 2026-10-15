@@ -1189,7 +1189,7 @@ export default {
             bindingValidation: {
                 type: 'boolean',
                 tooltip:
-                    'Match keyword-tool queries against their natural form: ignore stop words (articles, prepositions) and agreement on both sides, and allow stop words between content words. E.g. the raw query "comparatif solution verification identite" matches "comparatif des solutions de vérification d\'identité".',
+                    'Secondary keywords: match keyword-tool queries against their natural form: ignore stop words (articles, prepositions) and agreement on both sides, and allow stop words between content words. E.g. the raw query "comparatif solution verification identite" matches "comparatif des solutions de vérification d\'identité". The focus keyword always matches this way, in any word order.',
             },
             /* wwEditor:end */
         },

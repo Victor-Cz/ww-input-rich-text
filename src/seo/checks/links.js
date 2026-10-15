@@ -1,5 +1,5 @@
 import { makeCheck, notApplicable, ratioScore } from '../result.js';
-import { includesAnyPhrase, normalizeText } from '../textUtils.js';
+import { hasKeyword, normalizeText } from '../textUtils.js';
 import { extractDomain, normalizeDomain } from '../../utils/linkDomain.js';
 
 // Catégorie "links" — aucun mot-clé requis.
@@ -21,7 +21,7 @@ export function linksChecks(context) {
 // na sans mot-clé ou sans lien. value : nb de liens fautifs.
 function competingAnchor(model, phrases, matchOptions) {
     if (!phrases.length || !model.links.length) return notApplicable('competingAnchor', 'links', 0);
-    const offenders = model.links.filter(link => includesAnyPhrase(link.text, phrases, matchOptions));
+    const offenders = model.links.filter(link => hasKeyword(link.text, phrases, matchOptions));
     return makeCheck(
         'competingAnchor',
         'links',
