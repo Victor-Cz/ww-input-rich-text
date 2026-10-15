@@ -36,6 +36,7 @@ A versatile rich text editor enabling text content creation with formatting opti
 - showHeader: boolean - Show a header container above the menu. The header, the menu and the text then scroll together inside the element (needs a height) and the menu sticks to the top once the header has scrolled away. Default: false
 - headerAlignText: boolean - Header takes the width and position of the text column (editorPadding, editorMaxWidth). Off = full-width header. Default: true
 - customMenu: boolean - Use custom menu. Default: false
+- centerMenu: boolean - Center the menu on the text column at its own width (can be wider than the column, never wider than the editor). Default: false
 - menuColor: string - Menu color. Default: "#000000ad"
 - fieldName: string - Form field name. Default: ""
 - customValidation: boolean - Enable custom validation. Default: false

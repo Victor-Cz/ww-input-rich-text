@@ -28,6 +28,7 @@ export default {
             'showHeader',
             'headerAlignText',
             'customMenu',
+            'centerMenu',
             'menuColor',
             'editorPadding',
             'editorMaxWidth',
@@ -857,6 +858,19 @@ export default {
             type: 'OnOff',
             defaultValue: false,
             bindable: true,
+        },
+        centerMenu: {
+            label: {
+                en: 'Center menu on text',
+                fr: 'Centrer le menu sur le texte',
+            },
+            type: 'OnOff',
+            defaultValue: false,
+            bindable: true,
+            description: {
+                en: 'The menu keeps its own width and is centered on the text column: it can be wider than the column, never wider than the editor. Give the custom menu container an auto width.',
+                fr: "Le menu garde sa propre largeur et se centre sur la colonne de texte : il peut être plus large que la colonne, jamais que l'éditeur. Donnez une largeur auto au conteneur du menu personnalisé.",
+            },
         },
         initialValue: {
             section: 'settings',

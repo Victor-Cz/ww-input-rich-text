@@ -30,7 +30,8 @@
                      (l'utilisateur pilote sa visibilité via isVersionPreview) ;
                      la frise apparaît par-dessus le slot, ou dans le conteneur
                      externe si un sélecteur est fourni -->
-                <div class="ww-rich-text__menu-slot" :class="{ '-history': versionHistory.active }">
+                <div class="ww-rich-text__menu-slot"
+                    :class="{ '-history': versionHistory.active, '-centered': content.centerMenu }">
                 <div class="ww-rich-text__menu native-menu" v-if="!hideMenu && !content.customMenu" :style="menuStyles">
                     <!-- Texte type (normal, ...) -->
                     <select id="rich-size" v-model="currentTextType" :disabled="!isEditable" v-if="menu.textType">
@@ -3677,6 +3678,23 @@ export default {
 
 .ww-rich-text__menu-slot {
     position: relative;
+}
+
+/* Menu centré sur l'axe de la colonne de texte : à sa largeur naturelle, il
+   peut déborder de la colonne des deux côtés, sans dépasser l'éditeur (au-delà,
+   il défile). Les marges de colonne inégales décalent le centre d'autant. */
+.ww-rich-text__menu-slot.-centered {
+    --column-left: max(var(--editor-padding-left, 12px), calc((100% - var(--editor-max-width, 100%)) / 2));
+    --column-right: max(var(--editor-padding-right, 12px), calc((100% - var(--editor-max-width, 100%)) / 2));
+    display: flex;
+    justify-content: center;
+    padding-left: max(0px, calc(var(--column-left) - var(--column-right)));
+    padding-right: max(0px, calc(var(--column-right) - var(--column-left)));
+
+    > .ww-rich-text__menu {
+        min-width: 0;
+        max-width: 100%;
+    }
 }
 
 /* Sans menu du tout, réserver la place de la frise en mode historique
