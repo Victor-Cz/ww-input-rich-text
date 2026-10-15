@@ -54,6 +54,12 @@ son mot le moins répété ; le surlignage montre les mots trouvés. Des mots
 répartis sur plusieurs phrases ne comptent pas comme une occurrence (l'intro, le
 H1 et le meta title les notent alors « en partie présents »).
 
+Une phrase se termine par `.` `!` `?` ou `…` suivi d'un espace (ou en fin de
+texte). Ne coupent pas : un point sans espace après (`2.5`, `indy.fr`), un point
+après une abréviation (`vs.`, `M.`, `cf.`, `e.g.`…), un point ou `…` suivi d'une
+minuscule (`etc. et`, `hésite… puis`). Ce découpage sert aussi aux checks de
+lisibilité (longueur des phrases, transitions, voix passive…).
+
 Pour les **mots-clés secondaires**, le matching reste une suite de mots dans
 l'ordre. Avec **`seoFullLemmatizer`** activé, il passe en mode « requête outil
 SEO » : les mots vides (articles, prépositions, accords) sont ignorés **des deux

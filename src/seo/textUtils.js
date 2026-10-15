@@ -266,23 +266,70 @@ export function countSyllables(word, lang) {
     return Math.max(1, groups ? groups.length : 1);
 }
 
+// Abréviations dont le point ne termine pas la phrase (fr + en), normalisées
+// (minuscules, sans accent). « etc. » n'y est pas : il finit souvent une phrase
+// (et ne coupe pas quand la suite reprend en minuscule).
+const ABBREVIATIONS = new Set([
+    'vs', 'cf', 'ex', 'v', 'p', 'pp', 'env', 'approx', 'av', 'apr', 'fig', 'ref', 'tel', 'art', 'chap', 'vol',
+    'mme', 'mmes', 'mlle', 'mlles', 'mm', 'dr', 'pr', 'prof', 'st', 'ste', 'mr', 'mrs', 'ms', 'jr', 'sr',
+    'e.g', 'i.e',
+]);
+// Fermants qui peuvent suivre la ponctuation finale (« il a dit "ok." Puis… »)
+const CLOSING_CHARS = new Set(['"', '\'', '»', ')', ']', '”', '’']);
+
 /**
  * Découpe un texte en phrases. Retourne [{ text, start, end }] avec
  * index dans le texte d'origine.
+ * La ponctuation finale ne coupe que suivie d'un espace ou de la fin du texte
+ * (« 2.5 », « indy.fr » restent entiers). Un point ou des points de suspension
+ * ne coupent pas quand la suite reprend en minuscule (« etc. et »,
+ * « hésite… puis »), ni un point après une abréviation (« vs. », « M. »).
  */
 export function splitSentences(text) {
+    const source = String(text);
     const sentences = [];
-    const regex = /[^.!?…]+[.!?…]*[\s ]*/g;
-    for (const match of String(text).matchAll(regex)) {
-        const raw = match[0];
-        const trimmed = raw.trim();
-        if (!trimmed || !/[\p{L}\p{N}]/u.test(trimmed)) continue;
-        const leading = raw.length - raw.trimStart().length;
-        sentences.push({
-            text: trimmed,
-            start: match.index + leading,
-            end: match.index + leading + trimmed.length,
-        });
+    let start = 0;
+    for (const match of source.matchAll(/[.!?…]+/g)) {
+        const end = match.index + match[0].length;
+        if (!isSentenceEnd(source, match.index, end)) continue;
+        pushSentence(sentences, source, start, end);
+        start = end;
     }
+    pushSentence(sentences, source, start, source.length);
     return sentences;
+}
+
+function pushSentence(sentences, source, from, to) {
+    const raw = source.slice(from, to);
+    const trimmed = raw.trim();
+    if (!trimmed || !/[\p{L}\p{N}]/u.test(trimmed)) return;
+    const leading = raw.length - raw.trimStart().length;
+    sentences.push({ text: trimmed, start: from + leading, end: from + leading + trimmed.length });
+}
+
+// La ponctuation [punctStart, punctEnd) termine-t-elle une phrase ?
+function isSentenceEnd(source, punctStart, punctEnd) {
+    let next = punctEnd;
+    while (next < source.length && CLOSING_CHARS.has(source[next])) next++;
+    if (next >= source.length) return true;
+    if (!/\s/.test(source[next])) {
+        // Espace oublié entre deux phrases (« fin.Début »), mais pas « U.S.A. »
+        return /\p{Ll}/u.test(source[punctStart - 1] || '') && /\p{Lu}/u.test(source[next]);
+    }
+
+    const punctuation = source.slice(punctStart, punctEnd);
+    if (/[!?]/.test(punctuation)) return true;
+
+    while (next < source.length && /\s/.test(source[next])) next++;
+    if (next < source.length && /\p{Ll}/u.test(source[next])) return false;
+    if (punctuation !== '.') return true;
+
+    // Mot qui précède le point : « M. » (Monsieur — en majuscule seulement, pour
+    // ne pas avaler « 10 m. ») ou une abréviation connue. Pas d'autre initiale :
+    // « le plan B. Ensuite » doit couper.
+    let wordStart = punctStart;
+    while (wordStart > 0 && !/\s/.test(source[wordStart - 1])) wordStart--;
+    const word = source.slice(wordStart, punctStart).replace(/^[^\p{L}\p{N}]+/u, '');
+    if (word === 'M') return false;
+    return !ABBREVIATIONS.has(normalizeText(word));
 }
