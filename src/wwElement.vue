@@ -13,7 +13,8 @@
         '--primary-color-active': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '99', // 60%
         '--primary-color-hover': (content.parameterAiMenuPrimaryColor ?? '#007bff') + 'CC', // 80%
         '--brispr-color': agentColor,
-        ...cssVariables
+        ...cssVariables,
+        ...columnStyles
     }">
         <template v-if="richEditor">
                 <!-- En-tête : l'en-tête, le menu et le texte défilent ensemble, le
@@ -1267,6 +1268,11 @@ export default {
                 '--tooltip-color': this.content.a?.tooltipColor || '#ffffff',
                 '--tooltip-background-color': this.content.a?.tooltipBackgroundColor || '#393d45',
                 '--tooltip-font-size': this.content.a?.tooltipFontSize || '12px',
+            };
+        },
+        // Colonne de texte, posée à la racine : l'en-tête aligné la partage avec le texte
+        columnStyles() {
+            return {
                 // editor padding
                 '--editor-padding-top': this.content.editorPadding?.paddingTop || '12px',
                 '--editor-padding-right': this.content.editorPadding?.paddingRight || '12px',
