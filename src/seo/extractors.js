@@ -185,6 +185,11 @@ export function findPhrasesInModel(model, phrases, opts = {}) {
         if (block.isCode) continue;
         ranges.push(...findPhrasesInBlock(block, phrases, opts));
     }
+    return mergeRanges(ranges);
+}
+
+/** Plages dédoublonnées et triées dans l'ordre du document. */
+export function mergeRanges(ranges) {
     return dedupeRanges(ranges).sort((a, b) => a.from - b.from);
 }
 

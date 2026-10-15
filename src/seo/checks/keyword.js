@@ -1,4 +1,4 @@
-import { findPhrasesInBlock, findPhrasesInModel } from '../extractors.js';
+import { findPhrasesInBlock, findPhrasesInModel, mergeRanges } from '../extractors.js';
 import { decreasingScore, makeCheck, notApplicable, ratioScore } from '../result.js';
 import { contentWords, findPhraseMatches } from '../textUtils.js';
 
@@ -30,12 +30,23 @@ export function keywordChecks(context) {
 // Mots-clés secondaires : % de secondaires apparaissant dans le texte.
 // Cible ≥ 70 %, proportionnel en dessous. na sans secondaires fournis.
 // value : % des secondaires présents ; occurrences surlignables.
+// `terms` : détail terme par terme (exposé dans seo.keywords.secondary).
 function secondaryKeywords(model, secondaries, matchOptions) {
-    if (!secondaries.length) return notApplicable('secondaryKeywords', 'keyword');
-    const found = secondaries.filter(keyword => findPhrasesInModel(model, [keyword], matchOptions).length > 0);
-    const percent = Math.round((found.length / secondaries.length) * 100);
-    const ranges = found.length ? findPhrasesInModel(model, found, matchOptions) : [];
-    return makeCheck('secondaryKeywords', 'keyword', ratioScore(percent, 70), percent, ranges);
+    if (!secondaries.length) {
+        const check = notApplicable('secondaryKeywords', 'keyword');
+        check.terms = [];
+        return check;
+    }
+    const terms = secondaries.map(term => {
+        const ranges = findPhrasesInModel(model, [term], matchOptions);
+        return { term, count: ranges.length, found: ranges.length > 0, ranges };
+    });
+    const foundCount = terms.filter(term => term.found).length;
+    const percent = Math.round((foundCount / secondaries.length) * 100);
+    const ranges = mergeRanges(terms.flatMap(term => term.ranges));
+    const check = makeCheck('secondaryKeywords', 'keyword', ratioScore(percent, 70), percent, ranges);
+    check.terms = terms;
+    return check;
 }
 
 // 1-4 mots significatifs = 100, puis -15 par mot au-delà.

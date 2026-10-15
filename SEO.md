@@ -104,9 +104,25 @@ mot de contenu **étranger** intercalé rompt toujours le match.
     headings: { h1, h2, h3, h4, h5, h6 }, lists, tables,
     images, imagesWithoutAlt, internalLinks, externalLinks,
     keywordOccurrences, keywordDensity, fleschScore, readingTimeMinutes
+  },
+  keywords: {
+    // null sans mot-clé principal. occurrences / density comptent aussi les synonymes
+    main: { term: 'chaussure running', occurrences: 8, density: 1.2 },
+    // un objet par mot-clé secondaire, dans l'ordre de seoSecondaryKeywords ([] sans secondaires)
+    secondary: [
+      { id: 'secondaryKeyword:amorti', term: 'amorti', count: 3, found: true },
+      { id: 'secondaryKeyword:drop', term: 'drop', count: 0, found: false },
+    ]
   }
 }
 ```
+
+`keywords.secondary` donne le détail que le check `secondaryKeywords` résume en
+pourcentage (même matching, même tolérance casse / accents / flexions) : une
+liste de chips ✓ / ✗ est un simple repeat dessus. L'`id` de chaque entrée se
+passe à `highlightSeoCheck` pour surligner ce terme seul. Pour surligner le
+mot-clé principal, utiliser le check `keywordDensity` (ses plages sont toutes les
+occurrences du principal et de ses synonymes).
 
 ## Check ids
 
@@ -136,7 +152,9 @@ mot de contenu **étranger** intercalé rompt toujours le match.
   l'éditeur toutes les occurrences liées au check (mots, phrases, blocs, images)
   et scrolle vers la première. Retourne `false` si le check n'a rien à montrer —
   la clé `clickable` du check l'indique à l'avance (pour n'afficher l'« œil »
-  que sur les checks concernés).
+  que sur les checks concernés). `checkId` accepte aussi l'`id` d'un mot-clé
+  secondaire (`seo.keywords.secondary[].id`) : seules ses occurrences sont
+  surlignées (rien à montrer si `found` est `false`).
   Le surlignage est **persistant** : il suit les frappes en direct, puis ses
   plages sont **recalculées à chaque ré-analyse** — les occurrences corrigées
   disparaissent, les nouvelles apparaissent — jusqu'à `clearSeoHighlight` ou un

@@ -17,8 +17,9 @@ import { getWordLists } from './wordlists.js';
  * @param {Object} rawOptions - { keyword, synonyms, secondaryKeywords, metaTitle,
  *   metaDescription, slug, siteDomain, lang, wordLists, expectH1 }
  * @returns {{ result: Object, rangesMap: Object }} - `result` est la valeur exposée
- *   dans la variable `seo` ; `rangesMap` associe chaque check id à ses plages doc
- *   pour le surlignage (non exposé : positions volatiles).
+ *   dans la variable `seo` ; `rangesMap` associe chaque check id (et chaque id de
+ *   mot-clé secondaire, `secondaryKeyword:<terme>`) à ses plages doc pour le
+ *   surlignage (non exposé : positions volatiles).
  */
 export function analyzeSeo(doc, rawOptions = {}) {
     const options = normalizeOptions(rawOptions);
@@ -45,6 +46,12 @@ export function analyzeSeo(doc, rawOptions = {}) {
     ];
 
     const rangesMap = {};
+    // Détail par mot-clé secondaire : chacun a sa propre entrée de surlignage,
+    // pour cibler un seul terme avec highlightSeoCheck.
+    const secondaryTerms = checks.find(check => check.id === 'secondaryKeywords')?.terms || [];
+    for (const term of secondaryTerms) {
+        rangesMap[secondaryKeywordId(term.term)] = term.ranges;
+    }
     const exposedChecks = checks.map(check => {
         rangesMap[check.id] = check.ranges || [];
         const labels = getLabels(check.id, options.uiLang);
@@ -91,9 +98,34 @@ export function analyzeSeo(doc, rawOptions = {}) {
         }),
         checks: exposedChecks,
         stats: buildStats(model, options, occurrences),
+        keywords: {
+            main: phrases.length
+                ? {
+                      term: options.keyword,
+                      occurrences: occurrences.length,
+                      density: keywordDensity(occurrences, model),
+                  }
+                : null,
+            secondary: secondaryTerms.map(({ term, count, found }) => ({
+                // Identifiant accepté par highlightSeoCheck (surligne ce terme seul)
+                id: secondaryKeywordId(term),
+                term,
+                count,
+                found,
+            })),
+        },
     };
 
     return { result, rangesMap };
+}
+
+function secondaryKeywordId(term) {
+    return `secondaryKeyword:${term}`;
+}
+
+// Densité du mot-clé principal (+ synonymes), en % arrondi à 2 décimales
+function keywordDensity(occurrences, model) {
+    return model.wordCount ? Math.round((occurrences.length / model.wordCount) * 10000) / 100 : 0;
 }
 
 function normalizeOptions(raw) {
@@ -135,7 +167,6 @@ function buildStats(model, options, occurrences) {
     }
 
     const { external, internal } = classifyLinks(model.links, options.siteDomain);
-    const keywordOccurrences = occurrences.length;
 
     return {
         wordCount: model.wordCount,
@@ -149,10 +180,8 @@ function buildStats(model, options, occurrences) {
         imagesWithoutAlt: model.images.filter(image => !image.alt).length,
         internalLinks: internal.length,
         externalLinks: external.length,
-        keywordOccurrences,
-        keywordDensity: model.wordCount
-            ? Math.round((keywordOccurrences / model.wordCount) * 10000) / 100
-            : 0,
+        keywordOccurrences: occurrences.length,
+        keywordDensity: keywordDensity(occurrences, model),
         fleschScore: fleschReadingScore(model, options.lang),
         readingTimeMinutes: Math.max(1, Math.round(model.wordCount / 200)),
     };

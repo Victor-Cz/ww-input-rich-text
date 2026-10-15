@@ -2675,6 +2675,7 @@ export default {
             }
         },
 
+        // checkId : id d'un check, ou id d'un mot-clé secondaire (seo.keywords.secondary[].id)
         highlightSeoCheck(checkId, color = null) {
             if (!this.richEditor || !this.seoRangesMap) return false;
             const ranges = this.seoRangesMap[checkId];
