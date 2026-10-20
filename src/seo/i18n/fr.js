@@ -36,6 +36,10 @@ export default {
             name: 'Metas',
             description: 'Optimisation du meta title et de la meta description de la page.',
         },
+        credibility: {
+            name: 'Crédibilité',
+            description: 'Faits chiffrés et sourcés, citations, fraîcheur des données : ce qui rend un passage digne d’être cité.',
+        },
     },
     // Structure
     textLength: {
@@ -60,13 +64,15 @@ export default {
         },
     },
     subheadingDistribution: {
-        title: 'Répartition des sous-titres',
-        description: 'Vérifie qu’aucune section ne dépasse 300 mots sans sous-titre.',
-        objective: '≤ 300 mots par section',
+        title: 'Longueur des sections',
+        description: 'Vérifie que chaque section (texte entre deux sous-titres) fait entre 80 et 300 mots : assez pour être comprise seule, assez court pour rester ciblée.',
+        objective: '80-300 mots par section',
         messages: {
-            good: 'Le texte est bien découpé par des sous-titres.',
-            warning: 'Une section fait {value} mots sans sous-titre, ajoutez-en un.',
-            bad: 'Une section fait {value} mots sans sous-titre : découpez-la.',
+            good: 'Les sections ont une bonne longueur.',
+            warning: '{value} section(s) sortent de la fourchette 80-300 mots.',
+            bad: '{value} section(s) sortent de la fourchette 80-300 mots : redécoupez le texte.',
+            tooLong: '{value} section(s) hors fourchette, dont au moins une de plus de 300 mots sans sous-titre : découpez-la.',
+            tooShort: '{value} section(s) font moins de 80 mots : étoffez-les ou fusionnez-les.',
         },
     },
     paragraphLength: {
@@ -80,12 +86,14 @@ export default {
         },
     },
     structuredContent: {
-        title: 'Contenu structuré',
-        description: 'Vérifie la présence de listes ou de tableaux, favorables aux featured snippets.',
-        objective: '≥ 1 liste ou tableau',
+        title: 'Format adapté',
+        description: 'Vérifie que le format suit le contenu : liste numérotée pour une procédure, tableau pour un comparatif, sinon au moins une liste ou un tableau. Favorable aux featured snippets et à l’extraction par les moteurs IA.',
+        objective: 'Liste numérotée (procédure), tableau (comparatif), sinon ≥ 1 liste ou tableau',
         messages: {
-            good: 'Le contenu utilise des listes ou des tableaux.',
+            good: 'Le format est adapté au contenu.',
             warning: 'Ajoutez une liste ou un tableau (favorable aux featured snippets).',
+            missingOrderedList: 'Le contenu décrit une procédure : présentez les étapes en liste numérotée.',
+            missingTable: 'Le contenu compare des options : ajoutez un tableau comparatif.',
         },
     },
     centeredContent: {
@@ -385,6 +393,172 @@ export default {
             good: 'Le mot-clé apparaît {value} fois dans la meta description.',
             warning: 'Le mot-clé apparaît {value} fois dans la meta description : 1 à 2 est idéal.',
             bad: 'Le mot-clé doit apparaître 1 à 2 fois dans la meta description (actuellement {value}).',
+        },
+    },
+    // GEO — structure
+    answerFirst: {
+        title: 'Réponse d’abord',
+        description: 'Vérifie que chaque section commence par une réponse directe : un paragraphe de 30 à 80 mots, ou une liste / un tableau.',
+        objective: '1er paragraphe de 30-80 mots après chaque sous-titre',
+        messages: {
+            good: 'Les sections commencent par une réponse directe.',
+            warning: '{value} section(s) ne commencent pas par une réponse directe de 30 à 80 mots.',
+            bad: '{value} section(s) ne commencent pas par une réponse directe : ouvrez chaque section par la réponse, puis détaillez.',
+            na: 'Pas assez de sections pour évaluer.',
+        },
+    },
+    selfContained: {
+        title: 'Passages autonomes',
+        description: 'Vérifie que chaque section se comprend seule, sans renvoyer au texte qui précède (« Cela… », « comme vu plus haut »).',
+        objective: 'Aucune section dépendante du contexte',
+        messages: {
+            good: 'Les sections se comprennent seules.',
+            warning: '{value} renvoi(s) au contexte : nommez le sujet au lieu d’y faire référence.',
+            bad: '{value} renvoi(s) au contexte : extraites seules, ces sections perdent leur sens.',
+            na: 'Pas de section à évaluer.',
+        },
+    },
+    keyTakeaways: {
+        title: 'Résumé en tête',
+        description: 'Vérifie que le contenu s’ouvre sur un résumé : bloc « En bref / À retenir », ou introduction courte contenant le mot-clé.',
+        objective: 'Bloc « À retenir » ou intro ≤ 100 mots avec le mot-clé',
+        messages: {
+            good: 'Le contenu s’ouvre sur un résumé.',
+            warning: 'L’introduction fait {value} mots : raccourcissez-la ou ajoutez un bloc « À retenir ».',
+            bad: 'L’introduction fait {value} mots : ajoutez un bloc « À retenir » en tête.',
+            missingKeyword: 'L’introduction est courte mais ne nomme pas le mot-clé.',
+            noIntro: 'Le contenu commence directement par un sous-titre : ajoutez une introduction courte.',
+        },
+    },
+    // GEO — titres
+    questionHeadings: {
+        title: 'Titres en questions',
+        description: 'Vérifie qu’une partie des sous-titres reprend la forme des requêtes (« Comment… ? », « Quel… ? »).',
+        objective: '≥ 30 % des H2/H3 en questions',
+        messages: {
+            good: '{value} % des sous-titres sont des questions.',
+            warning: '{value} % des sous-titres sont des questions : visez 30 %.',
+            bad: '{value} % des sous-titres sont des questions : reformulez-en quelques-uns comme une requête.',
+            na: 'Pas assez de sous-titres pour évaluer.',
+        },
+    },
+    descriptiveHeadings: {
+        title: 'Titres descriptifs',
+        description: 'Vérifie que chaque sous-titre nomme son sujet (pas d’« Introduction » ou d’« Avantages » seul).',
+        objective: 'Aucun sous-titre générique',
+        messages: {
+            good: 'Les sous-titres sont descriptifs.',
+            warning: '{value} sous-titre(s) génériques : précisez de quoi ils parlent.',
+            bad: '{value} sous-titre(s) génériques : un titre doit nommer son sujet.',
+            na: 'Pas de sous-titre à évaluer.',
+        },
+    },
+    // GEO — lisibilité
+    vagueLanguage: {
+        title: 'Formules floues',
+        description: 'Vérifie l’absence d’affirmations sans sujet identifiable (« certains experts », « des études montrent »).',
+        objective: '≤ 5 % des phrases',
+        messages: {
+            good: 'Les affirmations sont précises.',
+            warning: '{value} % des phrases contiennent une formule floue : nommez la source.',
+            bad: '{value} % des phrases contiennent une formule floue : remplacez-les par des faits attribués.',
+            na: 'Texte trop court pour évaluer.',
+        },
+    },
+    acronymsDefined: {
+        title: 'Sigles développés',
+        description: 'Vérifie que chaque sigle est développé à sa première occurrence (hors sigles connus de tous).',
+        objective: 'Tous les sigles développés',
+        messages: {
+            good: 'Les sigles sont développés.',
+            warning: '{value} sigle(s) ne sont pas développés à leur première occurrence.',
+            bad: '{value} sigle(s) ne sont pas développés : écrivez la forme longue entre parenthèses.',
+            na: 'Aucun sigle à développer.',
+        },
+    },
+    // GEO — mot-clé
+    definition: {
+        title: 'Définition du sujet',
+        description: 'Vérifie que le sujet est défini dès le début (« X est… », « X désigne… »).',
+        objective: 'Une définition dans les 150 premiers mots',
+        messages: {
+            good: 'Le sujet est défini dès le début.',
+            keywordOnly: 'Le mot-clé apparaît au début, mais sans définition : écrivez « <mot-clé> est… ».',
+            bad: 'Définissez le sujet dans les 150 premiers mots (« <mot-clé> est… »).',
+        },
+    },
+    entityPerSection: {
+        title: 'Sujet nommé par partie',
+        description: 'Vérifie que chaque partie (H2) nomme le sujet, pour rester compréhensible une fois extraite.',
+        objective: '≥ 80 % des parties nomment le sujet',
+        messages: {
+            good: '{value} % des parties nomment le sujet.',
+            warning: '{value} % des parties nomment le sujet : nommez-le dans les autres.',
+            bad: '{value} % des parties nomment le sujet : extraites seules, les autres ne disent pas de quoi elles parlent.',
+            na: 'Pas assez de parties (H2) pour évaluer.',
+        },
+    },
+    questionCoverage: {
+        title: 'Questions couvertes',
+        description: 'Vérifie que le contenu répond aux questions cibles fournies.',
+        objective: '100 % des questions cibles couvertes',
+        messages: {
+            good: '{value} % des questions cibles sont couvertes.',
+            warning: '{value} % des questions cibles sont couvertes : traitez les autres.',
+            bad: '{value} % des questions cibles sont couvertes : ajoutez des sections qui y répondent.',
+            na: 'Aucune question cible fournie.',
+        },
+    },
+    // GEO — crédibilité
+    sourcedFacts: {
+        title: 'Faits sourcés',
+        description: 'Vérifie que chaque chiffre est attribué à une source (lien externe ou « selon… »). Un chiffre non sourcé coûte plus cher qu’une absence de chiffre.',
+        objective: 'Tous les chiffres sourcés',
+        messages: {
+            good: 'Les chiffres sont sourcés.',
+            warning: '{value} phrase(s) chiffrées sans source.',
+            bad: '{value} phrase(s) chiffrées sans source : citez la source ou retirez le chiffre.',
+            na: 'Aucun chiffre à sourcer.',
+        },
+    },
+    factDensity: {
+        title: 'Faits chiffrés',
+        description: 'Vérifie la présence de faits précis et chiffrés (pourcentages, montants, durées).',
+        objective: '≈ 1 fait chiffré pour 150 mots',
+        messages: {
+            good: '{value} fait(s) chiffré(s) : c’est suffisant.',
+            warning: '{value} fait(s) chiffré(s) pour {target} visés.',
+            bad: '{value} fait(s) chiffré(s) pour {target} visés : ajoutez des données sourcées.',
+        },
+    },
+    quotations: {
+        title: 'Citations',
+        description: 'Vérifie la présence d’au moins une citation attribuée (bloc de citation, ou propos entre guillemets avec sa source).',
+        objective: '≥ 1 citation attribuée',
+        messages: {
+            good: 'Le contenu cite {value} source(s).',
+            bad: 'Ajoutez une citation d’expert attribuée.',
+        },
+    },
+    freshness: {
+        title: 'Fraîcheur des données',
+        description: 'Vérifie que les années citées sont récentes (≤ 2 ans) pour au moins la moitié.',
+        objective: '≥ 50 % d’années récentes',
+        messages: {
+            good: 'Les données citées sont récentes.',
+            warning: 'Seulement {value} % des années citées sont récentes : actualisez les données.',
+            bad: 'Seulement {value} % des années citées sont récentes : les données semblent datées.',
+            na: 'Aucune année citée, ou contenu intemporel.',
+        },
+    },
+    entityDensity: {
+        title: 'Entités nommées',
+        description: 'Vérifie la présence de noms propres (marques, organismes, lieux, personnes), qui ancrent le contenu.',
+        objective: '≥ 1 entité pour 100 mots',
+        messages: {
+            good: 'Le contenu nomme des entités précises.',
+            warning: '{value} entité(s) pour 100 mots : nommez des acteurs précis.',
+            bad: '{value} entité(s) pour 100 mots : le contenu reste générique.',
         },
     },
 };

@@ -1,6 +1,6 @@
 import { findKeywordInBlock, findPhrasesInBlock } from '../extractors.js';
 import { decreasingScore, makeCheck, notApplicable, ratioScore } from '../result.js';
-import { contentWords, findPhraseMatches, hasKeyword } from '../textUtils.js';
+import { contentWords, findListMatches, findPhraseMatches, hasKeyword, normalizeText } from '../textUtils.js';
 
 // Catégorie "headings" — contenu des titres (H1-H6) : longueur et présence
 // des mots-clés. La structure des titres (headingHierarchy — unicité du H1 +
@@ -13,7 +13,45 @@ export function headingsChecks(context) {
         keywordInH1(model, phrases, wordLists.stopWords, matchOptions),
         keywordInSubheadings(model, phrases, matchOptions),
         secondaryInSubheadings(model, context.options.secondaryKeywords, context.secondaryMatchOptions),
+        questionHeadings(model, wordLists),
+        descriptiveHeadings(model, wordLists),
     ];
+}
+
+// Titres formulés comme les requêtes (« Comment… ? », « What is… »).
+// Cible 30 % des H2/H3 (pas 100 % : tout n'est pas une question) — proportionnel.
+// na si < 3 sous-titres. value : % de sous-titres interrogatifs (surlignés).
+function questionHeadings(model, wordLists) {
+    const subheadings = model.headings.filter(heading => heading.level === 2 || heading.level === 3);
+    if (subheadings.length < 3) return notApplicable('questionHeadings', 'headings', 0);
+    const questions = subheadings.filter(heading => isQuestion(heading.text, wordLists.questionWords));
+    const percent = Math.round((questions.length / subheadings.length) * 100);
+    return makeCheck('questionHeadings', 'headings', ratioScore(percent, 30), percent,
+        questions.map(heading => ({ from: heading.from, to: heading.to })));
+}
+
+export function isQuestion(text, questionWords) {
+    const trimmed = text.trim();
+    if (trimmed.endsWith('?')) return true;
+    return findListMatches(trimmed, questionWords).some(match => match.start === 0);
+}
+
+// Titres porteurs de sens : un titre sert d'ancre au passage extrait, il doit
+// nommer son sujet. Fautif : titre générique (« Introduction », « Avantages »)
+// ou moins de 2 mots de contenu (« FAQ » toléré). Score = % de titres
+// descriptifs. na sans sous-titre. value : nb de titres fautifs (surlignés).
+function descriptiveHeadings(model, wordLists) {
+    const subheadings = model.headings.filter(heading => heading.level >= 2);
+    if (!subheadings.length) return notApplicable('descriptiveHeadings', 'headings', 0);
+    const generic = new Set(wordLists.genericHeadings.map(heading => normalizeText(heading)));
+    const offenders = subheadings.filter(heading => {
+        const normalized = normalizeText(heading.text).replace(/[\s:?!.…]+$/u, '').trim();
+        if (normalized === 'faq') return false;
+        return generic.has(normalized) || contentWords(heading.text, wordLists.stopWords).length < 2;
+    });
+    const score = (1 - offenders.length / subheadings.length) * 100;
+    return makeCheck('descriptiveHeadings', 'headings', score, offenders.length,
+        offenders.map(heading => ({ from: heading.from, to: heading.to })));
 }
 
 // Longueur des titres : un titre concis reste scannable. 100 jusqu'à 60

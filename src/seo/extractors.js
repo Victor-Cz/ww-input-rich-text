@@ -6,17 +6,30 @@ import { countWords, splitSentences, findKeywordMatches, findPhraseMatches } fro
 
 const LIST_TYPES = new Set(['bulletList', 'orderedList', 'taskList']);
 const IMAGE_TYPES = new Set(['image', 'customImage']);
+// Conteneur d'un bloc (le plus proche) : distingue un paragraphe de liste, de
+// tableau ou de citation d'un paragraphe libre.
+const CONTAINER_TYPES = {
+    orderedList: 'orderedList',
+    bulletList: 'list',
+    taskList: 'list',
+    tableCell: 'table',
+    tableHeader: 'table',
+    blockquote: 'blockquote',
+};
 
 /**
  * Construit le modèle d'analyse :
  * {
- *   blocks:    [{ type, level, from, to, text, segments, words, align, inCodeBlock }]
+ *   blocks:    [{ type, level, from, to, text, segments, words, align, isCode, container }]
+ *              container : 'orderedList' | 'list' | 'table' | 'blockquote' | null
  *   headings:  sous-ensemble de blocks (h1-h6)
  *   paragraphs: sous-ensemble de blocks (paragraphes hors code)
  *   sentences: [{ text, from, to, words, block }]
  *   links:     [{ from, to, href, rel, text }]
  *   images:    [{ from, to, src, alt }]
- *   listCount, tableCount, wordCount, charCount, fullText
+ *   sections:  [{ heading, blocks, words, from, to }] — découpage aux titres H2-H6 ;
+ *              la 1re (heading null) est l'introduction
+ *   listCount, orderedListCount, tableCount, blockquoteCount, wordCount, charCount, fullText
  * }
  */
 export function extractModel(doc) {
@@ -24,13 +37,17 @@ export function extractModel(doc) {
     const links = [];
     const images = [];
     let listCount = 0;
+    let orderedListCount = 0;
     let tableCount = 0;
+    let blockquoteCount = 0;
 
     doc.descendants((node, pos) => {
         const typeName = node.type.name;
 
         if (LIST_TYPES.has(typeName)) listCount++;
+        if (typeName === 'orderedList') orderedListCount++;
         if (typeName === 'table') tableCount++;
+        if (typeName === 'blockquote') blockquoteCount++;
 
         if (IMAGE_TYPES.has(typeName)) {
             const src = (node.attrs?.src || '').trim();
@@ -80,11 +97,27 @@ export function extractModel(doc) {
             words: countWords(text),
             align: node.attrs?.textAlign || null,
             isCode: typeName === 'codeBlock',
+            container: findContainer(doc, pos),
         });
 
         return false;
     });
 
+    return assembleModel({
+        blocks,
+        links: mergeAdjacentLinks(links),
+        images,
+        counts: { listCount, orderedListCount, tableCount, blockquoteCount },
+    });
+}
+
+/**
+ * Assemble le modèle d'analyse à partir des blocs, liens et images extraits.
+ * Indépendant de ProseMirror : un autre extracteur (HTML côté serveur…) peut
+ * produire les mêmes entrées — positions en offsets de texte — et réutiliser
+ * toute l'analyse.
+ */
+export function assembleModel({ blocks, links = [], images = [], counts = {} }) {
     const headings = blocks.filter(block => block.type === 'heading');
     const paragraphs = blocks.filter(block => block.type === 'paragraph');
 
@@ -111,14 +144,55 @@ export function extractModel(doc) {
         headings,
         paragraphs,
         sentences,
-        links: mergeAdjacentLinks(links),
+        links,
         images,
-        listCount,
-        tableCount,
+        sections: buildSections(blocks),
+        listCount: counts.listCount || 0,
+        orderedListCount: counts.orderedListCount || 0,
+        tableCount: counts.tableCount || 0,
+        blockquoteCount: counts.blockquoteCount || 0,
         wordCount: textBlocks.reduce((sum, block) => sum + block.words, 0),
         charCount: fullText.replace(/\s/g, '').length,
         fullText,
     };
+}
+
+function findContainer(doc, pos) {
+    const $pos = doc.resolve(pos);
+    for (let depth = $pos.depth; depth > 0; depth--) {
+        const container = CONTAINER_TYPES[$pos.node(depth).type.name];
+        if (container) return container;
+    }
+    return null;
+}
+
+// Sections = passages tels qu'un moteur les découperait : un titre H2-H6 et les
+// blocs jusqu'au titre suivant. La 1re section (heading null) regroupe ce qui
+// précède le 1er sous-titre (introduction, H1 exclu).
+function buildSections(blocks) {
+    const sections = [];
+    let current = { heading: null, blocks: [] };
+    for (const block of blocks) {
+        if (block.type === 'heading' && block.level >= 2) {
+            sections.push(current);
+            current = { heading: block, blocks: [] };
+        } else if (block.type !== 'heading' && !block.isCode) {
+            current.blocks.push(block);
+        }
+    }
+    sections.push(current);
+    return sections
+        .filter(section => section.heading || section.blocks.length)
+        .map(section => {
+            const first = section.heading || section.blocks[0];
+            const last = section.blocks[section.blocks.length - 1] || section.heading;
+            return {
+                ...section,
+                words: section.blocks.reduce((sum, block) => sum + block.words, 0),
+                from: first.from,
+                to: last.to,
+            };
+        });
 }
 
 function collectLinkMarks(textNode, absolutePos, links) {

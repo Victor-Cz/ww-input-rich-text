@@ -91,6 +91,9 @@ lisibilité (longueur des phrases, transitions, voix passive…).
 - **Score global et par catégorie : moyenne pondérée** par l'importance du check
   (`weight`) : critique = 4 (`textLength`, `headingHierarchy`, `keywordInIntroduction`,
   `keywordDensity`, `metaTitleKeyword`), standard = 2, mineur = 1.
+  Le catalogue de checks est **commun avec l'[analyse GEO](GEO.md)** : chaque
+  check a un poids par score (`scoring.js`, `CHECK_WEIGHTS`) ; `seo.checks`
+  n'expose que ceux de poids SEO > 0.
 - **Grade** : `green` > 80 · `orange` 51-80 · `red` ≤ 50 — mais un check
   **critique en échec plafonne le grade à `orange`** (global et catégorie),
   quel que soit le score ; ses ids sont listés dans `criticalIssues`.
@@ -104,7 +107,7 @@ lisibilité (longueur des phrases, transitions, voix passive…).
   criticalIssues: ['headingHierarchy'],   // checks critiques (weight 4) en échec
   highlighting: false,   // true tant que des éléments SEO sont surlignés dans l'éditeur
   scores: {              // sous-score 0-100 par catégorie (null si non applicable)
-    structure, headings, readability, links, images, keyword, meta
+    structure, headings, readability, links, images, keyword, meta, credibility
   },
   categories: [          // les mêmes, avec labels localisés et grade plafonné
     { id: 'structure', name: 'Structure', description: '…', score: 77, grade: 'orange' },
@@ -155,14 +158,18 @@ occurrences du principal et de ses synonymes).
 
 ## Check ids
 
+Les checks marqués † sont partagés avec le GEO (voir [GEO.md](GEO.md)).
+
 - **structure** : `textLength`, `headingHierarchy` (unicité du H1 **+** hiérarchie
-  des niveaux), `subheadingDistribution`, `paragraphLength`, `structuredContent`,
-  `centeredContent` (toute la **structure** des titres est ici)
+  des niveaux), `subheadingDistribution`† (longueur des sections : 80-300 mots,
+  moyenne des sections), `paragraphLength`, `structuredContent`† (format adapté :
+  liste numérotée si procédure, tableau si comparatif, sinon ≥ 1 liste ou
+  tableau), `centeredContent`, `answerFirst`† (toute la **structure** des titres est ici)
 - **headings** (**contenu** des titres) : `headingLength`, `keywordInH1`,
   `keywordInSubheadings`, `secondaryInSubheadings` (les checks mot-clé sont na
-  sans mot-clé / sans secondaires)
+  sans mot-clé / sans secondaires), `questionHeadings`†, `descriptiveHeadings`†
 - **readability** : `sentenceLength`, `transitionWords`,
-  `consecutiveSentences`, `passiveVoice`, `complexWords`
+  `consecutiveSentences`, `passiveVoice`, `complexWords`, `vagueLanguage`†
   (le score Flesch, composite de `sentenceLength` + `complexWords`, est
   disponible dans `stats.fleschScore` mais n'est pas un check)
 - **links** : `outboundLinks`, `internalLinks`, `genericAnchors`, `emptyLinks`,
@@ -171,26 +178,28 @@ occurrences du principal et de ses synonymes).
   `imageAlt`, `keywordInImageAlt` (na sans mot-clé)
 - **keyword** : `keyphraseLength`, `keywordInIntroduction`, `keywordDensity`,
   `keywordDistribution`, `secondaryKeywords` (présence des mots-clés secondaires ;
-  na sans secondaires)
+  na sans secondaires), `definition`†
 - **meta** : `metaTitleKeyword` (présence + position), `metaTitleLength`,
   `metaTitleAttractiveness`, `metaDescriptionLength`, `metaDescriptionKeyword`
+- **credibility** : `sourcedFacts`† (phrases chiffrées attribuées à une source)
 
 ## Actions
 
-- **Highlight SEO check** (`highlightSeoCheck(checkId, color?)`) : surligne dans
+- **Highlight SEO/GEO check** (`highlightSeoCheck(checkId, color?)`) : surligne dans
   l'éditeur toutes les occurrences liées au check (mots, phrases, blocs, images)
   et scrolle vers la première. Retourne `false` si le check n'a rien à montrer —
   la clé `clickable` du check l'indique à l'avance (pour n'afficher l'« œil »
   que sur les checks concernés). `checkId` accepte aussi l'`id` d'un mot-clé
   secondaire (`seo.keywords.secondary[].id`) : seules ses occurrences sont
-  surlignées (rien à montrer si `found` est `false`).
+  surlignées (rien à montrer si `found` est `false`). Accepte aussi les ids
+  des checks GEO et des passages (`geo.passages[].id`).
   Le surlignage est **persistant** : il suit les frappes en direct, puis ses
   plages sont **recalculées à chaque ré-analyse** — les occurrences corrigées
   disparaissent, les nouvelles apparaissent — jusqu'à `clearSeoHighlight` ou un
   highlight sur un autre check.
   Couleur : argument `Color` de l'action > propriété `seoHighlightColor` >
   défaut de l'extension (jaune translucide).
-- **Clear SEO highlight** (`clearSeoHighlight()`) : désactive le mode et efface
+- **Clear SEO/GEO highlight** (`clearSeoHighlight()`) : désactive le mode et efface
   le surlignage.
 
 Le champ **`seo.highlighting`** (booléen) est `true` tant que des éléments SEO
@@ -206,9 +215,11 @@ lorsqu'il y a quelque chose à effacer.
 ## Architecture
 
 - `src/seo/` : analyseur pur (aucune dépendance), chargé en import dynamique —
-  `analyzer.js` (orchestrateur), `extractors.js` (une traversée du doc
-  ProseMirror → modèle avec positions), `checks/*.js` (un module par catégorie),
-  `scoring.js`, `messages.js` (fr/en), `wordlists.js`, `textUtils.js`.
+  `analyzer.js` (orchestrateur : `analyzeContent` → `{ seo, geo }`,
+  `analyzeModel` pour un modèle déjà extrait), `extractors.js` (une traversée du
+  doc ProseMirror → modèle avec positions ; `assembleModel` indépendant de
+  ProseMirror), `checks/*.js` (un module par catégorie), `scoring.js` (poids
+  par score), `passages.js`, `i18n/` (fr/en), `wordlists.js`, `textUtils.js`.
 - `src/extensions/SeoHighlighter.js` : extension Tiptap de décorations
   multi-plages, inerte hors surlignage.
 - Intégration unique dans `wwElement.vue` : variable `seo`, debounce, actions.

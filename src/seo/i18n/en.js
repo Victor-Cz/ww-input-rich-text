@@ -36,6 +36,10 @@ export default {
             name: 'Metas',
             description: 'Optimization of the page meta title and meta description.',
         },
+        credibility: {
+            name: 'Credibility',
+            description: 'Sourced figures, quotes, data freshness: what makes a passage worth citing.',
+        },
     },
     // Structure
     textLength: {
@@ -60,13 +64,15 @@ export default {
         },
     },
     subheadingDistribution: {
-        title: 'Subheading distribution',
-        description: 'Checks that no section exceeds 300 words without a subheading.',
-        objective: '≤ 300 words per section',
+        title: 'Section length',
+        description: 'Checks that each section (text between two subheadings) is 80 to 300 words long: enough to stand alone, short enough to stay focused.',
+        objective: '80-300 words per section',
         messages: {
-            good: 'The text is well divided by subheadings.',
-            warning: 'A section is {value} words long without a subheading, add one.',
-            bad: 'A section is {value} words long without a subheading: split it up.',
+            good: 'Sections have a good length.',
+            warning: '{value} section(s) fall outside the 80-300 word range.',
+            bad: '{value} section(s) fall outside the 80-300 word range: rework the structure.',
+            tooLong: '{value} section(s) out of range, including at least one over 300 words without a subheading: split it up.',
+            tooShort: '{value} section(s) are under 80 words: expand or merge them.',
         },
     },
     paragraphLength: {
@@ -80,12 +86,14 @@ export default {
         },
     },
     structuredContent: {
-        title: 'Structured content',
-        description: 'Checks for lists or tables, which help with featured snippets.',
-        objective: '≥ 1 list or table',
+        title: 'Matching format',
+        description: 'Checks that the format fits the content: numbered list for a procedure, table for a comparison, otherwise at least one list or table. Helps featured snippets and extraction by AI engines.',
+        objective: 'Numbered list (procedure), table (comparison), otherwise ≥ 1 list or table',
         messages: {
-            good: 'The content uses lists or tables.',
+            good: 'The format fits the content.',
             warning: 'Add a list or a table (good for featured snippets).',
+            missingOrderedList: 'The content describes a procedure: present the steps as a numbered list.',
+            missingTable: 'The content compares options: add a comparison table.',
         },
     },
     centeredContent: {
@@ -385,6 +393,172 @@ export default {
             good: 'The keyphrase appears {value} time(s) in the meta description.',
             warning: 'The keyphrase appears {value} times in the meta description: 1-2 is ideal.',
             bad: 'The keyphrase should appear 1-2 times in the meta description (currently {value}).',
+        },
+    },
+    // GEO — structure
+    answerFirst: {
+        title: 'Answer first',
+        description: 'Checks that each section opens with a direct answer: a 30 to 80 word paragraph, or a list / table.',
+        objective: '30-80 word first paragraph after each subheading',
+        messages: {
+            good: 'Sections open with a direct answer.',
+            warning: '{value} section(s) do not open with a direct 30-80 word answer.',
+            bad: '{value} section(s) do not open with a direct answer: lead with the answer, then elaborate.',
+            na: 'Not enough sections to evaluate.',
+        },
+    },
+    selfContained: {
+        title: 'Self-contained passages',
+        description: 'Checks that each section makes sense on its own, without pointing back to earlier text ("This…", "as mentioned above").',
+        objective: 'No context-dependent section',
+        messages: {
+            good: 'Sections make sense on their own.',
+            warning: '{value} reference(s) to context: name the subject instead of pointing to it.',
+            bad: '{value} reference(s) to context: extracted alone, these sections lose their meaning.',
+            na: 'No section to evaluate.',
+        },
+    },
+    keyTakeaways: {
+        title: 'Summary up front',
+        description: 'Checks that the content opens with a summary: a "Key takeaways / TL;DR" block, or a short intro containing the keyword.',
+        objective: 'Takeaways block or intro ≤ 100 words with the keyword',
+        messages: {
+            good: 'The content opens with a summary.',
+            warning: 'The intro is {value} words long: shorten it or add a "Key takeaways" block.',
+            bad: 'The intro is {value} words long: add a "Key takeaways" block up front.',
+            missingKeyword: 'The intro is short but does not mention the keyword.',
+            noIntro: 'The content starts with a subheading: add a short intro.',
+        },
+    },
+    // GEO — headings
+    questionHeadings: {
+        title: 'Question headings',
+        description: 'Checks that some subheadings mirror search queries ("How…?", "What…?").',
+        objective: '≥ 30% of H2/H3 as questions',
+        messages: {
+            good: '{value}% of subheadings are questions.',
+            warning: '{value}% of subheadings are questions: aim for 30%.',
+            bad: '{value}% of subheadings are questions: rephrase a few as queries.',
+            na: 'Not enough subheadings to evaluate.',
+        },
+    },
+    descriptiveHeadings: {
+        title: 'Descriptive headings',
+        description: 'Checks that each subheading names its subject (no bare "Introduction" or "Pros").',
+        objective: 'No generic subheading',
+        messages: {
+            good: 'Subheadings are descriptive.',
+            warning: '{value} generic subheading(s): say what they are about.',
+            bad: '{value} generic subheading(s): a heading should name its subject.',
+            na: 'No subheading to evaluate.',
+        },
+    },
+    // GEO — readability
+    vagueLanguage: {
+        title: 'Vague language',
+        description: 'Checks for claims without an identifiable subject ("some experts", "studies show").',
+        objective: '≤ 5% of sentences',
+        messages: {
+            good: 'Claims are precise.',
+            warning: '{value}% of sentences contain vague language: name the source.',
+            bad: '{value}% of sentences contain vague language: replace it with attributed facts.',
+            na: 'Text too short to evaluate.',
+        },
+    },
+    acronymsDefined: {
+        title: 'Acronyms spelled out',
+        description: 'Checks that each acronym is spelled out on first use (well-known ones excepted).',
+        objective: 'All acronyms spelled out',
+        messages: {
+            good: 'Acronyms are spelled out.',
+            warning: '{value} acronym(s) are not spelled out on first use.',
+            bad: '{value} acronym(s) are not spelled out: add the full form in parentheses.',
+            na: 'No acronym to spell out.',
+        },
+    },
+    // GEO — keyword
+    definition: {
+        title: 'Topic definition',
+        description: 'Checks that the topic is defined early on ("X is…", "X refers to…").',
+        objective: 'A definition in the first 150 words',
+        messages: {
+            good: 'The topic is defined early on.',
+            keywordOnly: 'The keyword appears early, but without a definition: write "<keyword> is…".',
+            bad: 'Define the topic in the first 150 words ("<keyword> is…").',
+        },
+    },
+    entityPerSection: {
+        title: 'Topic named in each part',
+        description: 'Checks that each part (H2) names the topic, so it still makes sense once extracted.',
+        objective: '≥ 80% of parts name the topic',
+        messages: {
+            good: '{value}% of parts name the topic.',
+            warning: '{value}% of parts name the topic: name it in the others.',
+            bad: '{value}% of parts name the topic: extracted alone, the others do not say what they are about.',
+            na: 'Not enough parts (H2) to evaluate.',
+        },
+    },
+    questionCoverage: {
+        title: 'Questions covered',
+        description: 'Checks that the content answers the target questions provided.',
+        objective: '100% of target questions covered',
+        messages: {
+            good: '{value}% of target questions are covered.',
+            warning: '{value}% of target questions are covered: address the others.',
+            bad: '{value}% of target questions are covered: add sections that answer them.',
+            na: 'No target question provided.',
+        },
+    },
+    // GEO — credibility
+    sourcedFacts: {
+        title: 'Sourced facts',
+        description: 'Checks that every figure is attributed to a source (external link or "according to…"). An unsourced figure costs more than no figure.',
+        objective: 'All figures sourced',
+        messages: {
+            good: 'Figures are sourced.',
+            warning: '{value} sentence(s) with figures and no source.',
+            bad: '{value} sentence(s) with figures and no source: cite the source or drop the figure.',
+            na: 'No figure to source.',
+        },
+    },
+    factDensity: {
+        title: 'Figures',
+        description: 'Checks for precise, quantified facts (percentages, amounts, durations).',
+        objective: '≈ 1 figure per 150 words',
+        messages: {
+            good: '{value} figure(s): that is enough.',
+            warning: '{value} figure(s) out of {target} expected.',
+            bad: '{value} figure(s) out of {target} expected: add sourced data.',
+        },
+    },
+    quotations: {
+        title: 'Quotes',
+        description: 'Checks for at least one attributed quote (blockquote, or quoted words with their source).',
+        objective: '≥ 1 attributed quote',
+        messages: {
+            good: 'The content quotes {value} source(s).',
+            bad: 'Add an attributed expert quote.',
+        },
+    },
+    freshness: {
+        title: 'Data freshness',
+        description: 'Checks that at least half of the years cited are recent (≤ 2 years old).',
+        objective: '≥ 50% recent years',
+        messages: {
+            good: 'The data cited is recent.',
+            warning: 'Only {value}% of the years cited are recent: update the data.',
+            bad: 'Only {value}% of the years cited are recent: the data looks dated.',
+            na: 'No year cited, or evergreen content.',
+        },
+    },
+    entityDensity: {
+        title: 'Named entities',
+        description: 'Checks for proper nouns (brands, organizations, places, people) that anchor the content.',
+        objective: '≥ 1 entity per 100 words',
+        messages: {
+            good: 'The content names specific entities.',
+            warning: '{value} entity(ies) per 100 words: name specific players.',
+            bad: '{value} entity(ies) per 100 words: the content stays generic.',
         },
     },
 };

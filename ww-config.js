@@ -174,6 +174,8 @@ export default {
                 'seoHighlightColor',
                 'seoWordLists',
             ],
+            'geoInfobox',
+            ['enableGeoAnalysis', 'geoQuestions', 'geoEvergreen', 'geoWordLists'],
         ],
     },
     options: {
@@ -188,6 +190,11 @@ export default {
         {
             name: 'seo:change',
             label: { en: 'On SEO score change', fr: 'Au changement du score SEO' },
+            event: { score: 0, grade: '', scores: {} },
+        },
+        {
+            name: 'geo:change',
+            label: { en: 'On GEO score change', fr: 'Au changement du score GEO' },
             event: { score: 0, grade: '', scores: {} },
         },
         {
@@ -810,7 +817,7 @@ export default {
         },
         // SEO actions
         {
-            label: 'Highlight SEO check',
+            label: 'Highlight SEO/GEO check',
             action: 'highlightSeoCheck',
             args: [
                 {
@@ -824,7 +831,7 @@ export default {
             ],
         },
         {
-            label: 'Clear SEO highlight',
+            label: 'Clear SEO/GEO highlight',
             action: 'clearSeoHighlight',
         },
     ],
@@ -1045,7 +1052,7 @@ export default {
             type: 'Text',
             defaultValue: '',
             bindable: true,
-            hidden: content => !content.enableSeoAnalysis,
+            hidden: content => !content.enableSeoAnalysis && !content.enableGeoAnalysis,
             /* wwEditor:start */
             bindingValidation: {
                 type: 'string',
@@ -1060,7 +1067,7 @@ export default {
             options: { item: { type: 'Text' } },
             defaultValue: [],
             bindable: true,
-            hidden: content => !content.enableSeoAnalysis,
+            hidden: content => !content.enableSeoAnalysis && !content.enableGeoAnalysis,
             /* wwEditor:start */
             bindingValidation: {
                 type: 'array',
@@ -1075,7 +1082,7 @@ export default {
             options: { options: MATCHING_OPTIONS },
             defaultValue: 'anyOrder',
             bindable: true,
-            hidden: content => !content.enableSeoAnalysis,
+            hidden: content => !content.enableSeoAnalysis && !content.enableGeoAnalysis,
             /* wwEditor:start */
             bindingValidation: {
                 type: 'string',
@@ -1168,7 +1175,7 @@ export default {
             },
             defaultValue: 'en',
             bindable: true,
-            hidden: content => !content.enableSeoAnalysis,
+            hidden: content => !content.enableSeoAnalysis && !content.enableGeoAnalysis,
             /* wwEditor:start */
             bindingValidation: {
                 type: 'string',
@@ -1189,7 +1196,7 @@ export default {
             },
             defaultValue: 'auto',
             bindable: true,
-            hidden: content => !content.enableSeoAnalysis,
+            hidden: content => !content.enableSeoAnalysis && !content.enableGeoAnalysis,
             /* wwEditor:start */
             bindingValidation: {
                 type: 'string',
@@ -1203,7 +1210,7 @@ export default {
             type: 'Color',
             defaultValue: '',
             bindable: true,
-            hidden: content => !content.enableSeoAnalysis,
+            hidden: content => !content.enableSeoAnalysis && !content.enableGeoAnalysis,
             /* wwEditor:start */
             bindingValidation: {
                 type: 'string',
@@ -1231,11 +1238,68 @@ export default {
             options: { text: 'Bind an object to override default word lists' },
             defaultValue: null,
             bindable: true,
-            hidden: content => !content.enableSeoAnalysis,
+            hidden: content => !content.enableSeoAnalysis && !content.enableGeoAnalysis,
             /* wwEditor:start */
             bindingValidation: {
                 type: 'object',
                 tooltip: 'Overrides default fr/en lists: { stopWords, genericAnchors, powerWords, sentimentWords, transitionWords, complexWords } — each an array of strings.',
+            },
+            /* wwEditor:end */
+        },
+        // --- GEO analysis (score de citabilité, catalogue commun avec le SEO) ---
+        enableGeoAnalysis: {
+            section: 'settings',
+            label: { en: 'GEO analysis', fr: 'Analyse GEO' },
+            type: 'OnOff',
+            defaultValue: false,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'boolean',
+                tooltip: 'Enable the GEO analysis (citability by AI engines): exposes a `geo` variable with the same shape as `seo`, plus `passages`. Shares the keyword, language and word list settings with the SEO analysis.',
+            },
+            /* wwEditor:end */
+        },
+        geoQuestions: {
+            section: 'settings',
+            label: { en: 'GEO: target questions', fr: 'GEO : questions cibles' },
+            type: 'Array',
+            options: { item: { type: 'Text' } },
+            defaultValue: [],
+            bindable: true,
+            hidden: content => !content.enableGeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'array',
+                tooltip: 'Questions the content should answer (People Also Ask, query fan-out, tracked prompts). Scored by the questionCoverage check. Array of strings or comma-separated string.',
+            },
+            /* wwEditor:end */
+        },
+        geoEvergreen: {
+            section: 'settings',
+            label: { en: 'GEO: evergreen content', fr: 'GEO : contenu intemporel' },
+            type: 'OnOff',
+            defaultValue: false,
+            bindable: true,
+            hidden: content => !content.enableGeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'boolean',
+                tooltip: 'Evergreen content: the freshness check (recent years cited) is not applicable.',
+            },
+            /* wwEditor:end */
+        },
+        geoWordLists: {
+            section: 'settings',
+            label: { en: 'GEO: custom word lists', fr: 'GEO : listes de mots personnalisées' },
+            type: 'Info',
+            options: { text: 'Bind an object to override default word lists' },
+            defaultValue: null,
+            bindable: true,
+            hidden: content => !content.enableGeoAnalysis,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'object',
+                tooltip: 'Overrides default fr/en GEO lists: { attributionWords, vagueWords, anaphoraOpeners, backReferences, genericHeadings, procedureWords, comparisonWords, definitionVerbs, questionWords, knownAcronyms, experienceMarkers, takeawayMarkers } — each an array of strings.',
             },
             /* wwEditor:end */
         },
@@ -3384,6 +3448,15 @@ export default {
                 variant: 'info',
                 title: 'SEO',
                 content: 'Analyse SEO du contenu : mot-clé, lisibilité, structure, méta-données.',
+            },
+        },
+        geoInfobox: {
+            type: 'InfoBox',
+            section: 'settings',
+            options: {
+                variant: 'info',
+                title: 'GEO',
+                content: 'Score de citabilité par les moteurs IA (réponses directes, passages autonomes, faits sourcés). Partage le mot-clé, la langue et les listes de mots du SEO.',
             },
         },
         /* wwEditor:end */

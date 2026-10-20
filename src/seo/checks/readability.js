@@ -1,6 +1,6 @@
 import { mapOffsetToPos } from '../extractors.js';
 import { decreasingScore, makeCheck, notApplicable, ratioScore } from '../result.js';
-import { countSyllables, escapeRegExp, normalizeText, splitWords } from '../textUtils.js';
+import { countSyllables, findListMatches, normalizeText, splitWords } from '../textUtils.js';
 
 // Catégorie "readability" — aucun mot-clé requis.
 // Les checks par phrase s'appuient sur model.sentences (hors titres et code).
@@ -19,7 +19,64 @@ export function readabilityChecks(context) {
         consecutiveSentences(model),
         passiveVoice(model, lang),
         complexWords(model, lang, wordLists),
+        vagueLanguage(model, wordLists),
+        acronymsDefined(model, wordLists),
     ];
+}
+
+// Formules floues (« certains experts », « studies show ») : affirmation sans
+// sujet identifiable, ni vérifiable ni citable. 100 jusqu'à 5 % des phrases,
+// 0 à partir de 20 %. na si < 5 phrases. value : % de phrases (formules surlignées).
+function vagueLanguage(model, wordLists) {
+    if (model.sentences.length < MIN_SENTENCES) return notApplicable('vagueLanguage', 'readability', 0);
+    const ranges = [];
+    let vague = 0;
+    for (const sentence of model.sentences) {
+        const matches = findListMatches(sentence.text, wordLists.vagueWords);
+        if (!matches.length) continue;
+        vague++;
+        for (const match of matches) {
+            ranges.push({
+                from: mapOffsetToPos(sentence.block, sentence.startInBlock + match.start),
+                to: mapOffsetToPos(sentence.block, sentence.startInBlock + match.end),
+            });
+        }
+    }
+    const percent = Math.round((vague / model.sentences.length) * 100);
+    return makeCheck('vagueLanguage', 'readability', decreasingScore(percent, 5, 20), percent, ranges);
+}
+
+// Sigle : 2-6 caractères majuscules/chiffres dont ≥ 2 lettres (« RGPD », « B2B »).
+const ACRONYM_REGEX = /(?<![\p{L}\p{N}])(?=(?:\p{N}*\p{Lu}){2})[\p{Lu}\p{N}]{2,6}s?(?![\p{L}\p{N}])/gu;
+
+// Sigles développés à leur 1re occurrence : « Règlement général… (RGPD) » ou
+// « RGPD (Règlement général…) ». Sigles connus (`knownAcronyms`) dispensés ;
+// titres et blocs tout en majuscules ignorés. Score = % de sigles développés.
+// na sans sigle. value : nb de sigles non développés (1re occurrence surlignée).
+function acronymsDefined(model, wordLists) {
+    const known = new Set(wordLists.knownAcronyms.map(word => normalizeText(word)));
+    const firsts = new Map();
+    for (const block of model.blocks) {
+        // Titres exclus : un sigle y est souvent annoncé, puis développé dans le texte
+        if (block.isCode || block.type === 'heading' || isMostlyUppercase(block.text)) continue;
+        for (const match of block.text.matchAll(ACRONYM_REGEX)) {
+            const acronym = match[0].replace(/s$/, '');
+            if (known.has(normalizeText(acronym)) || firsts.has(acronym)) continue;
+            const end = match.index + match[0].length;
+            const defined = block.text[match.index - 1] === '(' || /^\s*\(/.test(block.text.slice(end));
+            firsts.set(acronym, { defined, from: mapOffsetToPos(block, match.index), to: mapOffsetToPos(block, end) });
+        }
+    }
+    if (!firsts.size) return notApplicable('acronymsDefined', 'readability', 0);
+    const undefinedOnes = [...firsts.values()].filter(item => !item.defined);
+    const score = (1 - undefinedOnes.length / firsts.size) * 100;
+    return makeCheck('acronymsDefined', 'readability', score, undefinedOnes.length,
+        undefinedOnes.map(({ from, to }) => ({ from, to })));
+}
+
+function isMostlyUppercase(text) {
+    const letters = text.replace(/[^\p{L}]/gu, '');
+    return letters.length >= 12 && letters.replace(/[^\p{Lu}]/gu, '').length / letters.length > 0.6;
 }
 
 // Seuil Yoast par langue : une phrase est "longue" au-delà de 20 mots (fr) / 25 (en)
@@ -187,46 +244,4 @@ function toRange(sentence) {
 
 function firstWord(sentence) {
     return splitWords(normalizeText(sentence.text))[0] || null;
-}
-
-// La regex d'une liste (grosse alternance) est coûteuse à construire : mémoïsée
-// par identité du tableau — appelée pour chaque phrase du document, elle était
-// recompilée à chaque appel.
-const LIST_REGEX_CACHE = new WeakMap();
-
-function getListRegex(words) {
-    if (!Array.isArray(words) || !words.length) return null;
-    if (LIST_REGEX_CACHE.has(words)) return LIST_REGEX_CACHE.get(words);
-    const cleaned = words
-        .map(word =>
-            escapeRegExp(normalizeText(word).trim())
-                .replace(/['']/g, `[''']`)
-                .replace(/ +/g, `[\\s\\u00A0]+`)
-        )
-        .filter(Boolean);
-    const regex = cleaned.length
-        ? new RegExp(`(^|[^\\p{L}])(${cleaned.join('|')})(?=[^\\p{L}]|$)`, 'giu')
-        : null;
-    LIST_REGEX_CACHE.set(words, regex);
-    return regex;
-}
-
-/**
- * Toutes les occurrences d'un des mots/groupes de la liste dans un texte,
- * bornées par des non-lettres. Retourne des offsets [start, end) dans le texte
- * d'origine. Tolère les variantes d'apostrophe (' vs ') et d'espace.
- */
-function findListMatches(text, words) {
-    const regex = getListRegex(words);
-    if (!regex) return [];
-    // Regex partagée (flag g) : repartir du début à chaque appel
-    regex.lastIndex = 0;
-    const normalized = normalizeText(text);
-    const matches = [];
-    for (let match = regex.exec(normalized); match !== null; match = regex.exec(normalized)) {
-        const start = match.index + match[1].length;
-        matches.push({ start, end: start + match[2].length });
-        if (regex.lastIndex === match.index) regex.lastIndex++;
-    }
-    return matches;
 }

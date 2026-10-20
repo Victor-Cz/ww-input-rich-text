@@ -479,6 +479,14 @@ export default {
             readonly: true,
         });
 
+        const { value: geo, setValue: _setGeo } = wwLib.wwVariable.useComponentVariable({
+            uid: props.uid,
+            name: 'geo',
+            type: 'object',
+            defaultValue: null,
+            readonly: true,
+        });
+
         const { value: outline, setValue: _setOutline } = wwLib.wwVariable.useComponentVariable({
             uid: props.uid,
             name: 'outline',
@@ -551,6 +559,7 @@ export default {
         const setPendingChangesCount = (...args) => { if (!_isDestroyed) _setPendingChangesCount(...args); };
         const setCollaborationStatus = (...args) => { if (!_isDestroyed) _setCollaborationStatus(...args); };
         const setSeo = (...args) => { if (!_isDestroyed) _setSeo(...args); };
+        const setGeo = (...args) => { if (!_isDestroyed) _setGeo(...args); };
         const setHistory = (...args) => { if (!_isDestroyed) _setHistory(...args); };
         const setOutline = (...args) => { if (!_isDestroyed) _setOutline(...args); };
         const setCurrentHeading = (...args) => { if (!_isDestroyed) _setCurrentHeading(...args); };
@@ -607,6 +616,8 @@ export default {
             setCollaborationStatus,
             seo,
             setSeo,
+            geo,
+            setGeo,
             history,
             setHistory,
             outline,
@@ -963,6 +974,7 @@ export default {
                     this.activeSeoHighlight = null;
                     this.seoHighlightVisible = false;
                     this.setSeo(null);
+                    this.setGeo(null);
                     if (this.richEditor) this.richEditor.commands.clearSeoHighlights();
                     return;
                 }
@@ -1319,9 +1331,15 @@ export default {
                 backgroundColor: this.content.outlineIndicatorBgColor || 'transparent',
             };
         },
+        // Analyse de contenu (catalogue commun SEO + GEO) : active si l'un des deux scores l'est
+        contentAnalysisEnabled() {
+            return !!(this.content.enableSeoAnalysis || this.content.enableGeoAnalysis);
+        },
         seoOptions() {
-            if (!this.content.enableSeoAnalysis) return null;
+            if (!this.contentAnalysisEnabled) return null;
             return {
+                seoEnabled: !!this.content.enableSeoAnalysis,
+                geoEnabled: !!this.content.enableGeoAnalysis,
                 keyword: this.content.seoKeyword,
                 synonyms: this.content.seoKeywordSynonyms,
                 secondaryKeywords: this.content.seoSecondaryKeywords,
@@ -1334,6 +1352,9 @@ export default {
                 expectH1: this.content.seoExpectH1,
                 keywordMatching: this.content.seoKeywordMatching,
                 secondaryMatching: this.content.seoSecondaryKeywordsMatching,
+                questions: this.content.geoQuestions,
+                evergreen: this.content.geoEvergreen,
+                geoWordLists: this.content.geoWordLists,
             };
         },
     },
@@ -2628,7 +2649,7 @@ export default {
 
         // SEO analysis
         scheduleSeoAnalysis(immediate = false) {
-            if (!this.content.enableSeoAnalysis || !this.richEditor || this.isDestroying) return;
+            if (!this.contentAnalysisEnabled || !this.richEditor || this.isDestroying) return;
             if (this.seoDebounce) {
                 clearTimeout(this.seoDebounce);
                 this.seoDebounce = null;
@@ -2644,39 +2665,52 @@ export default {
         },
 
         async runSeoAnalysis() {
-            if (!this.content.enableSeoAnalysis || !this.richEditor || this.isDestroying) return;
+            if (!this.contentAnalysisEnabled || !this.richEditor || this.isDestroying) return;
             try {
                 // Import dynamique : le module d'analyse n'est chargé que si l'extension est activée
                 if (!this.seoAnalyzerPromise) {
                     this.seoAnalyzerPromise = import('./seo/analyzer.js');
                 }
-                const { analyzeSeo } = await this.seoAnalyzerPromise;
-                if (!this.content.enableSeoAnalysis || !this.richEditor || this.isDestroying) return;
+                const { analyzeContent } = await this.seoAnalyzerPromise;
+                if (!this.contentAnalysisEnabled || !this.richEditor || this.isDestroying) return;
 
                 // Garder la garde du watcher seoOptions en phase : cette analyse
                 // couvre déjà les options courantes, inutile d'en relancer une.
                 this.lastSeoOptionsKey = JSON.stringify(this.seoOptions);
-                const previous = this.seo;
-                const { result, rangesMap } = analyzeSeo(this.richEditor.state.doc, this.seoOptions || {});
+                const options = this.seoOptions || {};
+                const { seo, geo, rangesMap } = analyzeContent(this.richEditor.state.doc, options);
                 this.seoRangesMap = rangesMap;
                 // Surlignage persistant : ré-appliquer les plages fraîches du check actif,
-                // puis refléter l'état de surlignage dans l'objet seo exposé
+                // puis refléter l'état de surlignage dans les objets exposés
                 this.refreshSeoHighlight();
-                result.highlighting = this.seoHighlightVisible;
-                this.setSeo(result);
-
-                if (!previous || previous.score !== result.score || previous.grade !== result.grade) {
-                    this.$emit('trigger-event', {
-                        name: 'seo:change',
-                        event: { score: result.score, grade: result.grade, scores: result.scores },
-                    });
-                }
+                this.publishScore('seo', options.seoEnabled ? seo : null);
+                this.publishScore('geo', options.geoEnabled ? geo : null);
             } catch (error) {
                 console.error('[SEO] Analysis error:', error);
             }
         },
 
-        // checkId : id d'un check, ou id d'un mot-clé secondaire (seo.keywords.secondary[].id)
+        // Expose un score (seo | geo) et émet `<score>:change` à la 1re analyse puis
+        // à chaque changement de score ou de grade. null : score désactivé.
+        publishScore(key, result) {
+            const previous = this[key];
+            const setter = key === 'seo' ? this.setSeo : this.setGeo;
+            if (!result) {
+                if (previous) setter(null);
+                return;
+            }
+            result.highlighting = this.seoHighlightVisible;
+            setter(result);
+            if (!previous || previous.score !== result.score || previous.grade !== result.grade) {
+                this.$emit('trigger-event', {
+                    name: `${key}:change`,
+                    event: { score: result.score, grade: result.grade, scores: result.scores },
+                });
+            }
+        },
+
+        // checkId : id d'un check (SEO ou GEO), d'un mot-clé secondaire
+        // (seo.keywords.secondary[].id) ou d'un passage (geo.passages[].id)
         highlightSeoCheck(checkId, color = null) {
             if (!this.richEditor || !this.seoRangesMap) return false;
             const ranges = this.seoRangesMap[checkId];
@@ -2729,6 +2763,7 @@ export default {
         setSeoHighlightingState(value) {
             this.seoHighlightVisible = value;
             if (this.seo) this.setSeo({ ...this.seo, highlighting: value });
+            if (this.geo) this.setGeo({ ...this.geo, highlighting: value });
         },
 
         // Scroll vers une plage. Les plages de texte pointent à l'intérieur du

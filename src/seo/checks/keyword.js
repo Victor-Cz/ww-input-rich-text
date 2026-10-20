@@ -1,6 +1,7 @@
 import { findKeywordInBlock, findKeywordInModel, findPhrasesInBlock, mergeRanges } from '../extractors.js';
 import { decreasingScore, makeCheck, notApplicable, ratioScore } from '../result.js';
-import { contentWords, findPhraseMatches } from '../textUtils.js';
+import { notePassage } from '../passages.js';
+import { contentStems, contentWords, findListMatches, findPhraseMatches, hasKeyword } from '../textUtils.js';
 
 // Catégorie "keyword" — nécessite `seoKeyword`.
 // Partout, « le mot-clé » = le principal OU un de ses synonymes (`context.phrases`),
@@ -15,11 +16,14 @@ export function keywordChecks(context) {
         context.options.secondaryKeywords,
         context.secondaryMatchOptions
     );
+    const questionCoverageCheck = questionCoverage(model, context.options.questions, wordLists);
     if (!phrases.length) {
         return [
             ...['keyphraseLength', 'keywordInIntroduction', 'keywordDensity', 'keywordDistribution']
                 .map(id => notApplicable(id, 'keyword')),
             secondaryKeywordsCheck,
+            ...['definition', 'entityPerSection'].map(id => notApplicable(id, 'keyword')),
+            questionCoverageCheck,
         ];
     }
 
@@ -29,7 +33,102 @@ export function keywordChecks(context) {
         keywordDensity(model, keywordMatches),
         keywordDistribution(model, keywordMatches),
         secondaryKeywordsCheck,
+        definition(model, phrases, wordLists, matchOptions),
+        entityPerSection(context),
+        questionCoverageCheck,
     ];
+}
+
+// Définition du sujet en tête : une phrase des ~150 premiers mots (hors titres)
+// contient le mot-clé ET un verbe de définition (« est un », « désigne »,
+// « refers to »…) → 100 ; mot-clé sans définition → 40 ; absent → 0.
+// value : 'defined' | 'keywordOnly' | 'missing'
+function definition(model, phrases, wordLists, matchOptions) {
+    let words = 0;
+    let keywordSentence = null;
+    for (const sentence of model.sentences) {
+        if (words >= 150) break;
+        words += sentence.words;
+        if (!hasKeyword(sentence.text, phrases, matchOptions)) continue;
+        const range = { from: sentence.from, to: sentence.to };
+        if (findListMatches(sentence.text, wordLists.definitionVerbs).length) {
+            return makeCheck('definition', 'keyword', 100, 'defined', [range]);
+        }
+        if (!keywordSentence) keywordSentence = range;
+    }
+    if (keywordSentence) {
+        const check = makeCheck('definition', 'keyword', 40, 'keywordOnly', [keywordSentence]);
+        check.messageKey = 'keywordOnly';
+        return check;
+    }
+    return makeCheck('definition', 'keyword', 0, 'missing');
+}
+
+// Sujet nommé dans chaque partie : une partie (H2 et ses sous-sections) extraite
+// seule doit dire de quoi elle parle. Nommé = mot-clé trouvé, ou au moins la
+// moitié de ses mots de contenu (« le logiciel » pour « logiciel de paie »).
+// Cible 80 % des parties — proportionnel. na si < 2 H2.
+// value : % de parties qui nomment le sujet ; H2 des parties muettes surlignés.
+function entityPerSection(context) {
+    const { model, phrases, matchOptions, wordLists } = context;
+    const groups = [];
+    for (const section of model.sections) {
+        if (!section.heading) continue;
+        if (section.heading.level === 2) groups.push({ heading: section.heading, sections: [section] });
+        else if (groups.length) groups[groups.length - 1].sections.push(section);
+    }
+    if (groups.length < 2) return notApplicable('entityPerSection', 'keyword', 0);
+
+    const keywordStems = phrases.map(phrase => [...contentStems(phrase, wordLists.stopWords)]);
+    const namesSubject = section => {
+        const blocks = [section.heading, ...section.blocks];
+        if (blocks.some(block => findKeywordInBlock(block, phrases, matchOptions).count)) return true;
+        const stems = contentStems(blocks.map(block => block.text).join('\n'), wordLists.stopWords);
+        return keywordStems.some(list => list.length
+            && list.filter(stem => stems.has(stem)).length >= Math.ceil(list.length / 2));
+    };
+
+    const muted = [];
+    for (const group of groups) {
+        let named = false;
+        for (const section of group.sections) {
+            const sectionNamed = namesSubject(section);
+            notePassage(context, section, 'entityPerSection', sectionNamed ? 100 : 0);
+            named = named || sectionNamed;
+        }
+        if (!named) muted.push(group.heading);
+    }
+    const percent = Math.round(((groups.length - muted.length) / groups.length) * 100);
+    return makeCheck('entityPerSection', 'keyword', ratioScore(percent, 80), percent,
+        muted.map(heading => ({ from: heading.from, to: heading.to })));
+}
+
+// Couverture des questions cibles (`geoQuestions`) : une question est couverte
+// si une section (titre + contenu) en réunit au moins 75 % des mots de contenu
+// (racines : casse, accents, flexions tolérés ; mots vides et interrogatifs
+// ignorés). Score = % de questions couvertes. na sans questions.
+// value : % couvertes · `terms` : détail par question (stats.uncoveredQuestions).
+function questionCoverage(model, questions, wordLists) {
+    if (!questions.length) {
+        const check = notApplicable('questionCoverage', 'keyword');
+        check.terms = [];
+        return check;
+    }
+    const ignored = [...wordLists.stopWords, ...wordLists.questionWords];
+    const sectionStems = model.sections.map(section =>
+        contentStems([section.heading ? section.heading.text : '', ...section.blocks.map(block => block.text)].join('\n'), ignored)
+    );
+    const terms = questions.map(question => {
+        const stems = [...contentStems(question, ignored)];
+        if (!stems.length) return { question, covered: false };
+        const needed = Math.ceil(stems.length * 0.75);
+        const covered = sectionStems.some(set => stems.filter(stem => set.has(stem)).length >= needed);
+        return { question, covered };
+    });
+    const percent = Math.round((terms.filter(term => term.covered).length / questions.length) * 100);
+    const check = makeCheck('questionCoverage', 'keyword', percent, percent);
+    check.terms = terms;
+    return check;
 }
 
 // Mots-clés secondaires : % de secondaires apparaissant dans le texte.

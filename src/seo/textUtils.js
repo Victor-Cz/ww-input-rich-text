@@ -266,6 +266,12 @@ export function findKeywordMatches(text, phrases, opts = {}) {
     return result;
 }
 
+/** Racines uniques des mots d'un texte, mots vides (`stopWords`) exclus. */
+export function contentStems(text, stopWords) {
+    const stopSet = getStopSet(stopWords);
+    return new Set(tokenizeCached(text).filter(token => !stopSet.has(token.raw)).map(token => token.stem));
+}
+
 /** Le mot-clé est-il dans ce texte court (titre, ancre, alt) ? */
 export function hasKeyword(text, phrases, opts = {}) {
     return findKeywordMatches(text, phrases, { ...opts, singleSentence: true }).count > 0;
@@ -351,4 +357,46 @@ function isSentenceEnd(source, punctStart, punctEnd) {
     const word = source.slice(wordStart, punctStart).replace(/^[^\p{L}\p{N}]+/u, '');
     if (word === 'M') return false;
     return !ABBREVIATIONS.has(normalizeText(word));
+}
+
+// La regex d'une liste (grosse alternance) est coûteuse à construire : mémoïsée
+// par identité du tableau — appelée pour chaque phrase du document, elle était
+// recompilée à chaque appel.
+const LIST_REGEX_CACHE = new WeakMap();
+
+function getListRegex(words) {
+    if (!Array.isArray(words) || !words.length) return null;
+    if (LIST_REGEX_CACHE.has(words)) return LIST_REGEX_CACHE.get(words);
+    const cleaned = words
+        .map(word =>
+            escapeRegExp(normalizeText(word).trim())
+                .replace(/['']/g, `[''']`)
+                .replace(/ +/g, `[\\s\\u00A0]+`)
+        )
+        .filter(Boolean);
+    const regex = cleaned.length
+        ? new RegExp(`(^|[^\\p{L}])(${cleaned.join('|')})(?=[^\\p{L}]|$)`, 'giu')
+        : null;
+    LIST_REGEX_CACHE.set(words, regex);
+    return regex;
+}
+
+/**
+ * Toutes les occurrences d'un des mots/groupes de la liste dans un texte,
+ * bornées par des non-lettres. Retourne des offsets [start, end) dans le texte
+ * d'origine. Tolère les variantes d'apostrophe (' vs ') et d'espace.
+ */
+export function findListMatches(text, words) {
+    const regex = getListRegex(words);
+    if (!regex) return [];
+    // Regex partagée (flag g) : repartir du début à chaque appel
+    regex.lastIndex = 0;
+    const normalized = normalizeText(text);
+    const matches = [];
+    for (let match = regex.exec(normalized); match !== null; match = regex.exec(normalized)) {
+        const start = match.index + match[1].length;
+        matches.push({ start, end: start + match[2].length });
+        if (regex.lastIndex === match.index) regex.lastIndex++;
+    }
+    return matches;
 }
