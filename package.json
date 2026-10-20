@@ -1,5 +1,5 @@
 {
-    "name": "ww-rich-text-v2",
+    "name": "rich-text-v2",
     "version": "3.0.1",
     "scripts": {
         "build": "weweb build",
