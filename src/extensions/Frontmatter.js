@@ -15,6 +15,10 @@
  * Le nœud est optionnel dans le schéma (`frontmatter? block+`). Une fois présent, il
  * reste en tête et ne peut pas être supprimé localement ; ses champs sont du texte brut.
  *
+ * Masqué par défaut (option `visible`) : le nœud n'est pas affiché et le curseur ne
+ * peut pas y entrer ; les champs restent lisibles et modifiables par la variable
+ * `frontmatter` et l'action `setFrontmatterField`.
+ *
  * Doit rester identique à brispr-collab (lib/frontmatter.ts) : mêmes noms de nœuds,
  * même contenu, même rendu HTML.
  *
@@ -76,6 +80,8 @@ export const FrontmatterField = Node.create({
     },
 });
 
+const isVisible = options => !!(typeof options.visible === 'function' ? options.visible() : options.visible);
+
 /** Premier nœud du document s'il s'agit du frontmatter, sinon null */
 export function frontmatterNode(doc) {
     const first = doc?.firstChild;
@@ -126,8 +132,20 @@ export const Frontmatter = Node.create({
     selectable: false,
     draggable: false,
 
+    addOptions() {
+        // Affiché dans l'éditeur (getter possible) ; masqué par défaut
+        return { visible: false };
+    },
+
     parseHTML: () => [{ tag: 'div[data-type="frontmatter"]' }],
-    renderHTML: () => ['div', { 'data-type': 'frontmatter', class: 'rt-frontmatter' }, 0],
+    renderHTML() {
+        const attrs = { 'data-type': 'frontmatter', class: 'rt-frontmatter' };
+        if (!isVisible(this.options)) {
+            attrs.class += ' rt-frontmatter--hidden';
+            attrs.contenteditable = 'false';
+        }
+        return ['div', attrs, 0];
+    },
 
     addStorage() {
         // Export Markdown : le frontmatter n'est pas du contenu
@@ -199,6 +217,7 @@ export const Frontmatter = Node.create({
     },
 
     addProseMirrorPlugins() {
+        const options = this.options;
         return [
             new Plugin({
                 key: frontmatterKey,
@@ -214,15 +233,28 @@ export const Frontmatter = Node.create({
                 // Un frontmatter supprimé localement (tout sélectionner + effacer…) est remis en tête,
                 // avec son contenu. Les transactions venues de Yjs (y-sync$) font foi.
                 appendTransaction(transactions, oldState, newState) {
-                    if (!transactions.some(tr => tr.docChanged)) return null;
-                    if (transactions.some(tr => tr.getMeta('y-sync$'))) return null;
+                    const local = !transactions.some(tr => tr.getMeta('y-sync$'));
                     const previous = frontmatterNode(oldState.doc);
-                    if (!previous || frontmatterNode(newState.doc)) return null;
-                    const tr = newState.tr.insert(0, previous);
-                    // Garder le curseur dans le texte, après le frontmatter remis
-                    const pos = Math.min(newState.selection.from + previous.nodeSize, tr.doc.content.size);
-                    tr.setSelection(TextSelection.near(tr.doc.resolve(pos)));
-                    return tr;
+                    if (local && previous && !frontmatterNode(newState.doc) && transactions.some(tr => tr.docChanged)) {
+                        const tr = newState.tr.insert(0, previous);
+                        // Garder le curseur dans le texte, après le frontmatter remis
+                        const pos = Math.min(newState.selection.from + previous.nodeSize, tr.doc.content.size);
+                        tr.setSelection(TextSelection.near(tr.doc.resolve(pos)));
+                        return tr;
+                    }
+                    // Masqué : le curseur ne peut pas entrer dans le frontmatter
+                    const fm = frontmatterNode(newState.doc);
+                    const { selection } = newState;
+                    if (fm && !isVisible(options) && selection instanceof TextSelection && selection.from < fm.nodeSize) {
+                        const start = newState.doc.resolve(fm.nodeSize);
+                        // Entièrement dedans : au début du texte ; à cheval : rognée au texte
+                        const next =
+                            selection.to <= fm.nodeSize
+                                ? TextSelection.near(start, 1)
+                                : TextSelection.between(start, selection.$to);
+                        return newState.tr.setSelection(next);
+                    }
+                    return null;
                 },
             }),
         ];
@@ -230,6 +262,6 @@ export const Frontmatter = Node.create({
 });
 
 /** Extensions à ajouter à l'éditeur (avec StarterKit configuré `document: false`) */
-export function frontmatterExtensions({ labels } = {}) {
-    return [FrontmatterDocument, Frontmatter, FrontmatterField.configure({ labels })];
+export function frontmatterExtensions({ labels, visible } = {}) {
+    return [FrontmatterDocument, Frontmatter.configure({ visible }), FrontmatterField.configure({ labels })];
 }

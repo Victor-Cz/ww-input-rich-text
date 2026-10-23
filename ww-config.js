@@ -1232,6 +1232,19 @@ export default {
             },
             /* wwEditor:end */
         },
+        showFrontmatter: {
+            section: 'settings',
+            label: { en: 'Show frontmatter', fr: 'Afficher le frontmatter' },
+            type: 'OnOff',
+            defaultValue: false,
+            bindable: true,
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'boolean',
+                tooltip: 'Show the frontmatter fields (meta title, description, slug) at the top of the editor. Hidden, they stay readable through the frontmatter variable and editable with the Set frontmatter field action.',
+            },
+            /* wwEditor:end */
+        },
         frontmatterLabels: {
             section: 'settings',
             label: { en: 'Frontmatter labels', fr: 'Libellés du frontmatter' },

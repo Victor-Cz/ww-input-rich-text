@@ -888,6 +888,10 @@ export default {
                 this.loadEditor();
             }
         },
+        'content.showFrontmatter'(value, previous) {
+            // Le rendu du frontmatter (masqué ou non) est figé au chargement
+            if (!!value !== !!previous) this.loadEditor();
+        },
         'content.timelineContainerSelector'() {
             this.resolveTimelineTarget();
         },
@@ -1462,7 +1466,10 @@ export default {
                         // Remplacé par FrontmatterDocument (frontmatter optionnel en tête)
                         document: false,
                     }),
-                    ...frontmatterExtensions({ labels: () => this.frontmatterLabels }),
+                    ...frontmatterExtensions({
+                        labels: () => this.frontmatterLabels,
+                        visible: () => !!this.content.showFrontmatter,
+                    }),
                     SeoLink.configure({
                         // target/rel sont calculés par lien (interne = lien normal,
                         // externe = _blank + noopener noreferrer nofollow). Le domaine
@@ -3229,6 +3236,9 @@ export default {
             margin-bottom: 24px;
             border: 1px solid #ebebeb;
             border-radius: 8px;
+        }
+        .rt-frontmatter--hidden {
+            display: none;
         }
         .rt-frontmatter-field {
             margin: 0;
