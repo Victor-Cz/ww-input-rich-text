@@ -10,7 +10,9 @@
  * Générique : le frontmatter est une suite de champs `frontmatterField`, chacun
  * identifié par sa clé (attribut `key`, la clé de la colonne `metadata`). La liste des
  * clés est fixée par le serveur collab, qui crée le nœud ; le plugin affiche les champs
- * qu'il trouve. Libellés : option `labels` ({ clé: libellé }), la clé à défaut.
+ * qu'il trouve. Affiché, c'est un tableau clé / valeur (à la façon des propriétés
+ * d'Obsidian) : libellé à gauche (option `labels`, la clé à défaut), valeur éditable
+ * à droite (option `emptyText` quand elle est vide).
  *
  * Le nœud est optionnel dans le schéma (`frontmatter? block+`). Une fois présent, il
  * reste en tête et ne peut pas être supprimé localement ; ses champs sont du texte brut.
@@ -48,8 +50,8 @@ export const FrontmatterField = Node.create({
     defining: true,
 
     addOptions() {
-        // { clé: libellé } — getter possible, relu à chaque rendu
-        return { labels: {} };
+        // { clé: libellé } et texte d'une valeur vide — getters possibles, relus à chaque rendu
+        return { labels: {}, emptyText: 'Empty' };
     },
 
     addAttributes() {
@@ -65,14 +67,16 @@ export const FrontmatterField = Node.create({
     parseHTML: () => [{ tag: 'div[data-fm-field]' }],
 
     renderHTML({ node, HTMLAttributes }) {
-        const labels = (typeof this.options.labels === 'function' ? this.options.labels() : this.options.labels) || {};
+        const read = value => (typeof value === 'function' ? value() : value);
+        const labels = read(this.options.labels) || {};
         const key = node.attrs.key;
         return [
             'div',
             {
                 ...HTMLAttributes,
                 'data-fm-field': '',
-                'data-placeholder': labels[key] || key || '',
+                'data-label': labels[key] || key || '',
+                'data-placeholder': read(this.options.emptyText) || '',
                 class: 'rt-frontmatter-field',
             },
             0,
@@ -262,6 +266,10 @@ export const Frontmatter = Node.create({
 });
 
 /** Extensions à ajouter à l'éditeur (avec StarterKit configuré `document: false`) */
-export function frontmatterExtensions({ labels, visible } = {}) {
-    return [FrontmatterDocument, Frontmatter.configure({ visible }), FrontmatterField.configure({ labels })];
+export function frontmatterExtensions({ labels, emptyText, visible } = {}) {
+    return [
+        FrontmatterDocument,
+        Frontmatter.configure({ visible }),
+        FrontmatterField.configure({ labels, emptyText }),
+    ];
 }

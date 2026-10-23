@@ -1468,6 +1468,7 @@ export default {
                     }),
                     ...frontmatterExtensions({
                         labels: () => this.frontmatterLabels,
+                        emptyText: () => (wwLib.wwLang?.lang === 'fr' ? 'Vide' : 'Empty'),
                         visible: () => !!this.content.showFrontmatter,
                     }),
                     SeoLink.configure({
@@ -3228,38 +3229,47 @@ export default {
 
     .ProseMirror {
         /* Frontmatter : meta title / description en tête du document */
+        /* Tableau clé / valeur, à la façon des propriétés d'Obsidian */
         .rt-frontmatter {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            padding: 12px;
+            gap: 2px;
+            padding-bottom: 12px;
             margin-bottom: 24px;
-            border: 1px solid #ebebeb;
-            border-radius: 8px;
+            border-bottom: 1px solid #ebebeb;
         }
         .rt-frontmatter--hidden {
             display: none;
         }
         .rt-frontmatter-field {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
             margin: 0;
+            padding: 4px 6px;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 20px;
+            color: var(--p-color);
             white-space: pre-wrap;
-            &:has(> br.ProseMirror-trailingBreak:only-child)::before {
+            &:hover {
+                background-color: #f5f5f5;
+            }
+            /* Clé : colonne fixe, non éditable */
+            &::before {
+                content: attr(data-label);
+                flex: 0 0 140px;
+                color: #61656d;
+                pointer-events: none;
+                user-select: none;
+            }
+            /* Valeur vide */
+            &:has(> br.ProseMirror-trailingBreak:only-child)::after {
                 content: attr(data-placeholder);
                 color: #a1a1aa;
                 pointer-events: none;
-                float: left;
-                height: 0;
+                user-select: none;
             }
-        }
-        .rt-frontmatter-field {
-            font-size: 14px;
-            line-height: 20px;
-            color: #61656d;
-        }
-        .rt-frontmatter-field[data-key='meta_title'] {
-            font-size: 18px;
-            line-height: 24px;
-            color: #1a0dab;
         }
 
         /* Basic editor styles */
