@@ -44,6 +44,10 @@ export function extractModel(doc) {
     doc.descendants((node, pos) => {
         const typeName = node.type.name;
 
+        // Le frontmatter (meta title / description) n'est pas du contenu : la meta
+        // est analysée à part, via les options metaTitle / metaDescription
+        if (typeName === 'frontmatter') return false;
+
         if (LIST_TYPES.has(typeName)) listCount++;
         if (typeName === 'orderedList') orderedListCount++;
         if (typeName === 'table') tableCount++;

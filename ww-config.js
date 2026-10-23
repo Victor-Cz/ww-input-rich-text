@@ -834,6 +834,20 @@ export default {
             label: 'Clear SEO/GEO highlight',
             action: 'clearSeoHighlight',
         },
+        {
+            label: 'Set frontmatter (meta title / description)',
+            action: 'setFrontmatterMeta',
+            args: [
+                {
+                    name: 'Meta title',
+                    type: 'Text',
+                },
+                {
+                    name: 'Meta description',
+                    type: 'Text',
+                },
+            ],
+        },
     ],
     properties: {
         readonly: {

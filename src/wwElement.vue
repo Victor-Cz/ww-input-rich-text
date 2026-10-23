@@ -357,6 +357,7 @@ import { AgentReveal } from './extensions/AgentReveal.js';
 import { AGENT } from './agent.js';
 import { CustomImage } from './extensions/CustomImage.js';
 import { SeoLink } from './extensions/SeoLink.js';
+import { FrontmatterExtensions, readFrontmatter, htmlWithoutFrontmatter } from './extensions/Frontmatter.js';
 import { sanitizeLinkUrl, sanitizeImageSrc, safeOpenUrl, isDangerousUrl } from './utils/sanitizeUrl.js';
 import { buildOutline, resolveOutlineLevels, toPublicOutline, toPublicHeading } from './utils/outline.js';
 
@@ -487,6 +488,15 @@ export default {
             readonly: true,
         });
 
+        // Meta du frontmatter (meta title / description), null sans frontmatter dans le document
+        const { value: frontmatter, setValue: _setFrontmatter } = wwLib.wwVariable.useComponentVariable({
+            uid: props.uid,
+            name: 'frontmatter',
+            type: 'object',
+            defaultValue: null,
+            readonly: true,
+        });
+
         const { value: outline, setValue: _setOutline } = wwLib.wwVariable.useComponentVariable({
             uid: props.uid,
             name: 'outline',
@@ -560,6 +570,7 @@ export default {
         const setCollaborationStatus = (...args) => { if (!_isDestroyed) _setCollaborationStatus(...args); };
         const setSeo = (...args) => { if (!_isDestroyed) _setSeo(...args); };
         const setGeo = (...args) => { if (!_isDestroyed) _setGeo(...args); };
+        const setFrontmatter = (...args) => { if (!_isDestroyed) _setFrontmatter(...args); };
         const setHistory = (...args) => { if (!_isDestroyed) _setHistory(...args); };
         const setOutline = (...args) => { if (!_isDestroyed) _setOutline(...args); };
         const setCurrentHeading = (...args) => { if (!_isDestroyed) _setCurrentHeading(...args); };
@@ -618,6 +629,8 @@ export default {
             setSeo,
             geo,
             setGeo,
+            frontmatter,
+            setFrontmatter,
             history,
             setHistory,
             outline,
@@ -1343,8 +1356,9 @@ export default {
                 keyword: this.content.seoKeyword,
                 synonyms: this.content.seoKeywordSynonyms,
                 secondaryKeywords: this.content.seoSecondaryKeywords,
-                metaTitle: this.content.seoMetaTitle,
-                metaDescription: this.content.seoMetaDescription,
+                // Meta du frontmatter quand le document en a un, sinon celle des propriétés
+                metaTitle: this.frontmatter ? this.frontmatter.metaTitle : this.content.seoMetaTitle,
+                metaDescription: this.frontmatter ? this.frontmatter.metaDescription : this.content.seoMetaDescription,
                 siteDomain: this.content.seoSiteDomain,
                 lang: this.content.seoLang,
                 uiLang: this.content.seoUiLang,
@@ -1433,7 +1447,10 @@ export default {
                 const extensions = [
                     StarterKit.configure({
                         history: this.isCollaborating ? false : true,
+                        // Remplacé par FrontmatterDocument (frontmatter optionnel en tête)
+                        document: false,
                     }),
+                    ...FrontmatterExtensions,
                     SeoLink.configure({
                         // target/rel sont calculés par lien (interne = lien normal,
                         // externe = _blank + noopener noreferrer nofollow). Le domaine
@@ -1592,6 +1609,7 @@ export default {
 
                         this.setValue(this.getContent());
                         this.setMentions(this.richEditor.getJSON().content.reduce(extractMentions, []));
+                        this.syncFrontmatter();
                         // Initialiser l'accumulateur de diffs à vide lors de la création
                         this.pendingSteps = [];
                         this.setPendingChangesCount(0);
@@ -1619,6 +1637,7 @@ export default {
                     onTransaction: ({ editor, transaction }) => {
                         if (this.isDestroying || !transaction.docChanged) return;
                         this.setMentions(editor.getJSON().content.reduce(extractMentions, []));
+                        this.syncFrontmatter();
                         this.scheduleOutlineUpdate();
                         this.scheduleSeoAnalysis();
                     },
@@ -1856,7 +1875,19 @@ export default {
         },
         getContent() {
             if (this.content.output === 'markdown') return this.richEditor.storage.markdown.getMarkdown();
-            return this.richEditor.getHTML();
+            // Le frontmatter n'est pas du contenu : il est exposé à part (variable frontmatter)
+            return htmlWithoutFrontmatter(this.richEditor);
+        },
+        // Meta du frontmatter → variable `frontmatter` (seulement si elle a changé)
+        syncFrontmatter() {
+            if (!this.richEditor || this.isDestroying) return;
+            const meta = readFrontmatter(this.richEditor.state.doc);
+            if (JSON.stringify(meta) !== JSON.stringify(this.frontmatter ?? null)) this.setFrontmatter(meta);
+        },
+        // Action : modifier la meta du frontmatter (null = champ inchangé)
+        setFrontmatterMeta(metaTitle, metaDescription) {
+            if (!this.richEditor) return;
+            this.richEditor.commands.setFrontmatter({ metaTitle, metaDescription });
         },
         /* Table */
         insertTable() {
@@ -3177,6 +3208,38 @@ export default {
     }
 
     .ProseMirror {
+        /* Frontmatter : meta title / description en tête du document */
+        .rt-frontmatter {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 12px;
+            margin-bottom: 24px;
+            border: 1px solid #ebebeb;
+            border-radius: 8px;
+        }
+        .rt-frontmatter-field {
+            margin: 0;
+            white-space: pre-wrap;
+            &:has(> br.ProseMirror-trailingBreak:only-child)::before {
+                content: attr(data-placeholder);
+                color: #a1a1aa;
+                pointer-events: none;
+                float: left;
+                height: 0;
+            }
+        }
+        .rt-frontmatter-title {
+            font-size: 18px;
+            line-height: 24px;
+            color: #1a0dab;
+        }
+        .rt-frontmatter-description {
+            font-size: 14px;
+            line-height: 20px;
+            color: #61656d;
+        }
+
         /* Basic editor styles */
         cursor: text;
         height: 100%;
