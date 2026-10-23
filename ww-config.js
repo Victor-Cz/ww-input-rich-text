@@ -835,15 +835,15 @@ export default {
             action: 'clearSeoHighlight',
         },
         {
-            label: 'Set frontmatter (meta title / description)',
-            action: 'setFrontmatterMeta',
+            label: 'Set frontmatter field',
+            action: 'setFrontmatterField',
             args: [
                 {
-                    name: 'Meta title',
+                    name: 'Key',
                     type: 'Text',
                 },
                 {
-                    name: 'Meta description',
+                    name: 'Value',
                     type: 'Text',
                 },
             ],
@@ -1229,6 +1229,31 @@ export default {
             bindingValidation: {
                 type: 'string',
                 tooltip: 'Default color of the highlightSeoCheck action (any CSS color). The action Color argument overrides it per call.',
+            },
+            /* wwEditor:end */
+        },
+        frontmatterLabels: {
+            section: 'settings',
+            label: { en: 'Frontmatter labels', fr: 'Libellés du frontmatter' },
+            type: 'Array',
+            defaultValue: [],
+            bindable: true,
+            options: {
+                item: {
+                    type: 'Object',
+                    defaultValue: { key: '', label: '' },
+                    options: {
+                        item: {
+                            key: { label: { en: 'Key' }, type: 'Text' },
+                            label: { label: { en: 'Label' }, type: 'Text', multiLang: true },
+                        },
+                    },
+                },
+            },
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'array',
+                tooltip: 'Placeholder of each frontmatter field: [{ key: "meta_title", label: "Meta title" }]. Defaults: Meta title, Meta description, Slug.',
             },
             /* wwEditor:end */
         },

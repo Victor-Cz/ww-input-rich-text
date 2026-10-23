@@ -2,16 +2,20 @@
  * Frontmatter.js
  *
  * OBJECTIF:
- * Métadonnées SEO (meta title, meta description) portées par le document lui-même,
+ * Métadonnées (meta title, meta description, slug…) portées par le document lui-même,
  * dans un nœud placé en tête : elles suivent la collaboration (Yjs), l'historique de
  * versions et l'agent comme le reste du texte. Le serveur collab les écrit dans la
  * colonne `metadata` et les retire du HTML.
  *
- * Le nœud est optionnel dans le schéma (`frontmatter? block+`) : c'est le serveur collab
- * qui le crée. Une fois présent, il reste en tête et ne peut pas être supprimé
- * localement ; ses deux champs sont du texte brut, sans mise en forme.
+ * Générique : le frontmatter est une suite de champs `frontmatterField`, chacun
+ * identifié par sa clé (attribut `key`, la clé de la colonne `metadata`). La liste des
+ * clés est fixée par le serveur collab, qui crée le nœud ; le plugin affiche les champs
+ * qu'il trouve. Libellés : option `labels` ({ clé: libellé }), la clé à défaut.
  *
- * Doit rester identique à brispr-collab (lib/frontmatter.ts) : même noms de nœuds,
+ * Le nœud est optionnel dans le schéma (`frontmatter? block+`). Une fois présent, il
+ * reste en tête et ne peut pas être supprimé localement ; ses champs sont du texte brut.
+ *
+ * Doit rester identique à brispr-collab (lib/frontmatter.ts) : mêmes noms de nœuds,
  * même contenu, même rendu HTML.
  *
  * @module extensions/Frontmatter
@@ -20,11 +24,10 @@ import { Node, getHTMLFromFragment } from '@tiptap/core';
 import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state';
 
 export const FRONTMATTER = 'frontmatter';
-export const FRONTMATTER_TITLE = 'frontmatterTitle';
-export const FRONTMATTER_DESCRIPTION = 'frontmatterDescription';
-const FIELDS = new Set([FRONTMATTER_TITLE, FRONTMATTER_DESCRIPTION]);
+export const FRONTMATTER_FIELD = 'frontmatterField';
 
 const frontmatterKey = new PluginKey('frontmatter');
+const oneLine = value => String(value ?? '').replace(/\s*\n+\s*/g, ' ');
 
 /** Document : le frontmatter, s'il existe, est toujours le premier enfant */
 export const FrontmatterDocument = Node.create({
@@ -33,22 +36,45 @@ export const FrontmatterDocument = Node.create({
     content: `${FRONTMATTER}? block+`,
 });
 
-const field = (name, key, placeholder) =>
-    Node.create({
-        name,
-        content: 'text*',
-        marks: '',
-        defining: true,
-        parseHTML: () => [{ tag: `div[data-fm="${key}"]` }],
-        renderHTML: () => [
-            'div',
-            { 'data-fm': key, 'data-placeholder': placeholder, class: `rt-frontmatter-field rt-frontmatter-${key}` },
-            0,
-        ],
-    });
+/** Champ du frontmatter : texte brut, identifié par sa clé */
+export const FrontmatterField = Node.create({
+    name: FRONTMATTER_FIELD,
+    content: 'text*',
+    marks: '',
+    defining: true,
 
-export const FrontmatterTitle = field(FRONTMATTER_TITLE, 'title', 'Meta title');
-export const FrontmatterDescription = field(FRONTMATTER_DESCRIPTION, 'description', 'Meta description');
+    addOptions() {
+        // { clé: libellé } — getter possible, relu à chaque rendu
+        return { labels: {} };
+    },
+
+    addAttributes() {
+        return {
+            key: {
+                default: null,
+                parseHTML: element => element.getAttribute('data-key'),
+                renderHTML: attributes => ({ 'data-key': attributes.key }),
+            },
+        };
+    },
+
+    parseHTML: () => [{ tag: 'div[data-fm-field]' }],
+
+    renderHTML({ node, HTMLAttributes }) {
+        const labels = (typeof this.options.labels === 'function' ? this.options.labels() : this.options.labels) || {};
+        const key = node.attrs.key;
+        return [
+            'div',
+            {
+                ...HTMLAttributes,
+                'data-fm-field': '',
+                'data-placeholder': labels[key] || key || '',
+                class: 'rt-frontmatter-field',
+            },
+            0,
+        ];
+    },
+});
 
 /** Premier nœud du document s'il s'agit du frontmatter, sinon null */
 export function frontmatterNode(doc) {
@@ -56,16 +82,15 @@ export function frontmatterNode(doc) {
     return first && first.type.name === FRONTMATTER ? first : null;
 }
 
-/** { metaTitle, metaDescription } du document, null s'il n'a pas de frontmatter */
+/** { clé: valeur } du frontmatter, null si le document n'en a pas */
 export function readFrontmatter(doc) {
     const node = frontmatterNode(doc);
     if (!node) return null;
-    const meta = { metaTitle: '', metaDescription: '' };
+    const values = {};
     node.forEach(child => {
-        if (child.type.name === FRONTMATTER_TITLE) meta.metaTitle = child.textContent;
-        if (child.type.name === FRONTMATTER_DESCRIPTION) meta.metaDescription = child.textContent;
+        if (child.attrs.key) values[child.attrs.key] = child.textContent;
     });
-    return meta;
+    return values;
 }
 
 /** HTML du document sans le frontmatter (contenu exporté, comme côté serveur) */
@@ -76,11 +101,11 @@ export function htmlWithoutFrontmatter(editor) {
     return getHTMLFromFragment(doc.content.cut(node.nodeSize), editor.schema);
 }
 
-/** Champ (title / description) qui contient la sélection, null sinon */
+/** Champ du frontmatter qui contient la position, null sinon */
 function fieldAt($pos) {
     for (let depth = $pos.depth; depth > 0; depth--) {
         const node = $pos.node(depth);
-        if (FIELDS.has(node.type.name)) return { node, depth };
+        if (node.type.name === FRONTMATTER_FIELD) return { node, depth };
     }
     return null;
 }
@@ -96,7 +121,7 @@ function atStartOfFirstBlock(state) {
 
 export const Frontmatter = Node.create({
     name: FRONTMATTER,
-    content: `${FRONTMATTER_TITLE} ${FRONTMATTER_DESCRIPTION}`,
+    content: `${FRONTMATTER_FIELD}+`,
     isolating: true,
     selectable: false,
     draggable: false,
@@ -111,19 +136,19 @@ export const Frontmatter = Node.create({
 
     addCommands() {
         return {
+            // { clé: valeur } : seuls les champs existants et présents dans l'objet changent
             setFrontmatter:
-                ({ metaTitle, metaDescription } = {}) =>
+                (values = {}) =>
                 ({ state, tr, dispatch }) => {
                     const node = frontmatterNode(state.doc);
                     if (!node) return false;
                     if (dispatch) {
-                        // Du dernier au premier champ : les positions du premier restent valides
+                        // Du dernier au premier champ : les positions des précédents restent valides
                         const fields = [];
                         node.forEach((child, offset) => fields.push({ child, pos: 1 + offset }));
                         for (const { child, pos } of fields.reverse()) {
-                            const value = child.type.name === FRONTMATTER_TITLE ? metaTitle : metaDescription;
-                            if (value == null) continue;
-                            const text = String(value).replace(/\s*\n+\s*/g, ' ');
+                            if (!Object.prototype.hasOwnProperty.call(values, child.attrs.key)) continue;
+                            const text = oneLine(values[child.attrs.key]);
                             if (text === child.textContent) continue;
                             const from = pos + 1;
                             const to = pos + child.nodeSize - 1;
@@ -138,23 +163,21 @@ export const Frontmatter = Node.create({
 
     addKeyboardShortcuts() {
         const editor = this.editor;
-        // Entrée : titre → description → premier bloc du texte
+        // Entrée : champ suivant, puis premier bloc du texte après le dernier champ
         const enter = () => {
             const { state } = editor;
             const { $from } = state.selection;
             const found = fieldAt($from);
             if (!found) return false;
-            // Titre : début de la description. Description : premier endroit éditable après le frontmatter
-            const target =
-                found.node.type.name === FRONTMATTER_TITLE
-                    ? $from.after(found.depth) + 1
-                    : frontmatterNode(state.doc).nodeSize;
+            const fm = frontmatterNode(state.doc);
+            const after = $from.after(found.depth);
+            const target = after < fm.nodeSize - 1 ? after + 1 : fm.nodeSize;
             return editor.commands.command(({ tr }) => {
                 tr.setSelection(TextSelection.near(tr.doc.resolve(target), 1)).scrollIntoView();
                 return true;
             });
         };
-        // Effacement : ne jamais fusionner un champ avec un autre, ni le texte avec la meta
+        // Effacement : ne jamais fusionner deux champs, ni le texte avec le frontmatter
         const backspace = () => {
             const { state } = editor;
             const { $from, empty } = state.selection;
@@ -183,7 +206,7 @@ export const Frontmatter = Node.create({
                     // Collage dans un champ : texte brut sur une ligne
                     handlePaste(view, event) {
                         if (!fieldAt(view.state.selection.$from)) return false;
-                        const text = (event.clipboardData?.getData('text/plain') || '').replace(/\s*\n+\s*/g, ' ');
+                        const text = oneLine(event.clipboardData?.getData('text/plain'));
                         view.dispatch(view.state.tr.insertText(text));
                         return true;
                     },
@@ -206,4 +229,7 @@ export const Frontmatter = Node.create({
     },
 });
 
-export const FrontmatterExtensions = [FrontmatterDocument, Frontmatter, FrontmatterTitle, FrontmatterDescription];
+/** Extensions à ajouter à l'éditeur (avec StarterKit configuré `document: false`) */
+export function frontmatterExtensions({ labels } = {}) {
+    return [FrontmatterDocument, Frontmatter, FrontmatterField.configure({ labels })];
+}

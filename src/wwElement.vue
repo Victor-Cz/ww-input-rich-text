@@ -357,7 +357,7 @@ import { AgentReveal } from './extensions/AgentReveal.js';
 import { AGENT } from './agent.js';
 import { CustomImage } from './extensions/CustomImage.js';
 import { SeoLink } from './extensions/SeoLink.js';
-import { FrontmatterExtensions, readFrontmatter, htmlWithoutFrontmatter } from './extensions/Frontmatter.js';
+import { frontmatterExtensions, readFrontmatter, htmlWithoutFrontmatter } from './extensions/Frontmatter.js';
 import { sanitizeLinkUrl, sanitizeImageSrc, safeOpenUrl, isDangerousUrl } from './utils/sanitizeUrl.js';
 import { buildOutline, resolveOutlineLevels, toPublicOutline, toPublicHeading } from './utils/outline.js';
 
@@ -488,7 +488,7 @@ export default {
             readonly: true,
         });
 
-        // Meta du frontmatter (meta title / description), null sans frontmatter dans le document
+        // Champs du frontmatter { clé: valeur } (meta_title, meta_description, slug…), null sans frontmatter
         const { value: frontmatter, setValue: _setFrontmatter } = wwLib.wwVariable.useComponentVariable({
             uid: props.uid,
             name: 'frontmatter',
@@ -1348,6 +1348,16 @@ export default {
         contentAnalysisEnabled() {
             return !!(this.content.enableSeoAnalysis || this.content.enableGeoAnalysis);
         },
+        // Libellés des champs du frontmatter { clé: libellé } (propriété « Frontmatter labels »)
+        frontmatterLabels() {
+            const labels = { meta_title: 'Meta title', meta_description: 'Meta description', slug: 'Slug' };
+            for (const item of this.content.frontmatterLabels || []) {
+                if (!item?.key) continue;
+                const label = wwLib.wwLang.getText(item.label);
+                if (label) labels[item.key] = label;
+            }
+            return labels;
+        },
         seoOptions() {
             if (!this.contentAnalysisEnabled) return null;
             return {
@@ -1357,8 +1367,10 @@ export default {
                 synonyms: this.content.seoKeywordSynonyms,
                 secondaryKeywords: this.content.seoSecondaryKeywords,
                 // Meta du frontmatter quand le document en a un, sinon celle des propriétés
-                metaTitle: this.frontmatter ? this.frontmatter.metaTitle : this.content.seoMetaTitle,
-                metaDescription: this.frontmatter ? this.frontmatter.metaDescription : this.content.seoMetaDescription,
+                metaTitle: this.frontmatter ? this.frontmatter.meta_title ?? '' : this.content.seoMetaTitle,
+                metaDescription: this.frontmatter
+                    ? this.frontmatter.meta_description ?? ''
+                    : this.content.seoMetaDescription,
                 siteDomain: this.content.seoSiteDomain,
                 lang: this.content.seoLang,
                 uiLang: this.content.seoUiLang,
@@ -1450,7 +1462,7 @@ export default {
                         // Remplacé par FrontmatterDocument (frontmatter optionnel en tête)
                         document: false,
                     }),
-                    ...FrontmatterExtensions,
+                    ...frontmatterExtensions({ labels: () => this.frontmatterLabels }),
                     SeoLink.configure({
                         // target/rel sont calculés par lien (interne = lien normal,
                         // externe = _blank + noopener noreferrer nofollow). Le domaine
@@ -1878,16 +1890,16 @@ export default {
             // Le frontmatter n'est pas du contenu : il est exposé à part (variable frontmatter)
             return htmlWithoutFrontmatter(this.richEditor);
         },
-        // Meta du frontmatter → variable `frontmatter` (seulement si elle a changé)
+        // Champs du frontmatter → variable `frontmatter` (seulement s'ils ont changé)
         syncFrontmatter() {
             if (!this.richEditor || this.isDestroying) return;
             const meta = readFrontmatter(this.richEditor.state.doc);
             if (JSON.stringify(meta) !== JSON.stringify(this.frontmatter ?? null)) this.setFrontmatter(meta);
         },
-        // Action : modifier la meta du frontmatter (null = champ inchangé)
-        setFrontmatterMeta(metaTitle, metaDescription) {
-            if (!this.richEditor) return;
-            this.richEditor.commands.setFrontmatter({ metaTitle, metaDescription });
+        // Action : modifier un champ du frontmatter par sa clé (meta_title, meta_description, slug…)
+        setFrontmatterField(key, value) {
+            if (!this.richEditor || !key) return;
+            this.richEditor.commands.setFrontmatter({ [key]: value ?? '' });
         },
         /* Table */
         insertTable() {
@@ -3229,15 +3241,15 @@ export default {
                 height: 0;
             }
         }
-        .rt-frontmatter-title {
-            font-size: 18px;
-            line-height: 24px;
-            color: #1a0dab;
-        }
-        .rt-frontmatter-description {
+        .rt-frontmatter-field {
             font-size: 14px;
             line-height: 20px;
             color: #61656d;
+        }
+        .rt-frontmatter-field[data-key='meta_title'] {
+            font-size: 18px;
+            line-height: 24px;
+            color: #1a0dab;
         }
 
         /* Basic editor styles */
