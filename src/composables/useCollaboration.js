@@ -577,7 +577,13 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 url: cleanBaseUrl, // URL de base sans le documentId
                 name: collabConfig.value.documentId, // Le provider ajoutera automatiquement /{name}
                 document: ydocInstance,
-                token: collabConfig.value.authToken || undefined,
+                // Fonction, relue à chaque (re)connexion : le serveur réautorise
+                // les connexions et refuse un JWT expiré, la reconnexion doit
+                // donc reprendre le token courant, pas celui de l'ouverture.
+                // Sans token, undefined : le provider n'envoie alors aucune
+                // authentification (une fonction en enverrait une, vide, aussitôt
+                // refusée) ; le watcher d'authToken relance quand il arrive
+                token: collabConfig.value.authToken ? () => collabConfig.value.authToken || '' : undefined,
                 // Ping toutes les 30s pour éviter les coupures par proxies/firewalls
                 keepAlive: 30000,
                 // Ajoute ?saveMode=...&userName=...&saveDebounce=... à l'URL WebSocket
@@ -596,7 +602,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 baseUrl: cleanBaseUrl,
                 documentId: providerConfig.name,
                 willConnectTo: `${cleanBaseUrl}/${providerConfig.name}`,
-                hasToken: !!providerConfig.token,
+                hasToken: !!collabConfig.value.authToken,
                 saveMode: collabConfig.value.saveMode,
                 saveDebounce: collabConfig.value.saveDebounce,
                 userName: collabConfig.value.userName,
