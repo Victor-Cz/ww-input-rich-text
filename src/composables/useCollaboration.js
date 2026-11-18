@@ -228,6 +228,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // l'éditeur), puis agentLingerDelay secondes
     let lingeringAgent = null;
     let agentLingerTimer = null;
+    // La liste des utilisateurs publiée en dernier (cf. awareness)
+    let lastUsersSignature = null;
 
     // Utilisateurs présents d'après l'awareness, Brispr avec la couleur du paramètre
     const readUsers = () =>
@@ -458,6 +460,19 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         if (provider.value.awareness) {
             provider.value.awareness.on('change', () => {
                 const users = readUsers();
+
+                // Curseurs et souris changent l'awareness à chaque mouvement :
+                // sur le serveur du template ou avec la souris des
+                // collaborateurs, rien n'est republié tant que la liste des
+                // utilisateurs ne change pas (Brispr seul : inchangé)
+                const signature = JSON.stringify(users);
+                const quiet = isTemplate() || !!content.value.showMousePresence;
+                if (quiet && signature === lastUsersSignature) {
+                    resolveAnonymousColorCollision();
+                    resolveDuplicateSessionColorCollision();
+                    return;
+                }
+                lastUsersSignature = signature;
 
                 // Alimenter le mapping de couleurs des diffs de version
                 // avec les utilisateurs présents (même clé que PermanentUserData)
@@ -708,6 +723,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         connectionAttempts.value = 0;
         clearAgentLinger();
         lingeringAgent = null;
+        lastUsersSignature = null;
 
         // Réinitialiser l'état local et le statut externe
         currentStatus = {

@@ -33,18 +33,43 @@ export const MousePresence = Extension.create({
 
     addProseMirrorPlugins() {
         const options = this.options;
+        // Les écouteurs de la vue (handleDOMEvents) passent par ici : la vue
+        // naît sur un élément détaché, que <editor-content> vide ensuite dans
+        // le sien, un écouteur posé à la création ne verrait rien
+        const handlers = { move: () => {}, leave: () => {} };
 
         return [
             new Plugin({
                 key: mousePresenceKey,
 
+                props: {
+                    handleDOMEvents: {
+                        mousemove: (_view, event) => {
+                            handlers.move(event);
+                            return false;
+                        },
+                        mouseleave: () => {
+                            handlers.leave();
+                            return false;
+                        },
+                    },
+                },
+
                 view(view) {
-                    const host = view.dom.parentElement;
-                    if (!host) return {};
-                    if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
                     const layer = document.createElement('div');
                     layer.className = 'ww-mouse-presence';
-                    host.appendChild(layer);
+
+                    // Le conteneur du texte, relu à chaque rendu (cf. handlers) :
+                    // le calque y est (re)placé
+                    const hostOf = () => {
+                        const host = view.dom.parentElement;
+                        if (!host || !host.isConnected) return null;
+                        if (layer.parentElement !== host) {
+                            if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+                            host.appendChild(layer);
+                        }
+                        return host;
+                    };
 
                     const elements = new Map();
                     let awareness = null;
@@ -138,7 +163,8 @@ export const MousePresence = Extension.create({
                     const render = () => {
                         frame = null;
                         const sync = syncState();
-                        if (!awareness || !sync || !options.enabled()) {
+                        const host = hostOf();
+                        if (!awareness || !sync || !host || !options.enabled()) {
                             clear();
                             if (!options.enabled()) publish(null);
                             return;
@@ -192,8 +218,8 @@ export const MousePresence = Extension.create({
                         awareness?.on('change', schedule);
                     }
 
-                    host.addEventListener('mousemove', onMove);
-                    host.addEventListener('mouseleave', leave);
+                    handlers.move = onMove;
+                    handlers.leave = leave;
                     document.addEventListener('visibilitychange', onVisibility);
                     window.addEventListener('resize', schedule);
                     window.addEventListener('scroll', schedule, { capture: true, passive: true });
@@ -205,8 +231,8 @@ export const MousePresence = Extension.create({
                             leave();
                             awareness?.off('change', schedule);
                             if (frame) cancelAnimationFrame(frame);
-                            host.removeEventListener('mousemove', onMove);
-                            host.removeEventListener('mouseleave', leave);
+                            handlers.move = () => {};
+                            handlers.leave = () => {};
                             document.removeEventListener('visibilitychange', onVisibility);
                             window.removeEventListener('resize', schedule);
                             window.removeEventListener('scroll', schedule, { capture: true });
