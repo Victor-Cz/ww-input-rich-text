@@ -216,7 +216,7 @@
                 </div>
                 <wwElement class="ww-rich-text__menu" v-else-if="content.customMenu"
                     v-bind="content.customMenuElement" />
-                <version-timeline v-if="shouldEnableCollaboration && !timelineTargetEl"
+                <version-timeline v-if="showVersionTimeline && !timelineTargetEl"
                     class="ww-rich-text__menu-timeline"
                     :versions="versionHistory.versions"
                     :selected-id="versionHistory.selectedId"
@@ -228,7 +228,7 @@
                 <!-- Frise téléportée dans un conteneur de la page (sélecteur
                      CSS fourni) : le conteneur — et le menu qu'il abrite —
                      reste entièrement sous le contrôle de l'utilisateur -->
-                <teleport v-if="shouldEnableCollaboration && timelineTargetEl" :to="timelineTargetEl">
+                <teleport v-if="showVersionTimeline && timelineTargetEl" :to="timelineTargetEl">
                     <version-timeline v-show="versionHistory.active" ref="teleportedTimeline"
                         class="ww-rich-text__menu-timeline -teleported"
                         :versions="versionHistory.versions"
@@ -354,6 +354,7 @@ import { SeoHighlighter } from './extensions/SeoHighlighter.js';
 import { TextSuggestion } from './extensions/TextSuggestion.js';
 import { TextStrike } from './extensions/TextStrike.js';
 import { AgentReveal } from './extensions/AgentReveal.js';
+import { MousePresence } from './extensions/MousePresence.js';
 import { AGENT } from './agent.js';
 import { CustomImage } from './extensions/CustomImage.js';
 import { SeoLink } from './extensions/SeoLink.js';
@@ -468,6 +469,8 @@ export default {
                 users: [],
                 userCount: 0,
                 agentWriting: false,
+                agentName: null,
+                channels: {},
             })),
             readonly: true,
         });
@@ -706,7 +709,7 @@ export default {
             immediate: true,
             handler: 'resolveAgentIcon',
         },
-        agentLocked(locked) {
+        agentActive(locked) {
             if (locked) {
                 this.agentFollowPausedUntil = 0;
                 window.addEventListener('wheel', this.pauseFollowingAgent, { passive: true });
@@ -719,7 +722,7 @@ export default {
             }
             this.$emit('trigger-event', {
                 name: locked ? 'collab:agent-writing' : 'collab:agent-done',
-                event: { agent: AGENT.name, timestamp: new Date().toISOString() },
+                event: { agent: this.agentName, timestamp: new Date().toISOString() },
             });
         },
         variableValue(value, oldValue) {
@@ -908,7 +911,7 @@ export default {
         // Hors historique, la liste des versions est chargée dès la synchro
         // pour alimenter la variable versions
         'collaborationStatus.synced'(synced) {
-            if (!synced) return;
+            if (!synced || !this.versionsAvailable) return;
             const vh = this.versionHistory;
             if (this.content.showVersionHistory && !vh.active) {
                 this.openVersionHistory();
@@ -930,6 +933,7 @@ export default {
         },
         // Versions créées ou publiées (par n'importe quel participant)
         versionsChangedCount() {
+            if (!this.versionsAvailable) return;
             this.refreshVersionList().catch(e => console.warn('[Versions] Failed to refresh version list:', e));
         },
         // Époque périmée (document compacté côté serveur pendant une coupure) :
@@ -1083,10 +1087,27 @@ export default {
         isEditable() {
             return !this.isReadonly && this.content.editable && !this.agentLocked;
         },
-        // Brispr écrit, ou son texte n'a pas fini de se dévoiler : le collab
-        // refuse déjà les modifications, l'éditeur ne laisse pas taper dans le vide
-        agentLocked() {
+        // L'agent écrit, ou son texte n'a pas fini de se dévoiler
+        agentActive() {
             return !!this.collaborationStatus?.agentWriting || this.agentRevealing;
+        },
+        // Brispr : le collab refuse déjà les modifications, l'éditeur ne laisse
+        // pas taper dans le vide. Serveur du template : on continue d'écrire,
+        // le serveur n'écrit que les blocs qui changent
+        agentLocked() {
+            return this.agentActive && !this.isTemplate();
+        },
+        // Nom affiché sur le caret de l'agent : celui de l'écrivain du serveur, sinon Brispr
+        agentName() {
+            return this.collaborationStatus?.agentName || AGENT.name;
+        },
+        // Versions : brispr-collab seulement
+        versionsAvailable() {
+            return this.shouldEnableCollaboration && !this.isTemplate();
+        },
+        // Frise des versions : masquable (showVersionTimeline), absente sans versions
+        showVersionTimeline() {
+            return this.versionsAvailable && (this.content.showVersionTimeline ?? true);
         },
         agentColor() {
             return this.content.agentColor || AGENT.color;
@@ -1532,7 +1553,7 @@ export default {
                 if (this.shouldEnableCollaboration) {
                     extensions.push(
                         AgentReveal.configure({
-                            label: AGENT.name,
+                            label: () => this.agentName,
                             icon: () => this.agentIconSvg,
                             wordsPerSecond: () => Math.max(1, Number(this.content.agentWritingSpeed) || 40),
                             shouldAnimate: () =>
@@ -1541,6 +1562,12 @@ export default {
                                 this.agentRevealing = revealing;
                             },
                             onReveal: caret => this.followAgentCaret(caret),
+                        }),
+                        // Souris des collaborateurs (showMousePresence), pas sur une version affichée
+                        MousePresence.configure({
+                            awareness: () => this.provider?.awareness ?? null,
+                            enabled: () =>
+                                !!this.content.showMousePresence && !this.isVersionPreview && !this.isArchivePreview(),
                         })
                     );
                 }
@@ -2330,6 +2357,8 @@ export default {
         // ===== Mode historique (frise chronologique) =====
 
         collabApiFetch(path) {
+            // Le serveur du template n'a pas de routes de versions
+            if (this.isTemplate()) return Promise.reject(new Error('versions-unavailable'));
             const base = (this.collabConfig.websocketUrl || '').replace(/^ws/, 'http').replace(/\/+$/, '');
             const token = this.collabConfig.authToken || '';
             const auth = token.startsWith('Bearer') ? token : `Bearer ${token}`;
@@ -2395,8 +2424,8 @@ export default {
         },
 
         async openVersionHistory() {
-            if (!this.shouldEnableCollaboration) {
-                console.warn('[Versions] History requires active collaboration');
+            if (!this.versionsAvailable) {
+                console.warn('[Versions] History requires collaboration on a server with versions');
                 return false;
             }
             this.startTimelineTargetWatch();
@@ -3661,6 +3690,41 @@ export default {
     }
 
     /* Styles des curseurs de collaboration */
+    /* Souris des collaborateurs (MousePresence) : par-dessus le texte, sans capter la souris */
+    .ww-mouse-presence {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        overflow: visible;
+        z-index: 101;
+    }
+
+    .ww-mouse-presence__pointer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: flex;
+        align-items: flex-start;
+        transition: transform 80ms linear;
+        will-change: transform;
+
+        svg {
+            flex: none;
+        }
+    }
+
+    .ww-mouse-presence__name {
+        margin: 12px 0 0 -2px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: normal;
+        white-space: nowrap;
+        user-select: none;
+    }
+
     .collaboration-cursor__caret {
         position: relative;
         border-left: 2px solid;

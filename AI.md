@@ -51,6 +51,14 @@ A versatile rich text editor enabling text content creation with formatting opti
 - checkbox: object - Checkbox styles
 - table: object - Table styles (borderColor, borderWidth, headerBgColor, headerColor, pairCellBgColor, oddCellBgColor, cellColor, cellPaddingX, cellPaddingY, handleColor)
 
+***Collaboration (enableCollaboration):***
+- collabProtocol: 'brispr' | 'template' - Collaboration server. Default: 'brispr' (brispr-collab, with versions). 'template': the template collaboration server (Search, Image…): no versions (version properties and timeline hidden), saving shown by the server's `save` channel, server writes (an agent writing through the back) revealed live without locking the editor
+- showMousePresence: boolean - Show each collaborator's mouse pointer over the text (name and color) and share yours. Default: false
+- showVersionTimeline: boolean - Show the version timeline (brispr only). Default: true
+- Template server channels: `collaborationStatus.channels` = { <channel>: [messages] } (last message = current state). `save` ({ state: saving | saved | error, at }), `presence` ({ <user_id>: member | editor | viewer }), `guests` (members only), plus the document type's channels (article: the article row, for guests too). Event `collab:channels-update` { channels, channel, message } (channel null after a reconnection snapshot)
+- `saveDocument` action on the template server: asks the server to save now (ignored for a viewer, or more than once every 2 s)
+- `collaborationStatus.agentName`: name of the agent writing (server writer), shown on its caret
+
 ***Slots:***
 - headerElement: (element) ww-div - Optional header element (above the menu, scrolls with the text)
 - customMenuElement: (element) ww-div - Optional custom menu element

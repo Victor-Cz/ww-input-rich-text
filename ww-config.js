@@ -68,6 +68,7 @@ export default {
             'enableCollaboration',
             'collaborationInfobox',
             [
+                'collabProtocol',
                 'websocketUrl',
                 'documentId',
                 'authToken',
@@ -77,9 +78,11 @@ export default {
                 'saveMode',
                 'saveDebounce',
                 'maxConnectionAttempts',
+                'showMousePresence',
             ],
             'versionsInfobox',
             [
+                'showVersionTimeline',
                 'showVersionHistory',
                 'versionDiffColorMode',
                 'versionDiffAuthors',
@@ -318,6 +321,16 @@ export default {
             event: {
                 documentId: '',
                 epoch: 0,
+                timestamp: '',
+            },
+        },
+        {
+            name: 'collab:channels-update',
+            label: { en: 'On server channels update (template server)', fr: 'Mise à jour des canaux du serveur (serveur du template)' },
+            event: {
+                channels: {},
+                channel: '',
+                message: null,
                 timestamp: '',
             },
         },
@@ -3380,6 +3393,49 @@ export default {
             defaultValue: false,
             bindable: true,
         },
+        collabProtocol: {
+            section: 'settings',
+            label: { en: 'Collaboration server', fr: 'Serveur de collaboration' },
+            type: 'TextSelect',
+            options: {
+                options: [
+                    { value: 'brispr', label: { en: 'Brispr collab (versions)', fr: 'Collab Brispr (versions)' } },
+                    { value: 'template', label: { en: 'Template server (Search, Image…)', fr: 'Serveur du template (Search, Image…)' } },
+                ],
+            },
+            defaultValue: 'brispr',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            propertyHelp: {
+                tooltip:
+                    'Template server: saving and server states through channels (collaborationStatus.channels, collab:channels-update), server writes shown live, no versions. The saveDocument action asks the server to save now.',
+            },
+            /* wwEditor:end */
+        },
+        showMousePresence: {
+            section: 'settings',
+            label: { en: "Show collaborators' mouse", fr: 'Afficher la souris des collaborateurs' },
+            type: 'OnOff',
+            defaultValue: false,
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            propertyHelp: {
+                tooltip: 'Shows the mouse pointer of each collaborator over the text, with their name and color, and shares yours',
+            },
+            /* wwEditor:end */
+        },
+        showVersionTimeline: {
+            section: 'settings',
+            label: { en: 'Show version timeline', fr: 'Afficher la frise des versions' },
+            type: 'OnOff',
+            defaultValue: true,
+            bindable: true,
+            hidden: content => !content.enableCollaboration || content.collabProtocol === 'template',
+        },
         websocketUrl: {
             section: 'settings',
             label: { en: 'WebSocket URL', fr: 'URL WebSocket' },
@@ -3463,7 +3519,7 @@ export default {
                 title: 'Versions',
                 content: 'Historique des versions, affichage des diffs et frise chronologique.',
             },
-            hidden: content => !content.enableCollaboration,
+            hidden: content => !content.enableCollaboration || content.collabProtocol === 'template',
         },
         agentInfobox: {
             type: 'InfoBox',
@@ -3518,7 +3574,7 @@ export default {
             type: 'OnOff',
             defaultValue: false,
             bindable: true,
-            hidden: content => !content.enableCollaboration,
+            hidden: content => !content.enableCollaboration || content.collabProtocol === 'template',
             /* eslint-disable-next-line */
             /* wwEditor:start */
             propertyHelp: {
@@ -3539,7 +3595,7 @@ export default {
             },
             defaultValue: 'default',
             bindable: true,
-            hidden: content => !content.enableCollaboration,
+            hidden: content => !content.enableCollaboration || content.collabProtocol === 'template',
             /* eslint-disable-next-line */
             /* wwEditor:start */
             propertyHelp: {
@@ -3554,7 +3610,7 @@ export default {
             type: 'OnOff',
             defaultValue: false,
             bindable: true,
-            hidden: content => !content.enableCollaboration,
+            hidden: content => !content.enableCollaboration || content.collabProtocol === 'template',
             /* eslint-disable-next-line */
             /* wwEditor:start */
             propertyHelp: {
@@ -3569,7 +3625,7 @@ export default {
             type: 'Text',
             defaultValue: '',
             bindable: true,
-            hidden: content => !content.enableCollaboration,
+            hidden: content => !content.enableCollaboration || content.collabProtocol === 'template',
             /* eslint-disable-next-line */
             /* wwEditor:start */
             placeholder: '.ma-box-menu',
@@ -3585,7 +3641,7 @@ export default {
             type: 'Color',
             defaultValue: '#111827',
             bindable: true,
-            hidden: content => !content.enableCollaboration,
+            hidden: content => !content.enableCollaboration || content.collabProtocol === 'template',
         },
         epochLoadButtonText: {
             section: 'settings',
@@ -3593,7 +3649,7 @@ export default {
             type: 'Text',
             defaultValue: "Charger l'époque",
             bindable: true,
-            hidden: content => !content.enableCollaboration,
+            hidden: content => !content.enableCollaboration || content.collabProtocol === 'template',
         },
         versionDiffAuthors: {
             section: 'settings',
@@ -3601,7 +3657,7 @@ export default {
             type: 'Object',
             defaultValue: {},
             bindable: true,
-            hidden: content => !content.enableCollaboration,
+            hidden: content => !content.enableCollaboration || content.collabProtocol === 'template',
             /* eslint-disable-next-line */
             /* wwEditor:start */
             placeholder: '= { "user-uuid": "Display name" }',
@@ -3633,7 +3689,7 @@ export default {
             },
             defaultValue: 'manual',
             bindable: true,
-            hidden: content => !content.enableCollaboration,
+            hidden: content => !content.enableCollaboration || content.collabProtocol === 'template',
         },
         saveDebounce: {
             section: 'settings',
@@ -3646,7 +3702,7 @@ export default {
             },
             defaultValue: 2000,
             bindable: true,
-            hidden: content => !content.enableCollaboration,
+            hidden: content => !content.enableCollaboration || content.collabProtocol === 'template',
         },
         agentColor: {
             section: 'settings',

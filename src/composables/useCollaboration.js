@@ -5,6 +5,7 @@ import Collaboration from '@tiptap/extension-collaboration';
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
 import { YChangeMark, YChangeNodeAttrs } from '../extensions/YChange.js';
 import { AGENT } from '../agent.js';
+import { SAVE_REQUEST, applyChannelMessage, lastMessage, saveStatusOf } from '../utils/collabChannels.js';
 
 /**
  * Composable pour gérer la collaboration Hocuspocus/Yjs dans l'éditeur Tiptap
@@ -50,6 +51,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         epoch: null,
         staleEpoch: false,
         agentWriting: false,
+        agentName: null,
+        channels: {},
     };
 
     // Helper pour mettre à jour le statut
@@ -85,7 +88,17 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         saveMode: content.value.saveMode || 'manual',
         saveDebounce: content.value.saveDebounce ?? 2000,
         maxConnectionAttempts: content.value.maxConnectionAttempts || 5,
+        protocol: content.value.collabProtocol === 'template' ? 'template' : 'brispr',
     }));
+
+    // Serveur de collaboration du template (Search, Image…) : enregistrement et
+    // états du serveur par canaux, écriture du serveur annoncée par l'awareness
+    // (user.writer), pas de versions. Sinon brispr-collab, comme avant
+    const isTemplate = () => collabConfig.value.protocol === 'template';
+
+    // L'agent qui écrit : Brispr (brispr-collab) ou l'écrivain du serveur du
+    // template (POST /collab/write : { user: { name, writer: true } }, sans id)
+    const isAgentUser = user => !!user && (user.id === AGENT.id || user.writer === true);
 
     // Vérification si la collaboration doit être activée
     const shouldEnableCollaboration = computed(() => {
@@ -222,14 +235,15 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             .filter(state => state.user)
             .map(state => ({
                 name: state.user.name,
-                color: state.user.id === AGENT.id ? agentColor() : state.user.color,
+                color: isAgentUser(state.user) ? agentColor() : state.user.color,
                 id: state.user.id || null,
+                ...(isAgentUser(state.user) ? { agent: true } : {}),
             }));
 
     // Publie la liste (statut + collab:awareness-update), avec Brispr tant
     // qu'il s'attarde après son départ
     const publishUsers = (users = readUsers()) => {
-        if (lingeringAgent && !users.some(user => user.id === AGENT.id)) {
+        if (lingeringAgent && !users.some(user => user.agent)) {
             users = [...users, { ...lingeringAgent, color: agentColor() }];
         }
 
@@ -262,6 +276,39 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             lingeringAgent = null;
             publishUsers();
         }, Math.max(0, delay));
+    };
+
+    // Un message des canaux du serveur du template : les canaux tenus dans
+    // collaborationStatus.channels, l'enregistrement (canal save) dans le
+    // statut. Les événements ne partent que pour un message en direct, pas
+    // pour l'instantané rejoué à chaque (re)connexion
+    const handleChannelMessage = data => {
+        const applied = applyChannelMessage(currentStatus.channels, data);
+        if (!applied) return;
+        const save = applied.live ? (applied.channel === 'save' ? applied.message : null) : lastMessage(applied.channels, 'save');
+        updateStatus({ channels: applied.channels, ...(saveStatusOf(save) ?? {}) });
+
+        emit('trigger-event', {
+            name: 'collab:channels-update',
+            event: {
+                channels: applied.channels,
+                channel: applied.channel,
+                message: applied.message,
+                timestamp: new Date().toISOString(),
+            },
+        });
+        if (!applied.live || applied.channel !== 'save') return;
+        const timestamp = new Date().toISOString();
+        if (save?.state === 'saving') {
+            emit('trigger-event', { name: 'collab:saving', event: { timestamp, saveId: null } });
+        } else if (save?.state === 'saved') {
+            emit('trigger-event', { name: 'collab:saved', event: { timestamp, saveId: null } });
+        } else if (save?.state === 'error') {
+            emit('trigger-event', {
+                name: 'collab:error',
+                event: { error: 'save-error', message: 'save-error', timestamp, saveId: null },
+            });
+        }
     };
 
     // Configuration des event listeners du provider
@@ -323,11 +370,14 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 syncing: false,
             });
 
-            // Demander l'époque courante au serveur (versionnage/compaction)
-            try {
-                provider.value.sendStateless(JSON.stringify({ action: 'get-epoch' }));
-            } catch (e) {
-                console.warn('[Collaboration] Failed to request epoch:', e);
+            // Demander l'époque courante au serveur (versionnage/compaction,
+            // brispr-collab seulement)
+            if (!isTemplate()) {
+                try {
+                    provider.value.sendStateless(JSON.stringify({ action: 'get-epoch' }));
+                } catch (e) {
+                    console.warn('[Collaboration] Failed to request epoch:', e);
+                }
             }
 
             emit('trigger-event', {
@@ -415,7 +465,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
 
                 // Brispr présent = il est en train d'écrire l'article. Gardé
                 // pour rester affiché un moment après son départ
-                const agent = users.find(user => user.id === AGENT.id);
+                const agent = users.find(user => user.agent);
                 if (agent) {
                     lingeringAgent = agent;
                     clearAgentLinger();
@@ -423,6 +473,9 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 const agentWriting = !!agent;
                 if (agentWriting !== !!currentStatus.agentWriting) {
                     updateStatus({ agentWriting });
+                }
+                if (agent && agent.name !== currentStatus.agentName) {
+                    updateStatus({ agentName: agent.name || null });
                 }
 
                 // Éviter que deux anonymes partagent la même couleur
@@ -442,6 +495,10 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         provider.value.on('stateless', ({ payload }) => {
             try {
                 const data = JSON.parse(payload);
+                if (isTemplate()) {
+                    handleChannelMessage(data);
+                    return;
+                }
                 if (data.action === 'save-state') {
                     // Le serveur DOIT renvoyer le saveId pour permettre le tracking
                     const saveId = data.saveId || null;
@@ -557,12 +614,16 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             // comparaison de versions — stockée dans le document lui-même.
             // Clé = userId (stable face aux renommages et homonymes),
             // fallback userName ; la résolution id → nom se fait côté UI.
-            permanentUserDataInstance = new Y.PermanentUserData(ydocInstance);
-            permanentUserDataInstance.setUserMapping(
-                ydocInstance,
-                ydocInstance.clientID,
-                localUserKey()
-            );
+            // Pas sur le serveur du template : PermanentUserData écrit dans
+            // le Y.Doc (son état est gardé en base), sans versions à attribuer
+            if (!isTemplate()) {
+                permanentUserDataInstance = new Y.PermanentUserData(ydocInstance);
+                permanentUserDataInstance.setUserMapping(
+                    ydocInstance,
+                    ydocInstance.clientID,
+                    localUserKey()
+                );
+            }
             registerUserColor(localUserKey());
             // Brispr garde sa couleur dans les diffs, même une fois parti
             registerUserColor(AGENT.id);
@@ -662,6 +723,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             epoch: null,
             staleEpoch: false,
             agentWriting: false,
+            agentName: null,
+            channels: {},
         };
         setCollaborationStatus(currentStatus);
     };
@@ -829,6 +892,14 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // IMPORTANT: Le serveur DOIT renvoyer le saveId dans sa réponse stateless
     // pour permettre le tracking de sauvegardes multiples simultanées
     const sendSaveSignal = (force = false, saveId = null) => {
+        // Serveur du template : { type: 'collab:save' }, sans saveId. Pas
+        // d'état « saving » d'avance : le serveur ignore la demande d'un viewer
+        // ou trop rapprochée, c'est le canal save qui dit l'enregistrement
+        if (isTemplate()) {
+            if (!provider.value?.isConnected) return false;
+            provider.value.sendStateless(SAVE_REQUEST);
+            return true;
+        }
         if (provider.value && provider.value.isConnected) {
             updateStatus({ saving: true, saved: false });
             provider.value.sendStateless(
@@ -847,6 +918,10 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // Demander au serveur de créer une version nommée du document
     // Réponse : message stateless { action: "version-created", ... }
     const sendCreateVersionSignal = (label = null) => {
+        if (isTemplate()) {
+            console.warn('[Collaboration] Versions are not available on the template collaboration server');
+            return false;
+        }
         if (provider.value && provider.value.isConnected) {
             provider.value.sendStateless(
                 JSON.stringify({
@@ -909,6 +984,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         isCollaborating,
         collabConfig,
         shouldEnableCollaboration,
+        isTemplate,
         versionsChangedCount,
 
         // Méthodes
