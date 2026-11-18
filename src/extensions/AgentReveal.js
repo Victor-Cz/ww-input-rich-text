@@ -81,6 +81,7 @@ export const AgentReveal = Extension.create({
 
     addOptions() {
         return {
+            /** Nom à côté du caret : un texte, ou une fonction relue à chaque dévoilement */
             label: 'Brispr',
             /** SVG de l'icône à côté du nom ('' : pas d'icône). La couleur vient de --brispr-color */
             icon: () => '',
@@ -108,8 +109,17 @@ export const AgentReveal = Extension.create({
         caretLabel.className = 'brispr-caret__label';
         const caretIcon = document.createElement('span');
         caretIcon.className = 'brispr-caret__icon';
-        caretLabel.append(caretIcon, options.label);
+        const caretName = document.createTextNode('');
+        caretLabel.append(caretIcon, caretName);
         caret.append(caretLabel);
+
+        // Le nom de l'agent n'est connu qu'une fois qu'il écrit (serveur du
+        // template : celui de l'écrivain) : relu à chaque dévoilement
+        const syncLabel = () => {
+            const label = String((typeof options.label === 'function' ? options.label() : options.label) ?? '');
+            if (caretName.data !== label) caretName.data = label;
+        };
+        syncLabel();
 
         // L'icône peut arriver après coup (bibliothèque d'icônes asynchrone) :
         // relue à chaque mise à jour, réécrite seulement si elle a changé
@@ -237,6 +247,7 @@ export const AgentReveal = Extension.create({
                         }
                         if (revealing) {
                             syncIcon();
+                            syncLabel();
                             options.onReveal(caret);
                         }
                     };
