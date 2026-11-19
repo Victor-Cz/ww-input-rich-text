@@ -2,7 +2,7 @@ import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from 'prosemirror-state';
 import * as Y from 'yjs';
 import { absolutePositionToRelativePosition, relativePositionToAbsolutePosition, ySyncPluginKey } from 'y-prosemirror';
-import { clampPosition, POINTER_FIELD, POINTER_THROTTLE_MS, remotePointers } from '../utils/mousePointers.js';
+import { clampPosition, clampToRect, POINTER_FIELD, POINTER_THROTTLE_MS, remotePointers } from '../utils/mousePointers.js';
 
 export const mousePresenceKey = new PluginKey('mousePresence');
 
@@ -18,7 +18,8 @@ const ARROW =
  * survolé quand le texte bouge, et se retrouve sur un écran d'une autre
  * largeur. Rien n'est publié ni dessiné quand enabled() est faux (paramètre
  * coupé, aperçu de version) ; la souris est retirée en quittant le texte ou
- * l'onglet.
+ * l'onglet. Une souris dans une marge s'ancre au mot le plus proche, et un
+ * défilement sans mouvement republie la souris là où elle se trouve désormais.
  */
 export const MousePresence = Extension.create({
     name: 'mousePresence',
@@ -96,7 +97,10 @@ export const MousePresence = Extension.create({
                     const encode = (x, y) => {
                         const sync = syncState();
                         if (!sync) return null;
-                        const hit = view.posAtCoords({ left: x, top: y });
+                        // Le mot le plus proche, même depuis une marge ou après la fin
+                        // d'une ligne : la souris ne disparaît pas chez les autres
+                        const inside = clampToRect(x, y, view.dom.getBoundingClientRect());
+                        const hit = view.posAtCoords({ left: inside.x, top: inside.y });
                         if (!hit) return null;
                         const base = view.coordsAtPos(hit.pos);
                         const relative = absolutePositionToRelativePosition(hit.pos, sync.type, sync.binding.mapping);
@@ -120,18 +124,33 @@ export const MousePresence = Extension.create({
                         }
                     };
 
+                    // Le dernier point connu de la souris sur le texte : un défilement
+                    // sans mouvement la fait passer sur d'autres mots, on la republie
+                    let lastPoint = null;
+
                     const onMove = event => {
                         if (!options.enabled()) return;
+                        lastPoint = { clientX: event.clientX, clientY: event.clientY };
                         lastEvent = event;
                         if (timer) return;
                         timer = setTimeout(flush, Math.max(0, lastSent + POINTER_THROTTLE_MS - Date.now()));
                     };
 
                     const leave = () => {
+                        lastPoint = null;
                         lastEvent = null;
                         clearTimeout(timer);
                         timer = null;
                         publish(null);
+                    };
+
+                    // Défilement : la souris immobile survole un autre endroit du texte
+                    const onScroll = () => {
+                        schedule();
+                        if (!lastPoint || !options.enabled()) return;
+                        lastEvent = lastPoint;
+                        if (timer) return;
+                        timer = setTimeout(flush, Math.max(0, lastSent + POINTER_THROTTLE_MS - Date.now()));
                     };
 
                     const onVisibility = () => {
@@ -222,7 +241,7 @@ export const MousePresence = Extension.create({
                     handlers.leave = leave;
                     document.addEventListener('visibilitychange', onVisibility);
                     window.addEventListener('resize', schedule);
-                    window.addEventListener('scroll', schedule, { capture: true, passive: true });
+                    window.addEventListener('scroll', onScroll, { capture: true, passive: true });
                     schedule();
 
                     return {
@@ -235,7 +254,7 @@ export const MousePresence = Extension.create({
                             handlers.leave = () => {};
                             document.removeEventListener('visibilitychange', onVisibility);
                             window.removeEventListener('resize', schedule);
-                            window.removeEventListener('scroll', schedule, { capture: true });
+                            window.removeEventListener('scroll', onScroll, { capture: true });
                             clear();
                             layer.remove();
                         },

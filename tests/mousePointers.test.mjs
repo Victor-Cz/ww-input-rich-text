@@ -33,3 +33,12 @@ test('forme et bornes', () => {
     assert.equal(clampPosition(12, 10), 10);
     assert.equal(clampPosition(5, 10), 5);
 });
+
+test('clampToRect garde un point du texte et ramène une marge au bord le plus proche', async () => {
+    const { clampToRect } = await import('../src/utils/mousePointers.js');
+    const rect = { left: 100, top: 50, right: 500, bottom: 900 };
+    assert.deepEqual(clampToRect(300, 400, rect), { x: 300, y: 400 });
+    assert.deepEqual(clampToRect(20, 400, rect), { x: 101, y: 400 }, 'marge gauche');
+    assert.deepEqual(clampToRect(800, 950, rect), { x: 499, y: 899 }, 'après la fin du texte');
+    assert.deepEqual(clampToRect(10, 10, { left: 0, top: 0, right: 1, bottom: 1 }), { x: 0.5, y: 0.5 }, 'rectangle plus petit que la marge');
+});

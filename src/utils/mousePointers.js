@@ -46,3 +46,17 @@ export function remotePointers(states, localClientId) {
 
 /** Position dans les bornes du document */
 export const clampPosition = (pos, size) => Math.max(0, Math.min(pos, size));
+
+/**
+ * Le point le plus proche de (x, y) à l'intérieur du rectangle du texte, à
+ * `inset` pixels du bord : la position du texte se cherche là. La souris dans
+ * une marge ou après la fin d'une ligne reste ainsi ancrée au mot le plus
+ * proche (le décalage dx / dy garde sa vraie place) au lieu de disparaître
+ */
+export function clampToRect(x, y, rect, inset = 1) {
+    const clamp = (value, min, max) => (max < min ? (min + max) / 2 : Math.max(min, Math.min(value, max)));
+    return {
+        x: clamp(x, rect.left + inset, rect.right - inset),
+        y: clamp(y, rect.top + inset, rect.bottom - inset),
+    };
+}
