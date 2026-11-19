@@ -100,20 +100,23 @@ const decorationsAt = (plugin, selectionPos, metas = []) => {
 };
 const keys = decos => decos.map(d => d.key).filter(Boolean).map(k => k.replace(/-https.*/, ''));
 
-test('modifiable, curseur dans un lien : [ avant, ](url) après ; ⌘ au bout des autres liens ; adresse au survol', () => {
+test('modifiable, curseur dans un lien : [ avant, ](url) après ; adresse et ouverture au survol', () => {
     const decos = decorationsAt(pluginFor(true), 8);
-    assert.deepEqual(keys(decos).sort(), ['lr-close-6-12-view', 'lr-key-23', 'lr-open-6'].sort());
-    assert.deepEqual(decos.filter(d => d.title).map(d => d.title), ['https://a.fr', 'https://b.fr']);
+    assert.deepEqual(keys(decos).sort(), ['lr-close-6-12-view', 'lr-open-6'].sort());
+    const titles = decos.filter(d => d.title).map(d => d.title);
+    assert.equal(titles.length, 2);
+    assert.ok(titles[0].startsWith('https://a.fr\n') && /(⌘|Ctrl) \+ click to open$/.test(titles[0]));
+    assert.ok(titles[1].startsWith('https://b.fr\n'));
 });
 
-test('modifiable, curseur hors lien : seulement les ⌘', () => {
-    assert.deepEqual(keys(decorationsAt(pluginFor(true), 2)).sort(), ['lr-key-12', 'lr-key-23']);
+test('modifiable, curseur hors lien : rien de révélé', () => {
+    assert.deepEqual(keys(decorationsAt(pluginFor(true), 2)), []);
 });
 
 test('lecture seule : le curseur ne révèle rien, le clic maintenu si', () => {
-    assert.deepEqual(keys(decorationsAt(pluginFor(false), 8)).sort(), ['lr-key-12', 'lr-key-23']);
+    assert.deepEqual(keys(decorationsAt(pluginFor(false), 8)), []);
     const held = decorationsAt(pluginFor(false), 2, [{ type: 'hold', range: { from: 16, to: 23, href: 'https://b.fr' } }]);
-    assert.deepEqual(keys(held).sort(), ['lr-close-16-23-view', 'lr-key-12', 'lr-open-16'].sort());
+    assert.deepEqual(keys(held).sort(), ['lr-close-16-23-view', 'lr-open-16'].sort());
 });
 
 test("édition : le champ d'adresse remplace l'url, jamais en lecture seule", () => {

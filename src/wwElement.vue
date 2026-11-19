@@ -3639,7 +3639,10 @@ export default {
         opacity: 0.7;
         user-select: none;
     }
+    // L'adresse a l'allure du lien : sa couleur, souligné
     .ww-link-reveal__url {
+        color: var(--a-color, #2563eb);
+        text-decoration: underline;
         word-break: break-all;
         &.-editable {
             cursor: text;
@@ -3656,15 +3659,6 @@ export default {
         &.-invalid {
             color: #b42318;
         }
-    }
-    .ww-link-reveal__key {
-        margin-left: 2px;
-        font-size: 0.65em;
-        vertical-align: super;
-        color: var(--ww-link-reveal-color, #61656d);
-        opacity: 0.55;
-        user-select: none;
-        pointer-events: none;
     }
 
     // Style pour les liens sécurisés

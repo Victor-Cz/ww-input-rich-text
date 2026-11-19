@@ -17,8 +17,8 @@ const HOLD_MS = 300;
  * - clic sur l'adresse : un champ sur place. Entrée applique (adresse
  *   nettoyée, cf. utils/sanitizeUrl), Échap ou sortie du champ annule, une
  *   adresse vide retire le lien ;
- * - un petit ⌘ (Ctrl hors Mac) au bout de chaque lien : Cmd/Ctrl + clic
- *   l'ouvre (handleClick de l'éditeur) ;
+ * - Cmd/Ctrl + clic ouvre le lien (handleClick de l'éditeur) ; l'infobulle
+ *   native du lien (title) le dit, sous son adresse ;
  * - lecture seule : rien ne se modifie ; le survol montre l'adresse (title),
  *   un clic maintenu montre la forme [texte](url) tant qu'on maintient ;
  * - commande editLink (bouton Lien du menu) : ouvre le champ sur le lien du
@@ -184,19 +184,13 @@ export const LinkReveal = Extension.create({
             closeParen.className = 'ww-link-reveal__mark';
             closeParen.textContent = ')';
             wrap.appendChild(closeParen);
-            if (!editing || !editing.isNew) wrap.appendChild(keyBadge());
             return wrap;
         };
 
-        // Le petit ⌘ au bout d'un lien
-        const keyBadge = () => {
-            const key = document.createElement('span');
-            key.className = 'ww-link-reveal__key';
-            key.textContent = modifier;
-            key.setAttribute('aria-hidden', 'true');
-            key.setAttribute('contenteditable', 'false');
-            return key;
-        };
+        // L'infobulle native d'un lien : son adresse, puis comment l'ouvrir
+        const lang = typeof document !== 'undefined' ? String(document.documentElement?.lang || '') : '';
+        const openHint = modifier + (lang.startsWith('fr') ? ' + clic pour ouvrir' : ' + click to open');
+        const titleOf = href => (href ? href + '\n' : '') + openHint;
 
         return [
             new Plugin({
@@ -243,18 +237,8 @@ export const LinkReveal = Extension.create({
 
                         const decorations = [];
                         for (const range of ranges) {
-                            // Le survol montre l'adresse (lecture seule comprise)
-                            decorations.push(Decoration.inline(range.from, range.to, { title: range.href }));
-                            const isActive = active && active.from === range.from && active.to === range.to;
-                            if (!isActive) {
-                                decorations.push(
-                                    Decoration.widget(range.to, keyBadge, {
-                                        side: 1,
-                                        key: `lr-key-${range.to}`,
-                                        ignoreSelection: true,
-                                    })
-                                );
-                            }
+                            // Le survol montre l'adresse et comment ouvrir le lien (lecture seule comprise)
+                            decorations.push(Decoration.inline(range.from, range.to, { title: titleOf(range.href) }));
                         }
                         if (active) {
                             const isEditing = !!(editing && canEdit);
