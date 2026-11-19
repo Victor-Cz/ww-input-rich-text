@@ -21,7 +21,8 @@ const ARROW =
  * l'onglet. Un défilement sans mouvement republie la souris là où elle se
  * trouve désormais (écouté sur la fenêtre du texte : iframe dans WeWeb). Sur
  * l'en-tête de l'éditeur (titre, metas…), la souris est ancrée à sa colonne
- * ({ area: 'header', x, y }) et dessinée au même endroit chez les autres.
+ * ({ area: 'header', x, y }) et dessinée au même endroit chez les autres ;
+ * de même sur la barre du menu, collée ou non ({ area: 'menu', x, y }).
  */
 export const MousePresence = Extension.create({
     name: 'mousePresence',
@@ -129,6 +130,12 @@ export const MousePresence = Extension.create({
                     // La zone qui défile (en-tête, menu collé, texte) et l'en-tête de l'éditeur
                     const scrollOf = () => view.dom.closest?.('.ww-rich-text__scroll') || null;
                     const headerOf = () => scrollOf()?.querySelector(':scope > .ww-rich-text__header') || null;
+                    const menuOf = () => scrollOf()?.querySelector(':scope > .ww-rich-text__sticky') || null;
+                    // Origine de la barre du menu : son centre (le menu y est centré) et son haut
+                    const menuOrigin = bar => {
+                        const rect = bar.getBoundingClientRect();
+                        return { left: rect.left + rect.width / 2, top: rect.top };
+                    };
                     const inside = (rect, x, y) => x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 
                     // Bord gauche de la colonne de l'en-tête (sa marge intérieure retirée) :
@@ -143,6 +150,13 @@ export const MousePresence = Extension.create({
                     // d'après ce qui est SOUS elle : le menu collé en haut passe par-dessus le texte,
                     // la souris sur le menu reste ancrée au mot qu'il recouvre
                     const encodeAt = (x, y) => {
+                        // Le menu d'abord : collé en haut, il passe par-dessus le texte
+                        const bar = menuOf();
+                        const barRect = bar?.getBoundingClientRect();
+                        if (barRect && barRect.height > 0 && inside(barRect, x, y)) {
+                            const origin = menuOrigin(bar);
+                            return { area: 'menu', x: Math.round(x - origin.left), y: Math.round(y - origin.top) };
+                        }
                         if (inside(view.dom.getBoundingClientRect(), x, y)) return encode(x, y);
                         const header = headerOf();
                         if (header && inside(header.getBoundingClientRect(), x, y)) {
@@ -248,6 +262,12 @@ export const MousePresence = Extension.create({
                             if (pointer.area === 'header') {
                                 if (header) {
                                     const origin = headerOrigin(header);
+                                    point = { left: origin.left + pointer.x, top: origin.top + pointer.y };
+                                }
+                            } else if (pointer.area === 'menu') {
+                                const bar = menuOf();
+                                if (bar) {
+                                    const origin = menuOrigin(bar);
                                     point = { left: origin.left + pointer.x, top: origin.top + pointer.y };
                                 }
                             } else {

@@ -46,3 +46,11 @@ test("une souris sur l'en-tête : { area: 'header', x, y }, rendue telle quelle"
     assert.deepEqual([header.area, header.x, header.y, header.anchor], ['header', 40, 12, undefined]);
     assert.deepEqual([text.area, text.dx, text.dy], [undefined, 1, 2]);
 });
+
+test('une souris sur la barre du menu : { area: \'menu\', x, y }', () => {
+    assert.equal(isPointer({ area: 'menu', x: -30, y: 8 }), true);
+    assert.equal(isPointer({ area: 'menu', x: 0 }), false);
+    assert.equal(isPointer({ area: 'autre', x: 0, y: 0 }), false);
+    const [menu] = remotePointers(new Map([[2, { user: { name: 'Léa' }, pointer: { area: 'menu', x: -30, y: 8 } }]]), 1);
+    assert.deepEqual([menu.area, menu.x, menu.y], ['menu', -30, 8]);
+});
