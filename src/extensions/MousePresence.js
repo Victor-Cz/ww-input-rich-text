@@ -272,10 +272,18 @@ export const MousePresence = Extension.create({
                                 }
                             }
                             if (!point) continue;
+                            const isNew = !elements.has(pointer.clientId);
                             const element = elementFor(pointer.clientId);
                             const x = point.left - hostRect.left + host.scrollLeft;
                             const y = point.top - hostRect.top + host.scrollTop;
                             element.style.transform = `translate(${x}px, ${y}px)`;
+                            if (isNew) {
+                                // Une souris qui (re)paraît se pose directement à sa place : le
+                                // lissage la ferait glisser depuis le coin du texte (0, 0)
+                                element.style.transition = 'none';
+                                void element.offsetWidth;
+                                element.style.transition = '';
+                            }
                             element.style.color = pointer.color;
                             const name = element.lastChild;
                             if (name.textContent !== pointer.name) name.textContent = pointer.name;
