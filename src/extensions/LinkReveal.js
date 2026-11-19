@@ -125,20 +125,27 @@ export const LinkReveal = Extension.create({
             wrap.appendChild(openParen);
 
             if (editing) {
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.className = 'ww-link-reveal__input';
-                input.value = editing.href || '';
-                input.placeholder = 'https://';
-                input.setAttribute('size', String(Math.max(12, (editing.href || '').length + 2)));
-                input.addEventListener('input', () => {
-                    input.classList.remove('-invalid');
-                    input.setAttribute('size', String(Math.max(12, input.value.length + 2)));
+                // L'adresse se modifie sur place, comme du texte : même police, et
+                // elle passe à la ligne (un <input> la couperait). Texte brut seulement
+                const input = document.createElement('span');
+                input.className = 'ww-link-reveal__url -editing';
+                input.setAttribute('contenteditable', 'true');
+                input.setAttribute('spellcheck', 'false');
+                input.setAttribute('data-placeholder', 'https://');
+                input.textContent = editing.href || '';
+                const valueOf = () => input.textContent.replace(/\s+/g, '');
+                input.addEventListener('input', () => input.classList.remove('-invalid'));
+                input.addEventListener('paste', event => {
+                    event.preventDefault();
+                    const text = event.clipboardData?.getData('text/plain') || '';
+                    input.ownerDocument.execCommand('insertText', false, text.replace(/\s+/g, ''));
                 });
                 input.addEventListener('keydown', event => {
+                    // Les touches restent dans l'adresse, pas dans l'éditeur autour
+                    event.stopPropagation();
                     if (event.key === 'Enter') {
                         event.preventDefault();
-                        commit(view, editing, input.value, input);
+                        commit(view, editing, valueOf(), input);
                     } else if (event.key === 'Escape') {
                         event.preventDefault();
                         cancel(view);
@@ -149,7 +156,11 @@ export const LinkReveal = Extension.create({
                 wrap.appendChild(input);
                 requestAnimationFrame(() => {
                     input.focus();
-                    input.select();
+                    const selection = input.ownerDocument.getSelection();
+                    const all = input.ownerDocument.createRange();
+                    all.selectNodeContents(input);
+                    selection?.removeAllRanges();
+                    selection?.addRange(all);
                 });
             } else {
                 const url = document.createElement('span');

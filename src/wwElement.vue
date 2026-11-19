@@ -3631,10 +3631,8 @@ export default {
     // Liens façon Markdown (linkEditing = inline, cf. extensions/LinkReveal) :
     // `[`, `](url)` et ⌘ discrets, dans le gris des textes secondaires
     .ww-link-reveal__mark,
-    .ww-link-reveal__url,
-    .ww-link-reveal__input {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        font-size: 0.85em;
+    .ww-link-reveal__url {
+        font: inherit;
         color: var(--ww-link-reveal-color, #61656d);
     }
     .ww-link-reveal__mark {
@@ -3645,18 +3643,16 @@ export default {
         word-break: break-all;
         &.-editable {
             cursor: text;
-            &:hover {
-                text-decoration: underline dotted;
+        }
+        // Modification de l'adresse : le même texte, qu'on tape sur place
+        &.-editing {
+            outline: none;
+            cursor: text;
+            &:empty::before {
+                content: attr(data-placeholder);
+                opacity: 0.5;
             }
         }
-    }
-    .ww-link-reveal__input {
-        border: none;
-        border-bottom: 1px solid currentColor;
-        background: transparent;
-        outline: none;
-        padding: 0 2px;
-        max-width: 100%;
         &.-invalid {
             color: #b42318;
         }
