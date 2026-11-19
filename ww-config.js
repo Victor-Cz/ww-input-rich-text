@@ -761,6 +761,16 @@ export default {
             ],
         },
         {
+            label: 'Delete Image by ID',
+            action: 'deleteImageById',
+            args: [
+                {
+                    name: 'Image ID',
+                    type: 'Text',
+                },
+            ],
+        },
+        {
             label: 'Get All Images Mapping',
             action: 'getAllImagesMapping',
             returnType: 'Object',
