@@ -19,10 +19,8 @@ const ARROW =
  * largeur. Rien n'est publié ni dessiné quand enabled() est faux (paramètre
  * coupé, aperçu de version) ; la souris est retirée en quittant le texte ou
  * l'onglet. Un défilement sans mouvement republie la souris là où elle se
- * trouve désormais (écouté sur la fenêtre du texte : iframe dans WeWeb). Sur
- * l'en-tête de l'éditeur (titre, metas…), la souris est ancrée à sa colonne
- * ({ area: 'header', x, y }) et dessinée au même endroit chez les autres ;
- * de même sur la barre du menu, collée ou non ({ area: 'menu', x, y }).
+ * trouve désormais (écouté sur la fenêtre du texte : iframe dans WeWeb). Hors
+ * du texte, et sur le menu même collé par-dessus, la souris n'est pas publiée.
  */
 export const MousePresence = Extension.create({
     name: 'mousePresence',
@@ -52,8 +50,8 @@ export const MousePresence = Extension.create({
                             handlers.move(event);
                             return false;
                         },
-                        mouseleave: (_view, event) => {
-                            handlers.leave(event);
+                        mouseleave: () => {
+                            handlers.leave();
                             return false;
                         },
                     },
@@ -127,43 +125,18 @@ export const MousePresence = Extension.create({
                         };
                     };
 
-                    // La zone qui défile (en-tête, menu collé, texte) et l'en-tête de l'éditeur
-                    const scrollOf = () => view.dom.closest?.('.ww-rich-text__scroll') || null;
-                    const headerOf = () => scrollOf()?.querySelector(':scope > .ww-rich-text__header') || null;
-                    const menuOf = () => scrollOf()?.querySelector(':scope > .ww-rich-text__sticky') || null;
-                    // Origine de la barre du menu : son centre (le menu y est centré) et son haut
-                    const menuOrigin = bar => {
-                        const rect = bar.getBoundingClientRect();
-                        return { left: rect.left + rect.width / 2, top: rect.top };
-                    };
+                    // La barre du menu (collée en haut, elle passe par-dessus le texte)
+                    const menuOf = () =>
+                        view.dom.closest?.('.ww-rich-text__scroll')?.querySelector(':scope > .ww-rich-text__sticky') || null;
                     const inside = (rect, x, y) => x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 
-                    // Bord gauche de la colonne de l'en-tête (sa marge intérieure retirée) :
-                    // la même colonne que le texte, d'un écran à l'autre
-                    const headerOrigin = header => {
-                        const rect = header.getBoundingClientRect();
-                        const style = (header.ownerDocument.defaultView || window).getComputedStyle(header);
-                        return { left: rect.left + (parseFloat(style.paddingLeft) || 0), top: rect.top };
-                    };
-
-                    // La souris sur le texte (ancrée à un mot) ou sur l'en-tête (ancrée à sa colonne),
-                    // d'après ce qui est SOUS elle : le menu collé en haut passe par-dessus le texte,
-                    // la souris sur le menu reste ancrée au mot qu'il recouvre
+                    // La souris sur le texte seulement, d'après ce qui est sous elle : sur le
+                    // menu (même collé par-dessus le texte) ou hors du texte, rien
                     const encodeAt = (x, y) => {
-                        // Le menu d'abord : collé en haut, il passe par-dessus le texte
-                        const bar = menuOf();
-                        const barRect = bar?.getBoundingClientRect();
-                        if (barRect && barRect.height > 0 && inside(barRect, x, y)) {
-                            const origin = menuOrigin(bar);
-                            return { area: 'menu', x: Math.round(x - origin.left), y: Math.round(y - origin.top) };
-                        }
-                        if (inside(view.dom.getBoundingClientRect(), x, y)) return encode(x, y);
-                        const header = headerOf();
-                        if (header && inside(header.getBoundingClientRect(), x, y)) {
-                            const origin = headerOrigin(header);
-                            return { area: 'header', x: Math.round(x - origin.left), y: Math.round(y - origin.top) };
-                        }
-                        return null;
+                        const barRect = menuOf()?.getBoundingClientRect();
+                        if (barRect && barRect.height > 0 && inside(barRect, x, y)) return null;
+                        if (!inside(view.dom.getBoundingClientRect(), x, y)) return null;
+                        return encode(x, y);
                     };
 
                     const flush = () => {
@@ -198,14 +171,6 @@ export const MousePresence = Extension.create({
                         clearTimeout(timer);
                         timer = null;
                         publish(null);
-                    };
-
-                    // Souris dans la zone qui défile hors du texte (en-tête, menu) : publiée
-                    // comme sur le texte ; hors de la zone, retirée
-                    const onDocMove = event => {
-                        if (view.dom.contains(event.target)) return;
-                        if (scrollOf()?.contains(event.target)) onMove(event);
-                        else if (lastPoint) leave();
                     };
 
                     // Défilement : la souris immobile survole un autre endroit du texte
@@ -255,41 +220,26 @@ export const MousePresence = Extension.create({
                         const hostRect = host.getBoundingClientRect();
                         const size = view.state.doc.content.size;
                         const shown = new Set();
-                        const header = headerOf();
                         for (const pointer of remotePointers(awareness.getStates(), awareness.clientID)) {
-                            // Le point à l'écran : colonne de l'en-tête, ou mot du texte + décalage
+                            // Le point à l'écran : coin du bloc ancré (cf. blockAt) + décalage
                             let point = null;
-                            if (pointer.area === 'header') {
-                                if (header) {
-                                    const origin = headerOrigin(header);
-                                    point = { left: origin.left + pointer.x, top: origin.top + pointer.y };
+                            try {
+                                const pos = relativePositionToAbsolutePosition(
+                                    sync.doc,
+                                    sync.type,
+                                    Y.createRelativePositionFromJSON(pointer.anchor),
+                                    sync.binding.mapping
+                                );
+                                if (pos !== null) {
+                                    const block = view.nodeDOM(clampPosition(pos, size));
+                                    const base =
+                                        block && block.nodeType === 1
+                                            ? block.getBoundingClientRect()
+                                            : view.coordsAtPos(clampPosition(pos, size));
+                                    point = { left: base.left + pointer.dx, top: base.top + pointer.dy };
                                 }
-                            } else if (pointer.area === 'menu') {
-                                const bar = menuOf();
-                                if (bar) {
-                                    const origin = menuOrigin(bar);
-                                    point = { left: origin.left + pointer.x, top: origin.top + pointer.y };
-                                }
-                            } else {
-                                try {
-                                    const pos = relativePositionToAbsolutePosition(
-                                        sync.doc,
-                                        sync.type,
-                                        Y.createRelativePositionFromJSON(pointer.anchor),
-                                        sync.binding.mapping
-                                    );
-                                    if (pos !== null) {
-                                        // Le coin du bloc ancré (cf. blockAt), sinon la position du texte
-                                        const block = view.nodeDOM(clampPosition(pos, size));
-                                        const base =
-                                            block && block.nodeType === 1
-                                                ? block.getBoundingClientRect()
-                                                : view.coordsAtPos(clampPosition(pos, size));
-                                        point = { left: base.left + pointer.dx, top: base.top + pointer.dy };
-                                    }
-                                } catch {
-                                    point = null;
-                                }
+                            } catch {
+                                point = null;
                             }
                             if (!point) continue;
                             const isNew = !elements.has(pointer.clientId);
@@ -337,13 +287,11 @@ export const MousePresence = Extension.create({
                         doc = current;
                         win = doc.defaultView || window;
                         doc.addEventListener('visibilitychange', onVisibility);
-                        doc.addEventListener('mousemove', onDocMove, { passive: true });
                         win.addEventListener('resize', schedule);
                         win.addEventListener('scroll', onScroll, { capture: true, passive: true });
                     }
                     function unbindWindow() {
                         doc?.removeEventListener('visibilitychange', onVisibility);
-                        doc?.removeEventListener('mousemove', onDocMove);
                         win?.removeEventListener('resize', schedule);
                         win?.removeEventListener('scroll', onScroll, { capture: true });
                         doc = null;
@@ -361,11 +309,7 @@ export const MousePresence = Extension.create({
                     }
 
                     handlers.move = onMove;
-                    // Le texte quitté pour l'en-tête ou le menu : la souris reste (cf. onDocMove)
-                    handlers.leave = event => {
-                        if (event?.relatedTarget && scrollOf()?.contains(event.relatedTarget)) return;
-                        leave();
-                    };
+                    handlers.leave = leave;
                     schedule();
 
                     return {

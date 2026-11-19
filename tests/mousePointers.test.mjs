@@ -34,23 +34,3 @@ test('forme et bornes', () => {
     assert.equal(clampPosition(5, 10), 5);
 });
 
-test("une souris sur l'en-tête : { area: 'header', x, y }, rendue telle quelle", () => {
-    assert.equal(isPointer({ area: 'header', x: 120, y: -4 }), true);
-    assert.equal(isPointer({ area: 'header', x: 'a', y: 0 }), false);
-    assert.equal(isPointer({ area: 'header', anchor, dx: 0, dy: 0 }), false, "pas de position d'en-tête");
-    const states = new Map([
-        [2, { user: { name: 'Léa', color: '#DC2626' }, pointer: { area: 'header', x: 40, y: 12 } }],
-        [3, { user: { name: 'Max' }, pointer: { anchor, dx: 1, dy: 2 } }],
-    ]);
-    const [header, text] = remotePointers(states, 1);
-    assert.deepEqual([header.area, header.x, header.y, header.anchor], ['header', 40, 12, undefined]);
-    assert.deepEqual([text.area, text.dx, text.dy], [undefined, 1, 2]);
-});
-
-test('une souris sur la barre du menu : { area: \'menu\', x, y }', () => {
-    assert.equal(isPointer({ area: 'menu', x: -30, y: 8 }), true);
-    assert.equal(isPointer({ area: 'menu', x: 0 }), false);
-    assert.equal(isPointer({ area: 'autre', x: 0, y: 0 }), false);
-    const [menu] = remotePointers(new Map([[2, { user: { name: 'Léa' }, pointer: { area: 'menu', x: -30, y: 8 } }]]), 1);
-    assert.deepEqual([menu.area, menu.x, menu.y], ['menu', -30, 8]);
-});

@@ -4,14 +4,7 @@
 // petit décalage en pixels : les fenêtres n'ont pas la même largeur, un x/y
 // brut ne tomberait pas sur le même mot d'un écran à l'autre.
 
-/**
- * Le champ d'awareness de la souris, ou null :
- * - sur le texte : { anchor, dx, dy } (position relative Yjs + décalage) ;
- * - sur l'en-tête : { area: 'header', x, y } (pixels depuis le bord gauche de
- *   la colonne et le haut de l'en-tête, qui a la largeur max du texte) ;
- * - sur la barre du menu : { area: 'menu', x, y } (pixels depuis le centre de
- *   la barre, le menu y est centré, et depuis son haut)
- */
+/** Le champ d'awareness de la souris : { anchor, dx, dy } ou null */
 export const POINTER_FIELD = 'pointer';
 
 /** Au plus un envoi par cet intervalle (ms) */
@@ -19,15 +12,14 @@ export const POINTER_THROTTLE_MS = 50;
 
 const isFiniteNumber = value => typeof value === 'number' && Number.isFinite(value);
 
-/** Les zones hors du texte où une souris s'ancre à la zone elle-même */
-export const POINTER_AREAS = ['header', 'menu'];
-
-/** Une souris publiée bien formée (sur le texte, l'en-tête ou le menu) */
-export const isPointer = value => {
-    if (!value || typeof value !== 'object') return false;
-    if (POINTER_AREAS.includes(value.area)) return isFiniteNumber(value.x) && isFiniteNumber(value.y);
-    return !!value.anchor && typeof value.anchor === 'object' && isFiniteNumber(value.dx) && isFiniteNumber(value.dy);
-};
+/** Une souris publiée bien formée */
+export const isPointer = value =>
+    !!value &&
+    typeof value === 'object' &&
+    !!value.anchor &&
+    typeof value.anchor === 'object' &&
+    isFiniteNumber(value.dx) &&
+    isFiniteNumber(value.dy);
 
 /**
  * Les souris des autres, dans l'ordre des clients : celles des états qui ont
@@ -44,9 +36,9 @@ export function remotePointers(states, localClientId) {
             clientId,
             name: String(state.user.name ?? ''),
             color: state.user.color || '#6B46C1',
-            ...(POINTER_AREAS.includes(pointer.area)
-                ? { area: pointer.area, x: pointer.x, y: pointer.y }
-                : { anchor: pointer.anchor, dx: pointer.dx, dy: pointer.dy }),
+            anchor: pointer.anchor,
+            dx: pointer.dx,
+            dy: pointer.dy,
         });
     }
     return pointers.sort((a, b) => a.clientId - b.clientId);
