@@ -19,7 +19,9 @@ const ARROW =
  * largeur. Rien n'est publié ni dessiné quand enabled() est faux (paramètre
  * coupé, aperçu de version) ; la souris est retirée en quittant le texte ou
  * l'onglet. Un défilement sans mouvement republie la souris là où elle se
- * trouve désormais (écouté sur la fenêtre du texte : iframe dans WeWeb).
+ * trouve désormais (écouté sur la fenêtre du texte : iframe dans WeWeb). Sur
+ * l'en-tête de l'éditeur (titre, metas…), la souris est ancrée à sa colonne
+ * ({ area: 'header', x, y }) et dessinée au même endroit chez les autres.
  */
 export const MousePresence = Extension.create({
     name: 'mousePresence',
@@ -108,6 +110,30 @@ export const MousePresence = Extension.create({
                         };
                     };
 
+                    // L'en-tête de l'éditeur (titre, metas…), frère du texte dans la zone qui défile
+                    const headerOf = () =>
+                        view.dom.closest?.('.ww-rich-text__scroll')?.querySelector(':scope > .ww-rich-text__header') || null;
+
+                    // Bord gauche de la colonne de l'en-tête (sa marge intérieure retirée) :
+                    // la même colonne que le texte, d'un écran à l'autre
+                    const headerOrigin = header => {
+                        const rect = header.getBoundingClientRect();
+                        const style = (header.ownerDocument.defaultView || window).getComputedStyle(header);
+                        return { left: rect.left + (parseFloat(style.paddingLeft) || 0), top: rect.top };
+                    };
+
+                    // La souris sur le texte (ancrée à un mot) ou sur l'en-tête (ancrée à sa colonne)
+                    const encodeAt = (x, y) => {
+                        const target = view.dom.ownerDocument.elementFromPoint(x, y);
+                        if (target && view.dom.contains(target)) return encode(x, y);
+                        const header = headerOf();
+                        if (header && target && header.contains(target)) {
+                            const origin = headerOrigin(header);
+                            return { area: 'header', x: Math.round(x - origin.left), y: Math.round(y - origin.top) };
+                        }
+                        return null;
+                    };
+
                     const flush = () => {
                         timer = null;
                         lastSent = Date.now();
@@ -115,7 +141,7 @@ export const MousePresence = Extension.create({
                         lastEvent = null;
                         if (!event || !options.enabled()) return;
                         try {
-                            publish(encode(event.clientX, event.clientY));
+                            publish(encodeAt(event.clientX, event.clientY));
                         } catch {
                             publish(null);
                         }
@@ -126,6 +152,7 @@ export const MousePresence = Extension.create({
                     let lastPoint = null;
 
                     const onMove = event => {
+                        bindWindow();
                         if (!options.enabled()) return;
                         lastPoint = { clientX: event.clientX, clientY: event.clientY };
                         lastEvent = event;
@@ -141,6 +168,15 @@ export const MousePresence = Extension.create({
                         publish(null);
                     };
 
+                    // Souris sur l'en-tête : publiée comme sur le texte ; ailleurs hors du
+                    // texte, retirée
+                    const onDocMove = event => {
+                        if (view.dom.contains(event.target)) return;
+                        const header = headerOf();
+                        if (header && header.contains(event.target)) onMove(event);
+                        else if (lastPoint) leave();
+                    };
+
                     // Défilement : la souris immobile survole un autre endroit du texte
                     const onScroll = () => {
                         schedule();
@@ -151,7 +187,7 @@ export const MousePresence = Extension.create({
                     };
 
                     const onVisibility = () => {
-                        if ((view.dom.ownerDocument || document).visibilityState === 'hidden') leave();
+                        if (view.dom.ownerDocument.visibilityState === 'hidden') leave();
                     };
 
                     // ----- Les souris des autres -----
@@ -188,23 +224,35 @@ export const MousePresence = Extension.create({
                         const hostRect = host.getBoundingClientRect();
                         const size = view.state.doc.content.size;
                         const shown = new Set();
+                        const header = headerOf();
                         for (const pointer of remotePointers(awareness.getStates(), awareness.clientID)) {
-                            let coords = null;
-                            try {
-                                const pos = relativePositionToAbsolutePosition(
-                                    sync.doc,
-                                    sync.type,
-                                    Y.createRelativePositionFromJSON(pointer.anchor),
-                                    sync.binding.mapping
-                                );
-                                if (pos !== null) coords = view.coordsAtPos(clampPosition(pos, size));
-                            } catch {
-                                coords = null;
+                            // Le point à l'écran : colonne de l'en-tête, ou mot du texte + décalage
+                            let point = null;
+                            if (pointer.area === 'header') {
+                                if (header) {
+                                    const origin = headerOrigin(header);
+                                    point = { left: origin.left + pointer.x, top: origin.top + pointer.y };
+                                }
+                            } else {
+                                try {
+                                    const pos = relativePositionToAbsolutePosition(
+                                        sync.doc,
+                                        sync.type,
+                                        Y.createRelativePositionFromJSON(pointer.anchor),
+                                        sync.binding.mapping
+                                    );
+                                    if (pos !== null) {
+                                        const coords = view.coordsAtPos(clampPosition(pos, size));
+                                        point = { left: coords.left + pointer.dx, top: coords.top + pointer.dy };
+                                    }
+                                } catch {
+                                    point = null;
+                                }
                             }
-                            if (!coords) continue;
+                            if (!point) continue;
                             const element = elementFor(pointer.clientId);
-                            const x = coords.left + pointer.dx - hostRect.left + host.scrollLeft;
-                            const y = coords.top + pointer.dy - hostRect.top + host.scrollTop;
+                            const x = point.left - hostRect.left + host.scrollLeft;
+                            const y = point.top - hostRect.top + host.scrollTop;
                             element.style.transform = `translate(${x}px, ${y}px)`;
                             element.style.color = pointer.color;
                             const name = element.lastChild;
@@ -220,9 +268,37 @@ export const MousePresence = Extension.create({
                     };
 
                     const schedule = () => {
+                        bindWindow();
                         bindAwareness();
                         if (!frame) frame = requestAnimationFrame(render);
                     };
+
+                    // La fenêtre et le document du texte : dans l'éditeur WeWeb, la page vit
+                    // dans une iframe, et la vue naît sur un élément détaché (document du
+                    // code) avant d'y être placée. Branchés une fois le texte dans la page,
+                    // rebranchés si son document change
+                    let doc = null;
+                    let win = null;
+                    function bindWindow() {
+                        const current = view.dom.isConnected ? view.dom.ownerDocument : null;
+                        if (current === doc) return;
+                        unbindWindow();
+                        if (!current) return;
+                        doc = current;
+                        win = doc.defaultView || window;
+                        doc.addEventListener('visibilitychange', onVisibility);
+                        doc.addEventListener('mousemove', onDocMove, { passive: true });
+                        win.addEventListener('resize', schedule);
+                        win.addEventListener('scroll', onScroll, { capture: true, passive: true });
+                    }
+                    function unbindWindow() {
+                        doc?.removeEventListener('visibilitychange', onVisibility);
+                        doc?.removeEventListener('mousemove', onDocMove);
+                        win?.removeEventListener('resize', schedule);
+                        win?.removeEventListener('scroll', onScroll, { capture: true });
+                        doc = null;
+                        win = null;
+                    }
 
                     // L'awareness du moment : un nouveau provider en apporte une autre
                     function bindAwareness() {
@@ -236,13 +312,6 @@ export const MousePresence = Extension.create({
 
                     handlers.move = onMove;
                     handlers.leave = leave;
-                    // La fenêtre et le document du texte : dans l'éditeur WeWeb, la page vit
-                    // dans une iframe, pas dans la fenêtre où tourne ce code
-                    const doc = view.dom.ownerDocument || document;
-                    const win = doc.defaultView || window;
-                    doc.addEventListener('visibilitychange', onVisibility);
-                    win.addEventListener('resize', schedule);
-                    win.addEventListener('scroll', onScroll, { capture: true, passive: true });
                     schedule();
 
                     return {
@@ -253,9 +322,7 @@ export const MousePresence = Extension.create({
                             if (frame) cancelAnimationFrame(frame);
                             handlers.move = () => {};
                             handlers.leave = () => {};
-                            doc.removeEventListener('visibilitychange', onVisibility);
-                            win.removeEventListener('resize', schedule);
-                            win.removeEventListener('scroll', onScroll, { capture: true });
+                            unbindWindow();
                             clear();
                             layer.remove();
                         },
