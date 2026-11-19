@@ -51,8 +51,8 @@ export const MousePresence = Extension.create({
                             handlers.move(event);
                             return false;
                         },
-                        mouseleave: () => {
-                            handlers.leave();
+                        mouseleave: (_view, event) => {
+                            handlers.leave(event);
                             return false;
                         },
                     },
@@ -110,9 +110,10 @@ export const MousePresence = Extension.create({
                         };
                     };
 
-                    // L'en-tête de l'éditeur (titre, metas…), frère du texte dans la zone qui défile
-                    const headerOf = () =>
-                        view.dom.closest?.('.ww-rich-text__scroll')?.querySelector(':scope > .ww-rich-text__header') || null;
+                    // La zone qui défile (en-tête, menu collé, texte) et l'en-tête de l'éditeur
+                    const scrollOf = () => view.dom.closest?.('.ww-rich-text__scroll') || null;
+                    const headerOf = () => scrollOf()?.querySelector(':scope > .ww-rich-text__header') || null;
+                    const inside = (rect, x, y) => x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 
                     // Bord gauche de la colonne de l'en-tête (sa marge intérieure retirée) :
                     // la même colonne que le texte, d'un écran à l'autre
@@ -122,12 +123,13 @@ export const MousePresence = Extension.create({
                         return { left: rect.left + (parseFloat(style.paddingLeft) || 0), top: rect.top };
                     };
 
-                    // La souris sur le texte (ancrée à un mot) ou sur l'en-tête (ancrée à sa colonne)
+                    // La souris sur le texte (ancrée à un mot) ou sur l'en-tête (ancrée à sa colonne),
+                    // d'après ce qui est SOUS elle : le menu collé en haut passe par-dessus le texte,
+                    // la souris sur le menu reste ancrée au mot qu'il recouvre
                     const encodeAt = (x, y) => {
-                        const target = view.dom.ownerDocument.elementFromPoint(x, y);
-                        if (target && view.dom.contains(target)) return encode(x, y);
+                        if (inside(view.dom.getBoundingClientRect(), x, y)) return encode(x, y);
                         const header = headerOf();
-                        if (header && target && header.contains(target)) {
+                        if (header && inside(header.getBoundingClientRect(), x, y)) {
                             const origin = headerOrigin(header);
                             return { area: 'header', x: Math.round(x - origin.left), y: Math.round(y - origin.top) };
                         }
@@ -168,12 +170,11 @@ export const MousePresence = Extension.create({
                         publish(null);
                     };
 
-                    // Souris sur l'en-tête : publiée comme sur le texte ; ailleurs hors du
-                    // texte, retirée
+                    // Souris dans la zone qui défile hors du texte (en-tête, menu) : publiée
+                    // comme sur le texte ; hors de la zone, retirée
                     const onDocMove = event => {
                         if (view.dom.contains(event.target)) return;
-                        const header = headerOf();
-                        if (header && header.contains(event.target)) onMove(event);
+                        if (scrollOf()?.contains(event.target)) onMove(event);
                         else if (lastPoint) leave();
                     };
 
@@ -311,7 +312,11 @@ export const MousePresence = Extension.create({
                     }
 
                     handlers.move = onMove;
-                    handlers.leave = leave;
+                    // Le texte quitté pour l'en-tête ou le menu : la souris reste (cf. onDocMove)
+                    handlers.leave = event => {
+                        if (event?.relatedTarget && scrollOf()?.contains(event.relatedTarget)) return;
+                        leave();
+                    };
                     schedule();
 
                     return {
