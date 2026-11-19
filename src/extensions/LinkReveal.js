@@ -26,6 +26,10 @@ const HOLD_MS = 300;
  *   qu'à l'Entrée (Échap ne laisse rien).
  * Inerte quand enabled() est faux.
  */
+// Couleurs posées en ligne : une feuille d'app peut forcer `span { color: inherit }`
+const MARK_COLOR = 'var(--ww-link-reveal-color, #61656d)';
+const URL_COLOR = 'var(--a-color, #2563eb)';
+
 export const LinkReveal = Extension.create({
     name: 'linkReveal',
 
@@ -78,7 +82,8 @@ export const LinkReveal = Extension.create({
         };
 
         // Applique l'adresse saisie (Entrée) : poser, retirer, ou refuser
-        const commit = (view, editing, value, input) => {
+        // refocus : rend la main au texte (Entrée) ; pas en quittant le champ par un clic ailleurs
+        const commit = (view, editing, value, input, refocus = true) => {
             const linkType = view.state.schema.marks.link;
             const result = resolveHrefInput(value);
             if (result.action === 'reject') {
@@ -96,7 +101,7 @@ export const LinkReveal = Extension.create({
                     .addMark(editing.from, editing.to, linkType.create({ ...attrs, href: result.href }));
             }
             view.dispatch(tr);
-            view.focus();
+            if (refocus) view.focus();
         };
 
         const cancel = view => {
@@ -108,6 +113,7 @@ export const LinkReveal = Extension.create({
         const openWidget = () => {
             const span = document.createElement('span');
             span.className = 'ww-link-reveal__mark';
+            span.style.color = MARK_COLOR;
             span.textContent = '[';
             span.setAttribute('contenteditable', 'false');
             return span;
@@ -121,6 +127,7 @@ export const LinkReveal = Extension.create({
 
             const openParen = document.createElement('span');
             openParen.className = 'ww-link-reveal__mark';
+            openParen.style.color = MARK_COLOR;
             openParen.textContent = '](';
             wrap.appendChild(openParen);
 
@@ -131,6 +138,7 @@ export const LinkReveal = Extension.create({
                 // <input> : l'adresse passe à la ligne, avec la police du texte
                 const input = document.createElement('textarea');
                 input.className = 'ww-link-reveal__url -editing';
+                input.style.color = URL_COLOR;
                 input.rows = 1;
                 input.wrap = 'soft';
                 input.spellcheck = false;
@@ -149,19 +157,35 @@ export const LinkReveal = Extension.create({
                     if (clean !== input.value) input.value = clean;
                     fit();
                 });
+                // Vrai une fois l'adresse appliquée ou abandonnée (Entrée, Échap, sortie)
+                let done = false;
                 input.addEventListener('keydown', event => {
                     // Les touches restent dans l'adresse, pas dans l'éditeur autour
                     event.stopPropagation();
                     if (event.key === 'Enter') {
                         event.preventDefault();
+                        if (resolveHrefInput(input.value.trim()).action === 'reject') {
+                            input.classList.add('-invalid');
+                            return;
+                        }
+                        done = true;
                         commit(view, editing, input.value.trim(), input);
                     } else if (event.key === 'Escape') {
                         event.preventDefault();
+                        done = true;
                         cancel(view);
                         view.focus();
                     }
                 });
-                input.addEventListener('blur', () => cancel(view));
+                // Quitter le champ applique l'adresse (Échap seul annule) ; une adresse
+                // refusée laisse le lien tel quel
+                input.addEventListener('blur', () => {
+                    if (done) return;
+                    done = true;
+                    const value = input.value.trim();
+                    if (value === (editing.href || '') || resolveHrefInput(value).action === 'reject') cancel(view);
+                    else commit(view, editing, value, input, false);
+                });
                 wrap.appendChild(input);
                 requestAnimationFrame(() => {
                     fit();
@@ -171,6 +195,7 @@ export const LinkReveal = Extension.create({
             } else {
                 const url = document.createElement('span');
                 url.className = 'ww-link-reveal__url' + (canEdit ? ' -editable' : '');
+                url.style.color = URL_COLOR;
                 url.textContent = range.href;
                 if (canEdit) {
                     url.addEventListener('mousedown', event => {
@@ -188,6 +213,7 @@ export const LinkReveal = Extension.create({
 
             const closeParen = document.createElement('span');
             closeParen.className = 'ww-link-reveal__mark';
+            closeParen.style.color = MARK_COLOR;
             closeParen.textContent = ')';
             wrap.appendChild(closeParen);
             return wrap;
