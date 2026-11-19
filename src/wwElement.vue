@@ -2063,6 +2063,14 @@ export default {
             this.sendSaveSignal(true, saveId);
         },
 
+        // Recharge le document collaboratif : nouveau Y.Doc et nouvelle connexion,
+        // comme après une époque périmée (le serveur renvoie l'état qu'il tient)
+        reloadCollaboration() {
+            if (!this.shouldEnableCollaboration) return;
+            this.initializeCollaboration();
+            this.loadEditor();
+        },
+
         // ===== Versionnage (snapshots Yjs) =====
 
         createVersion(label = null) {

@@ -599,6 +599,10 @@ export default {
             action: 'getConnectionStatus',
         },
         {
+            label: { en: 'Collab: Reload document', fr: 'Collab: Recharger le document' },
+            action: 'reloadCollaboration',
+        },
+        {
             label: { en: 'Collab: Save document', fr: 'Collab: Sauvegarder le document' },
             action: 'saveDocument',
             args: [
