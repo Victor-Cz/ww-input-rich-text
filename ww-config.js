@@ -107,7 +107,7 @@ export default {
             'debounceDelay',
             'autofocus',
             ['useImageTemplates', 'useImageLayout'],
-            ['useLinkTemplates', 'useLinkLayoutPopover', 'forceLinkPopoverDisplay', 'seoSiteDomain'],
+            ['useLinkTemplates', 'linkEditing', 'useLinkLayoutPopover', 'forceLinkPopoverDisplay', 'seoSiteDomain'],
             'mentionInfobox',
             [
                 'enableMention',
@@ -1592,6 +1592,29 @@ export default {
                 en: 'Link templates',
             },
             editorOnly: true,
+        },
+        linkEditing: {
+            section: 'settings',
+            label: { en: 'Link editing', fr: 'Édition des liens' },
+            type: 'TextSelect',
+            options: {
+                options: [
+                    { value: 'popover', label: { en: 'Popover', fr: 'Popup' } },
+                    { value: 'inline', label: { en: 'Inline (Markdown)', fr: 'Sur place (Markdown)' } },
+                ],
+            },
+            defaultValue: 'popover',
+            bindable: true,
+            description: {
+                en: 'Inline: a link under the cursor shows as [text](url), its address is edited in place (Enter applies, Escape cancels, empty removes the link), a small ⌘ marks Cmd/Ctrl + click to open. Read only: hover shows the address, press and hold shows [text](url). No popover.',
+                fr: "Sur place : un lien sous le curseur s'affiche [texte](url), son adresse se modifie sur place (Entrée applique, Échap annule, vide retire le lien), un petit ⌘ rappelle Cmd/Ctrl + clic pour l'ouvrir. Lecture seule : le survol montre l'adresse, un clic maintenu montre [texte](url). Pas de popup.",
+            },
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'string',
+                tooltip: '"popover" (default) or "inline"',
+            },
+            /* wwEditor:end */
         },
         useLinkLayoutPopover: {
             section: 'settings',

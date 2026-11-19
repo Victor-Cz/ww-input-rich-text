@@ -274,8 +274,9 @@
                 </div>
 
                 <!-- Link Popover pour afficher/modifier les liens -->
+                <!-- Liens façon Markdown (linkEditing = inline) : pas de popup -->
                 <link-popover
-                    v-if="richEditor"
+                    v-if="richEditor && content.linkEditing !== 'inline'"
                     :editor="richEditor"
                     ref="linkPopover"
                 />
@@ -358,6 +359,7 @@ import { MousePresence } from './extensions/MousePresence.js';
 import { AGENT } from './agent.js';
 import { CustomImage } from './extensions/CustomImage.js';
 import { SeoLink } from './extensions/SeoLink.js';
+import { LinkReveal } from './extensions/LinkReveal.js';
 import { frontmatterExtensions, readFrontmatter, htmlWithoutFrontmatter } from './extensions/Frontmatter.js';
 import { sanitizeLinkUrl, sanitizeImageSrc, safeOpenUrl, isDangerousUrl } from './utils/sanitizeUrl.js';
 import { buildOutline, resolveOutlineLevels, toPublicOutline, toPublicHeading } from './utils/outline.js';
@@ -1547,6 +1549,11 @@ export default {
                         ranges: [],
                         color: 'var(--primary-color)',
                     }),
+                    // Liens façon Markdown : [texte](url) au curseur, ⌘ au bout (linkEditing = inline)
+                    LinkReveal.configure({
+                        enabled: () => this.content.linkEditing === 'inline',
+                        editable: () => this.isEditable,
+                    }),
                 ];
 
                 // Rédaction en direct : dévoile le texte que Brispr écrit
@@ -1763,6 +1770,14 @@ export default {
             // onTransaction de l'éditeur (couvre aussi les chemins sans onUpdate).
         },
         setLink(url) {
+            // Liens façon Markdown : le champ d'adresse s'ouvre sur place, sur le
+            // lien du curseur ou sur la sélection (cf. extensions/LinkReveal)
+            const hasUrl = url !== undefined && url !== null && url !== '';
+            if (!hasUrl && this.content.linkEditing === 'inline') {
+                this.richEditor.chain().focus().editLink().run();
+                return;
+            }
+
             if (this.richEditor.isActive('link')) {
                 this.richEditor.chain().focus().unsetLink().run();
                 return;
@@ -3611,6 +3626,49 @@ export default {
 
     &.-readonly .ProseMirror {
         cursor: inherit;
+    }
+
+    // Liens façon Markdown (linkEditing = inline, cf. extensions/LinkReveal) :
+    // `[`, `](url)` et ⌘ discrets, dans le gris des textes secondaires
+    .ww-link-reveal__mark,
+    .ww-link-reveal__url,
+    .ww-link-reveal__input {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.85em;
+        color: var(--ww-link-reveal-color, #61656d);
+    }
+    .ww-link-reveal__mark {
+        opacity: 0.7;
+        user-select: none;
+    }
+    .ww-link-reveal__url {
+        word-break: break-all;
+        &.-editable {
+            cursor: text;
+            &:hover {
+                text-decoration: underline dotted;
+            }
+        }
+    }
+    .ww-link-reveal__input {
+        border: none;
+        border-bottom: 1px solid currentColor;
+        background: transparent;
+        outline: none;
+        padding: 0 2px;
+        max-width: 100%;
+        &.-invalid {
+            color: #b42318;
+        }
+    }
+    .ww-link-reveal__key {
+        margin-left: 2px;
+        font-size: 0.65em;
+        vertical-align: super;
+        color: var(--ww-link-reveal-color, #61656d);
+        opacity: 0.55;
+        user-select: none;
+        pointer-events: none;
     }
 
     // Style pour les liens sécurisés
