@@ -3774,29 +3774,31 @@ export default {
         z-index: 101;
     }
 
+    // Même style que les curseurs du canevas d'Image : flèche bordée de blanc avec
+    // une ombre, nom dans une pastille ronde
     .ww-mouse-presence__pointer {
         position: absolute;
         top: 0;
         left: 0;
-        display: flex;
-        align-items: flex-start;
         transition: transform 80ms linear;
         will-change: transform;
 
         svg {
-            flex: none;
+            display: block;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
         }
     }
 
     .ww-mouse-presence__name {
-        margin: 12px 0 0 -2px;
-        padding: 2px 6px;
-        border-radius: 3px;
+        position: absolute;
+        left: 14px;
+        top: 16px;
+        padding: 2px 7px;
+        border-radius: 999px;
         color: #fff;
-        font-size: 12px;
-        font-weight: 600;
-        line-height: normal;
+        font: 500 11px/16px system-ui, sans-serif;
         white-space: nowrap;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         user-select: none;
     }
 

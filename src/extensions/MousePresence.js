@@ -6,9 +6,9 @@ import { clampPosition, POINTER_FIELD, POINTER_THROTTLE_MS, remotePointers } fro
 
 export const mousePresenceKey = new PluginKey('mousePresence');
 
-// Flèche de souris, de la couleur du collaborateur
+// Flèche de souris, de la couleur du collaborateur (même dessin que les curseurs du canevas d'Image)
 const ARROW =
-    '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M1 1 L1 13 L4.5 9.8 L7 15 L9.2 14 L6.8 8.9 L11.5 8.9 Z" fill="currentColor" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/></svg>';
+    '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 1.5 L15.5 8.2 L9.2 9.6 L6.6 15.8 Z" fill="currentColor" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/></svg>';
 
 /**
  * Souris des collaborateurs sur le texte (paramètre showMousePresence) : la
