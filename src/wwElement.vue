@@ -2678,6 +2678,15 @@ export default {
             ImageManager.removeImageById(this.richEditor, imageId);
         },
 
+        // Retire le bloc image du document (removeImageById ne vide que son adresse)
+        deleteImageById(imageId) {
+            if (!this.content.useImageLayout) {
+                console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');
+                return;
+            }
+            ImageManager.deleteImageById(this.richEditor, imageId);
+        },
+
         getAllImagesMapping() {
             if (!this.content.useImageLayout) {
                 console.warn('Image Layout system is not enabled. Enable "Use image layout system" in settings.');

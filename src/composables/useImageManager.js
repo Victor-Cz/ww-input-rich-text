@@ -90,6 +90,33 @@ export function getImageById(editor, imageId) {
 }
 
 /**
+ * Delete the image node with this ID from the TipTap document: the whole block
+ * goes away (unlike removeImageById, which only clears its URL). Undo brings it back.
+ * @param {Editor} editor - TipTap editor instance
+ * @param {string} imageId - Image ID to delete
+ * @returns {boolean} True if the image was found and deleted
+ */
+export function deleteImageById(editor, imageId) {
+    if (!editor || !imageId) return false;
+
+    const { state, view } = editor;
+    let found = null;
+
+    state.doc.descendants((node, pos) => {
+        if (found) return false;
+        if ((node.type.name === 'image' || node.type.name === 'customImage') &&
+            node.attrs['data-image-id'] === imageId) {
+            found = { from: pos, to: pos + node.nodeSize };
+            return false; // Stop traversing
+        }
+    });
+
+    if (!found) return false;
+    view.dispatch(state.tr.delete(found.from, found.to));
+    return true;
+}
+
+/**
  * Remove image by ID (clear its URL) in the TipTap document
  * @param {Editor} editor - TipTap editor instance
  * @param {string} imageId - Image ID to remove
