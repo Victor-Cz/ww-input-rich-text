@@ -3655,12 +3655,22 @@ export default {
         &.-editable {
             cursor: text;
         }
-        // Modification de l'adresse : le même texte, qu'on tape sur place
+        // Modification de l'adresse : un champ sans cadre, à l'allure de l'adresse
         &.-editing {
+            display: inline-block;
+            vertical-align: top;
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+            border: none;
             outline: none;
+            background: transparent;
+            resize: none;
+            overflow: hidden;
+            line-height: inherit;
             cursor: text;
-            &:empty::before {
-                content: attr(data-placeholder);
+            &::placeholder {
+                color: inherit;
                 opacity: 0.5;
             }
         }

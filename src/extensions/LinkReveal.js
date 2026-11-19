@@ -125,27 +125,36 @@ export const LinkReveal = Extension.create({
             wrap.appendChild(openParen);
 
             if (editing) {
-                // L'adresse se modifie sur place, comme du texte : même police, et
-                // elle passe à la ligne (un <input> la couperait). Texte brut seulement
-                const input = document.createElement('span');
+                // L'adresse se modifie dans un vrai champ (il garde sa propre sélection :
+                // une zone contenteditable perdait le focus dès que ProseMirror
+                // réécrivait la sélection du document). Un <textarea> plutôt qu'un
+                // <input> : l'adresse passe à la ligne, avec la police du texte
+                const input = document.createElement('textarea');
                 input.className = 'ww-link-reveal__url -editing';
-                input.setAttribute('contenteditable', 'true');
-                input.setAttribute('spellcheck', 'false');
-                input.setAttribute('data-placeholder', 'https://');
-                input.textContent = editing.href || '';
-                const valueOf = () => input.textContent.replace(/\s+/g, '');
-                input.addEventListener('input', () => input.classList.remove('-invalid'));
-                input.addEventListener('paste', event => {
-                    event.preventDefault();
-                    const text = event.clipboardData?.getData('text/plain') || '';
-                    input.ownerDocument.execCommand('insertText', false, text.replace(/\s+/g, ''));
+                input.rows = 1;
+                input.wrap = 'soft';
+                input.spellcheck = false;
+                input.placeholder = 'https://';
+                input.value = editing.href || '';
+                // Largeur de l'adresse (toute la ligne au-delà), hauteur de son contenu
+                const fit = () => {
+                    input.style.width = `min(100%, ${Math.max(12, input.value.length + 2)}ch)`;
+                    input.style.height = 'auto';
+                    input.style.height = `${input.scrollHeight}px`;
+                };
+                input.addEventListener('input', () => {
+                    input.classList.remove('-invalid');
+                    // Pas de saut de ligne ni d'espace dans une adresse
+                    const clean = input.value.replace(/\s+/g, '');
+                    if (clean !== input.value) input.value = clean;
+                    fit();
                 });
                 input.addEventListener('keydown', event => {
                     // Les touches restent dans l'adresse, pas dans l'éditeur autour
                     event.stopPropagation();
                     if (event.key === 'Enter') {
                         event.preventDefault();
-                        commit(view, editing, valueOf(), input);
+                        commit(view, editing, input.value.trim(), input);
                     } else if (event.key === 'Escape') {
                         event.preventDefault();
                         cancel(view);
@@ -155,12 +164,9 @@ export const LinkReveal = Extension.create({
                 input.addEventListener('blur', () => cancel(view));
                 wrap.appendChild(input);
                 requestAnimationFrame(() => {
+                    fit();
                     input.focus();
-                    const selection = input.ownerDocument.getSelection();
-                    const all = input.ownerDocument.createRange();
-                    all.selectNodeContents(input);
-                    selection?.removeAllRanges();
-                    selection?.addRange(all);
+                    input.select();
                 });
             } else {
                 const url = document.createElement('span');
