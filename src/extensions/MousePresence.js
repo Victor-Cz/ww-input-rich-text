@@ -14,7 +14,7 @@ const ARROW =
  * Souris des collaborateurs sur le texte (paramètre showMousePresence) : la
  * sienne est publiée dans l'awareness (champ `pointer`), celles des autres
  * sont dessinées par-dessus le texte, avec leur nom et leur couleur. La
- * position est ancrée au texte (cf. utils/mousePointers) : elle suit le mot
+ * position est ancrée au bloc du texte survolé (paragraphe, titre…) : elle suit le bloc
  * survolé quand le texte bouge, et se retrouve sur un écran d'une autre
  * largeur. Rien n'est publié ni dessiné quand enabled() est faux (paramètre
  * coupé, aperçu de version) ; la souris est retirée en quittant le texte ou
@@ -96,13 +96,29 @@ export const MousePresence = Extension.create({
                         awareness.setLocalStateField(POINTER_FIELD, pointer);
                     };
 
+                    // Le bloc du texte (paragraphe, titre, liste, image…) sous une position,
+                    // et son rectangle à l'écran : la souris s'y ancre par son coin haut gauche.
+                    // Ancrée à un caractère, elle sautait d'un bout à l'autre d'une ligne dès
+                    // qu'un petit mouvement changeait le caractère le plus proche
+                    const blockAt = pos => {
+                        const doc = view.state.doc;
+                        const $pos = doc.resolve(clampPosition(pos, doc.content.size));
+                        if ($pos.depth < 1) return null;
+                        const start = $pos.before(1);
+                        const dom = view.nodeDOM(start);
+                        if (!dom || dom.nodeType !== 1) return null;
+                        return { start, rect: dom.getBoundingClientRect() };
+                    };
+
                     const encode = (x, y) => {
                         const sync = syncState();
                         if (!sync) return null;
                         const hit = view.posAtCoords({ left: x, top: y });
                         if (!hit) return null;
-                        const base = view.coordsAtPos(hit.pos);
-                        const relative = absolutePositionToRelativePosition(hit.pos, sync.type, sync.binding.mapping);
+                        const block = blockAt(hit.inside >= 0 ? hit.inside : hit.pos);
+                        const pos = block ? block.start : hit.pos;
+                        const base = block ? block.rect : view.coordsAtPos(hit.pos);
+                        const relative = absolutePositionToRelativePosition(pos, sync.type, sync.binding.mapping);
                         return {
                             anchor: Y.relativePositionToJSON(relative),
                             dx: Math.round(x - base.left),
@@ -243,8 +259,13 @@ export const MousePresence = Extension.create({
                                         sync.binding.mapping
                                     );
                                     if (pos !== null) {
-                                        const coords = view.coordsAtPos(clampPosition(pos, size));
-                                        point = { left: coords.left + pointer.dx, top: coords.top + pointer.dy };
+                                        // Le coin du bloc ancré (cf. blockAt), sinon la position du texte
+                                        const block = view.nodeDOM(clampPosition(pos, size));
+                                        const base =
+                                            block && block.nodeType === 1
+                                                ? block.getBoundingClientRect()
+                                                : view.coordsAtPos(clampPosition(pos, size));
+                                        point = { left: base.left + pointer.dx, top: base.top + pointer.dy };
                                     }
                                 } catch {
                                     point = null;
