@@ -18,7 +18,8 @@ const ARROW =
  * survolé quand le texte bouge, et se retrouve sur un écran d'une autre
  * largeur. Rien n'est publié ni dessiné quand enabled() est faux (paramètre
  * coupé, aperçu de version) ; la souris est retirée en quittant le texte ou
- * l'onglet.
+ * l'onglet. Un défilement sans mouvement republie la souris là où elle se
+ * trouve désormais (écouté sur la fenêtre du texte : iframe dans WeWeb).
  */
 export const MousePresence = Extension.create({
     name: 'mousePresence',
@@ -120,22 +121,37 @@ export const MousePresence = Extension.create({
                         }
                     };
 
+                    // Le dernier point de la souris sur le texte : un défilement sans
+                    // mouvement la fait passer sur d'autres mots, on la republie
+                    let lastPoint = null;
+
                     const onMove = event => {
                         if (!options.enabled()) return;
+                        lastPoint = { clientX: event.clientX, clientY: event.clientY };
                         lastEvent = event;
                         if (timer) return;
                         timer = setTimeout(flush, Math.max(0, lastSent + POINTER_THROTTLE_MS - Date.now()));
                     };
 
                     const leave = () => {
+                        lastPoint = null;
                         lastEvent = null;
                         clearTimeout(timer);
                         timer = null;
                         publish(null);
                     };
 
+                    // Défilement : la souris immobile survole un autre endroit du texte
+                    const onScroll = () => {
+                        schedule();
+                        if (!lastPoint || !options.enabled()) return;
+                        lastEvent = lastPoint;
+                        if (timer) return;
+                        timer = setTimeout(flush, Math.max(0, lastSent + POINTER_THROTTLE_MS - Date.now()));
+                    };
+
                     const onVisibility = () => {
-                        if (document.visibilityState === 'hidden') leave();
+                        if ((view.dom.ownerDocument || document).visibilityState === 'hidden') leave();
                     };
 
                     // ----- Les souris des autres -----
@@ -220,9 +236,13 @@ export const MousePresence = Extension.create({
 
                     handlers.move = onMove;
                     handlers.leave = leave;
-                    document.addEventListener('visibilitychange', onVisibility);
-                    window.addEventListener('resize', schedule);
-                    window.addEventListener('scroll', schedule, { capture: true, passive: true });
+                    // La fenêtre et le document du texte : dans l'éditeur WeWeb, la page vit
+                    // dans une iframe, pas dans la fenêtre où tourne ce code
+                    const doc = view.dom.ownerDocument || document;
+                    const win = doc.defaultView || window;
+                    doc.addEventListener('visibilitychange', onVisibility);
+                    win.addEventListener('resize', schedule);
+                    win.addEventListener('scroll', onScroll, { capture: true, passive: true });
                     schedule();
 
                     return {
@@ -233,9 +253,9 @@ export const MousePresence = Extension.create({
                             if (frame) cancelAnimationFrame(frame);
                             handlers.move = () => {};
                             handlers.leave = () => {};
-                            document.removeEventListener('visibilitychange', onVisibility);
-                            window.removeEventListener('resize', schedule);
-                            window.removeEventListener('scroll', schedule, { capture: true });
+                            doc.removeEventListener('visibilitychange', onVisibility);
+                            win.removeEventListener('resize', schedule);
+                            win.removeEventListener('scroll', onScroll, { capture: true });
                             clear();
                             layer.remove();
                         },
