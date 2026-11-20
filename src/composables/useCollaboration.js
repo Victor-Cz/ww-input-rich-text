@@ -7,6 +7,8 @@ import { YChangeMark, YChangeNodeAttrs } from '../extensions/YChange.js';
 import { AGENT } from '../agent.js';
 import { SAVE_REQUEST, applyChannelMessage, lastMessage, saveStatusOf } from '../utils/collabChannels.js';
 import { createCursorAwareness } from '../utils/cursorAwareness.js';
+import { brandColorOf } from '../utils/collabUsers.js';
+import { followedPresent } from '../utils/follow.js';
 
 // Curseurs des collaborateurs sur une awareness filtrée (cf. utils/cursorAwareness),
 // libérée avec l'éditeur : l'extension n'enlève jamais son écouteur
@@ -65,6 +67,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         agentName: null,
         agentIcon: null,
         channels: {},
+        // La personne suivie (id d'un utilisateur, ou 'agent'), cf. setFollowing
+        following: null,
     };
 
     // Helper pour mettre à jour le statut
@@ -263,12 +267,16 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                           agent: true,
                           writing: isWritingAgent(state.user),
                           ...(agentIconOf(state.user) ? { icon: agentIconOf(state.user) } : {}),
+                          // Couleur de sa marque, donnée par le serveur (Claude…) ;
+                          // `color` reste celle du paramètre de l'agent
+                          ...(brandColorOf(state.user) ? { brandColor: brandColorOf(state.user) } : {}),
                       }
                     : {}),
             }));
 
     // Publie la liste (statut + collab:awareness-update), avec Brispr tant
-    // qu'il s'attarde après son départ
+    // qu'il s'attarde après son départ. La personne suivie qui n'y est plus
+    // n'est plus suivie
     const publishUsers = (users = readUsers()) => {
         if (lingeringAgent && !users.some(user => user.agent)) {
             users = [...users, { ...lingeringAgent, color: agentColor() }];
@@ -277,6 +285,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         updateStatus({
             users,
             userCount: users.length,
+            ...(currentStatus.following && !followedPresent(users, currentStatus.following) ? { following: null } : {}),
         });
 
         emit('trigger-event', {
@@ -767,6 +776,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             agentName: null,
             agentIcon: null,
             channels: {},
+            following: null,
         };
         setCollaborationStatus(currentStatus);
     };
@@ -958,6 +968,16 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         return false;
     };
 
+    // La personne suivie (collaborationStatus.following) : l'id d'un
+    // utilisateur, 'agent', ou null. Le composant fait défiler et dit le
+    // changement (collab:follow-change) ; la liste des utilisateurs arrête le
+    // suivi de qui part (cf. publishUsers)
+    const setFollowing = key => {
+        const following = key || null;
+        if ((currentStatus.following ?? null) === following) return;
+        updateStatus({ following });
+    };
+
     const getEpoch = () => currentEpoch;
     const getPermanentUserData = () => permanentUserDataInstance;
 
@@ -1022,6 +1042,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         getRandomColor,
         colorForUser,
         releaseAgent,
+        setFollowing,
         sendSaveSignal,
         sendCreateVersionSignal,
         getEpoch,

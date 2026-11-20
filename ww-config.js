@@ -351,6 +351,13 @@ export default {
             },
         },
         {
+            name: 'collab:follow-change',
+            label: { en: 'On followed user change', fr: 'Personne suivie changée' },
+            event: {
+                following: '',
+            },
+        },
+        {
             name: 'version-history:select',
             label: { en: 'On version selected in timeline', fr: 'Version sélectionnée dans la frise' },
             event: {
@@ -615,6 +622,23 @@ export default {
                     },
                 },
             ],
+        },
+        {
+            label: { en: 'Collab: Follow a user (toggle)', fr: 'Collab: Suivre quelqu’un (bascule)' },
+            action: 'followUser',
+            args: [
+                {
+                    name: "User id (collaborationStatus.users[].id), or 'agent'",
+                    type: 'Text',
+                    options: {
+                        bindable: true,
+                    },
+                },
+            ],
+        },
+        {
+            label: { en: 'Collab: Stop following', fr: 'Collab: Arrêter de suivre' },
+            action: 'stopFollowing',
         },
         {
             label: { en: 'Collab: Create version', fr: 'Collab: Créer une version' },
