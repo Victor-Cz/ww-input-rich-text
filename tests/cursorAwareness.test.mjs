@@ -13,8 +13,9 @@ import { createCursorAwareness } from '../src/utils/cursorAwareness.js';
 const anchor = { type: null, tname: 'default', item: { client: 1, clock: 3 }, assoc: 0 };
 
 // Une awareness réelle, ses événements relayés par la façade comptés par nom
-function setup() {
+function setup(spy = () => {}) {
     const awareness = new Awareness(new Y.Doc());
+    spy(awareness);
     const facade = createCursorAwareness(awareness);
     const events = [];
     const listener = name => () => events.push(name);
@@ -75,7 +76,15 @@ test("un client distant : arrivée, souris ignorée, curseur, départ", () => {
 });
 
 test('lectures relayées, off, et destroy qui retire tout sans couper les écritures', () => {
-    const { awareness, facade, events, onUpdate } = setup();
+    // Les écouteurs posés et retirés sur l'awareness réelle
+    const attached = [];
+    const removed = [];
+    const { awareness, facade, events, onUpdate } = setup(real => {
+        const on = real.on.bind(real);
+        const off = real.off.bind(real);
+        real.on = (name, listener) => (attached.push([name, listener]), on(name, listener));
+        real.off = (name, listener) => (removed.push([name, listener]), off(name, listener));
+    });
     assert.equal(facade.clientID, awareness.clientID);
     assert.equal(facade.states, awareness.states);
     assert.equal(facade.getStates(), awareness.getStates());
@@ -89,7 +98,7 @@ test('lectures relayées, off, et destroy qui retire tout sans couper les écrit
     events.length = 0;
     awareness.setLocalStateField('cursor', null);
     assert.deepEqual(events, [], 'plus aucun événement après destroy');
-    assert.equal(awareness._observers.get('update')?.size ?? 0, 0, "plus d'écouteur sur l'awareness réelle");
+    assert.deepEqual(removed, attached, "son écouteur retiré de l'awareness réelle");
 
     facade.off('change', () => {});
     facade.setLocalStateField('cursor', { anchor, head: anchor });
