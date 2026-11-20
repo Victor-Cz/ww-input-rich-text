@@ -1150,7 +1150,14 @@ export default {
             const url = this.collaborationStatus?.agentIcon;
             if (!url) return this.agentIconSvg;
             const src = String(url).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-            return `<img src="${src}" alt="" referrerpolicy="no-referrer" />`;
+            // Sur la couleur de sa marque, le logo en blanc (comme son avatar)
+            const white = this.agentBrandColor ? ' class="-white"' : '';
+            return `<img src="${src}" alt="" referrerpolicy="no-referrer"${white} />`;
+        },
+        // La couleur de marque de l'agent présent (Claude…), donnée par le serveur
+        agentBrandColor() {
+            const users = this.collaborationStatus?.users;
+            return (Array.isArray(users) && users.find(user => user?.agent && user.brandColor)?.brandColor) || null;
         },
         // Versions : brispr-collab seulement
         versionsAvailable() {
@@ -1160,8 +1167,10 @@ export default {
         showVersionTimeline() {
             return this.versionsAvailable && (this.content.showVersionTimeline ?? true);
         },
+        // La couleur de l'agent dans le texte (caret, dévoilement, sélection) :
+        // celle de sa marque s'il en a une, comme son avatar, sinon le paramètre
         agentColor() {
-            return this.content.agentColor || AGENT.color;
+            return this.agentBrandColor || this.content.agentColor || AGENT.color;
         },
         // Suivi du caret de Brispr (agentFollow) : toujours, en lecture seule,
         // jamais. Quelqu'un de suivi (action followUser) passe avant : l'agent
@@ -4138,6 +4147,10 @@ export default {
 
         &:empty {
             display: none;
+        }
+
+        img.-white {
+            filter: brightness(0) invert(1);
         }
 
         svg,
