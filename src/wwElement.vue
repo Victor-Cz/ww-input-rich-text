@@ -362,6 +362,7 @@ import { TextSuggestion } from './extensions/TextSuggestion.js';
 import { TextStrike } from './extensions/TextStrike.js';
 import { AgentReveal } from './extensions/AgentReveal.js';
 import { MousePresence } from './extensions/MousePresence.js';
+import { AgentSelection } from './extensions/AgentSelection.js';
 import { AGENT } from './agent.js';
 import { CustomImage } from './extensions/CustomImage.js';
 import { SeoLink } from './extensions/SeoLink.js';
@@ -1600,6 +1601,14 @@ export default {
                             awareness: () => this.provider?.awareness ?? null,
                             enabled: () =>
                                 !!this.content.showMousePresence && !this.isVersionPreview && !this.isArchivePreview(),
+                        }),
+                        // Passages que l'agent montre ou remplace (sélection du serveur) :
+                        // surlignés à sa couleur, pas sur une version affichée
+                        AgentSelection.configure({
+                            awareness: () => this.provider?.awareness ?? null,
+                            color: () => this.agentColor,
+                            enabled: () => !this.isVersionPreview && !this.isArchivePreview(),
+                            onSelection: range => this.followAgentSelection(range),
                         })
                     );
                 }
@@ -2026,6 +2035,21 @@ export default {
         },
         pauseFollowingAgent() {
             this.agentFollowPausedUntil = Date.now() + AGENT_FOLLOW_RESUME_MS;
+        },
+        // Une nouvelle sélection de l'agent (AgentSelection) : si on suit
+        // l'agent, son début ramené dans la bande centrale, sans animation
+        followAgentSelection({ from }) {
+            if (this.collaborationStatus?.following !== FOLLOW_AGENT) return;
+            const view = this.richEditor?.view;
+            if (!view || !view.dom.isConnected) return;
+            try {
+                const rect = view.coordsAtPos(Math.min(from, view.state.doc.content.size));
+                const area = scrollArea(view.dom);
+                const delta = bandScrollDelta(rect, area, AGENT_FOLLOW_BAND);
+                if (delta) area.scroller.scrollBy({ top: delta, behavior: 'auto' });
+            } catch {
+                // Position hors du rendu (document en cours de synchronisation) : rien
+            }
         },
 
         // ===== Suivre quelqu'un (clic sur son avatar) =====
@@ -3919,6 +3943,17 @@ export default {
                 pointer-events: none;
             }
         }
+    }
+
+    /* Sélection de l'agent (AgentSelection) : les passages qu'il montre ou
+       remplace, sur un fond translucide de sa couleur avec un trait dessous.
+       Pas de caret */
+    .ww-agent-selection {
+        --ww-agent-selection-tint: var(--ww-agent-selection-color, #7611fa);
+        background-color: color-mix(in srgb, var(--ww-agent-selection-tint) 25%, transparent);
+        box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--ww-agent-selection-tint) 70%, transparent);
+        border-radius: 2px;
+        transition: background-color 0.2s ease;
     }
 
     /* Rédaction en direct (AgentReveal) : texte pas encore dévoilé, encre
