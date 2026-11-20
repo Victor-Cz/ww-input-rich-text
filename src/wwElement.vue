@@ -2096,13 +2096,13 @@ export default {
 
         // Action : suivre l'utilisateur d'id `userId` (collaborationStatus.users),
         // ou l'agent ('agent'). Rappelée sur la même personne, elle arrête ;
-        // soi-même ou un absent ne changent rien
+        // soi-même se suit sur un autre écran ; un absent ne change rien
         followUser(userId) {
             const status = this.collaborationStatus || {};
             this.setFollowing(
                 nextFollowing(status.following ?? null, userId, {
-                    localId: this.collabConfig?.userId || null,
                     users: status.users || [],
+                    localClientId: this.provider?.awareness?.clientID ?? null,
                 })
             );
         },
@@ -2133,7 +2133,8 @@ export default {
                 awareness.getStates(),
                 [...awareness.getStates().keys()],
                 key,
-                this.followedCursors
+                this.followedCursors,
+                awareness.clientID
             );
             if (this.followedClient != null) this.scheduleFollowScroll();
         },
@@ -2226,7 +2227,13 @@ export default {
         onFollowAwarenessChange({ added, updated }) {
             const key = this.collaborationStatus?.following;
             if (!key || key === FOLLOW_AGENT || !this.followAwareness || !this.followedCursors) return;
-            const moved = movedCursorClient(this.followAwareness.getStates(), [...added, ...updated], key, this.followedCursors);
+            const moved = movedCursorClient(
+                this.followAwareness.getStates(),
+                [...added, ...updated],
+                key,
+                this.followedCursors,
+                this.followAwareness.clientID
+            );
             if (moved == null) return;
             this.followedClient = moved;
             this.scheduleFollowScroll();
