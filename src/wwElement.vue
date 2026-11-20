@@ -342,7 +342,7 @@ import TableCell from '@tiptap/extension-table-cell';
 import { computed, inject, provide, onBeforeUnmount } from 'vue';
 import suggestion from './suggestion.js';
 import * as Y from 'yjs';
-import { ySyncPluginKey } from 'y-prosemirror';
+import { ySyncPluginKey, relativePositionToAbsolutePosition } from 'y-prosemirror';
 import { useCollaboration } from './composables/useCollaboration.js';
 import * as ImageManager from './composables/useImageManager.js';
 import { Markdown } from 'tiptap-markdown';
@@ -376,7 +376,7 @@ import { EMPTY_EDITOR_UI, readEditorUi, TEXT_TYPES, uiInputsChanged } from './ut
 import { mentionIds } from './utils/mentions.js';
 import { sameValue, shallowEqual } from './utils/sameValue.js';
 import { whenIdle } from './utils/idle.js';
-import { insideBand } from './utils/agentFollow.js';
+import { bandScrollDelta, FOLLOW_AGENT, insideBand, movedCursorClient, nextFollowing } from './utils/follow.js';
 import { currentLang } from './i18n/lang.js';
 
 // Analyse SEO / GEO : elle parcourt tout le document, lancée après ce délai
@@ -386,24 +386,25 @@ const SEO_ANALYSIS_DELAY_MS = 1500;
 // Rédaction en direct : un défilement de l'utilisateur suspend le suivi du
 // caret de Brispr, qui reprend après ce délai sans défilement
 const AGENT_FOLLOW_RESUME_MS = 3000;
-// Bande où le suivi garde le caret, en fraction de la hauteur visible : il
-// y reste plutôt que de longer le bord de l'écran
+// Bande où le suivi garde le caret (de l'agent, ou de la personne suivie), en
+// fraction de la hauteur visible : il y reste plutôt que de longer le bord de l'écran
 const AGENT_FOLLOW_BAND = { top: 0.3, bottom: 0.6 };
 
 /**
- * Zone visible { top, height } (coordonnées écran) de ce qui fait défiler `el` :
- * conteneur défilant le plus proche, sinon la fenêtre (celle de son document)
+ * Ce qui fait défiler `el` : le conteneur défilant le plus proche, sinon la
+ * fenêtre de son document (`scroller`), et sa zone visible { top, height }
+ * en coordonnées écran
  */
-function scrollViewport(el) {
+function scrollArea(el) {
     const doc = el.ownerDocument;
     const win = doc.defaultView || window;
     for (let node = el.parentElement; node && node !== doc.body; node = node.parentElement) {
         const { overflowY } = win.getComputedStyle(node);
         if (/auto|scroll|overlay/.test(overflowY) && node.scrollHeight > node.clientHeight) {
-            return { top: node.getBoundingClientRect().top + node.clientTop, height: node.clientHeight };
+            return { scroller: node, top: node.getBoundingClientRect().top + node.clientTop, height: node.clientHeight };
         }
     }
-    return { top: 0, height: win.innerHeight };
+    return { scroller: win, top: 0, height: win.innerHeight };
 }
 
 const TAGS_MAP = {
@@ -490,6 +491,7 @@ export default {
                 agentName: null,
                 agentIcon: null,
                 channels: {},
+                following: null,
             })),
             readonly: true,
         });
@@ -750,6 +752,15 @@ export default {
                 name: locked ? 'collab:agent-writing' : 'collab:agent-done',
                 event: { agent: this.agentName, timestamp: new Date().toISOString() },
             });
+        },
+        // La personne suivie change (action, départ, collaboration rechargée) :
+        // écouteurs du suivi rebranchés, changement annoncé
+        'collaborationStatus.following'(key, previous) {
+            const following = key || null;
+            if (following === (previous || null)) return;
+            this.detachFollowListeners();
+            if (following) this.attachFollowListeners(following);
+            this.$emit('trigger-event', { name: 'collab:follow-change', event: { following } });
         },
         variableValue(value, oldValue) {
             if (this.shouldEnableCollaboration) return;
@@ -1137,8 +1148,12 @@ export default {
         agentColor() {
             return this.content.agentColor || AGENT.color;
         },
-        // Suivi du caret de Brispr (agentFollow) : toujours, en lecture seule, jamais
+        // Suivi du caret de Brispr (agentFollow) : toujours, en lecture seule,
+        // jamais. Quelqu'un de suivi (action followUser) passe avant : l'agent
+        // s'il est suivi, quel que soit agentFollow ; personne d'autre sinon
         followsAgent() {
+            const following = this.collaborationStatus?.following;
+            if (following) return following === FOLLOW_AGENT;
             const mode = this.content.agentFollow ?? 'always';
             return mode === 'always' || (mode === 'readonly' && (this.isReadonly || !this.content.editable));
         },
@@ -1997,7 +2012,7 @@ export default {
             this.lastAgentScroll = now;
             // Le caret dans la bande centrale de ce qui défile, et dans la
             // fenêtre : rien à faire
-            const viewport = scrollViewport(caret);
+            const viewport = scrollArea(caret);
             const rect = caret.getBoundingClientRect();
             const windowHeight = (caret.ownerDocument.defaultView || window).innerHeight;
             if (insideBand(rect, viewport, AGENT_FOLLOW_BAND) && rect.top >= 0 && rect.bottom <= windowHeight) return;
@@ -2011,6 +2026,106 @@ export default {
         },
         pauseFollowingAgent() {
             this.agentFollowPausedUntil = Date.now() + AGENT_FOLLOW_RESUME_MS;
+        },
+
+        // ===== Suivre quelqu'un (clic sur son avatar) =====
+
+        // Action : suivre l'utilisateur d'id `userId` (collaborationStatus.users),
+        // ou l'agent ('agent'). Rappelée sur la même personne, elle arrête ;
+        // soi-même ou un absent ne changent rien
+        followUser(userId) {
+            const status = this.collaborationStatus || {};
+            this.setFollowing(
+                nextFollowing(status.following ?? null, userId, {
+                    localId: this.collabConfig?.userId || null,
+                    users: status.users || [],
+                })
+            );
+        },
+        stopFollowing() {
+            this.setFollowing(null);
+        },
+        // Pendant un suivi : un défilement, un clic ou une frappe de
+        // l'utilisateur dans le document l'arrête ; le curseur d'un
+        // collaborateur suivi est lu à chaque changement de l'awareness
+        attachFollowListeners(key) {
+            window.addEventListener('wheel', this.stopFollowing, { passive: true });
+            window.addEventListener('touchmove', this.stopFollowing, { passive: true });
+            this.$el?.addEventListener('mousedown', this.stopFollowingInDocument, true);
+            this.$el?.addEventListener('keydown', this.stopFollowingInDocument, true);
+            if (key === FOLLOW_AGENT) return;
+            const awareness = this.provider?.awareness;
+            if (!awareness) return;
+            this.followAwareness = awareness;
+            this.followedCursors = new Map();
+            awareness.on('change', this.onFollowAwarenessChange);
+            // Tout de suite là où il est (le dernier de ses onglets qui a un curseur)
+            this.followedClient = movedCursorClient(
+                awareness.getStates(),
+                [...awareness.getStates().keys()],
+                key,
+                this.followedCursors
+            );
+            if (this.followedClient != null) this.scheduleFollowScroll();
+        },
+        detachFollowListeners() {
+            window.removeEventListener('wheel', this.stopFollowing);
+            window.removeEventListener('touchmove', this.stopFollowing);
+            this.$el?.removeEventListener('mousedown', this.stopFollowingInDocument, true);
+            this.$el?.removeEventListener('keydown', this.stopFollowingInDocument, true);
+            this.followAwareness?.off('change', this.onFollowAwarenessChange);
+            this.followAwareness = null;
+            this.followedCursors = null;
+            this.followedClient = null;
+            if (this.followFrame) {
+                cancelAnimationFrame(this.followFrame);
+                this.followFrame = null;
+            }
+        },
+        stopFollowingInDocument(event) {
+            if (this.richEditor?.view?.dom?.contains(event.target)) this.stopFollowing();
+        },
+        // La souris des collaborateurs change aussi l'awareness : seul un
+        // curseur de la personne suivie qui bouge fait défiler
+        onFollowAwarenessChange({ added, updated }) {
+            const key = this.collaborationStatus?.following;
+            if (!key || key === FOLLOW_AGENT || !this.followAwareness || !this.followedCursors) return;
+            const moved = movedCursorClient(this.followAwareness.getStates(), [...added, ...updated], key, this.followedCursors);
+            if (moved == null) return;
+            this.followedClient = moved;
+            this.scheduleFollowScroll();
+        },
+        // Un défilement au plus par image, quel que soit le rythme de frappe
+        scheduleFollowScroll() {
+            if (this.followFrame) return;
+            this.followFrame = requestAnimationFrame(() => {
+                this.followFrame = null;
+                this.scrollToFollowedCursor();
+            });
+        },
+        // Le curseur suivi ramené dans la bande centrale de ce qui défile, sans
+        // animation, seulement s'il en sort (comme le caret de l'agent)
+        scrollToFollowedCursor() {
+            const view = this.richEditor?.view;
+            const cursor = this.followAwareness?.getStates().get(this.followedClient)?.cursor;
+            if (!view || !cursor?.head || this.isVersionPreview || this.isArchivePreview()) return;
+            const ystate = ySyncPluginKey.getState(view.state);
+            if (!ystate?.binding) return;
+            try {
+                const head = relativePositionToAbsolutePosition(
+                    ystate.doc,
+                    ystate.type,
+                    Y.createRelativePositionFromJSON(cursor.head),
+                    ystate.binding.mapping
+                );
+                if (head == null) return;
+                const rect = view.coordsAtPos(Math.min(head, Math.max(view.state.doc.content.size - 1, 0)));
+                const area = scrollArea(view.dom);
+                const delta = bandScrollDelta(rect, area, AGENT_FOLLOW_BAND);
+                if (delta) area.scroller.scrollBy({ top: delta, behavior: 'auto' });
+            } catch {
+                // Position introuvable (document en cours de synchronisation) : au prochain mouvement
+            }
         },
         // Icône de Brispr : celle du paramètre (bibliothèque d'icônes WeWeb), sinon aucune
         async resolveAgentIcon(name) {
@@ -3163,6 +3278,7 @@ export default {
 
         window.removeEventListener('wheel', this.pauseFollowingAgent);
         window.removeEventListener('touchmove', this.pauseFollowingAgent);
+        this.detachFollowListeners();
         /* wwEditor:start */
         this.$el?.removeEventListener('wheel', this.onEditorWheel);
         /* wwEditor:end */
