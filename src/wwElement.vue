@@ -2056,7 +2056,10 @@ export default {
             this.lastAgentCaret = caret;
             if (!this.followsAgent) return;
             const now = Date.now();
-            if (now < this.followPausedUntil) return;
+            if (now < this.followPausedUntil) {
+                this.followMissed = true;
+                return;
+            }
             if (!force && (now < this.agentFollowPausedUntil || now - this.lastAgentScroll < 250)) return;
             this.lastAgentScroll = now;
             // Le caret dans la bande centrale de ce qui défile, et dans la
@@ -2074,7 +2077,11 @@ export default {
             this.lastAgentCaret = null;
             if (!this.followsAgent) return;
             const now = Date.now();
-            if (now < this.followPausedUntil || now < this.agentFollowPausedUntil) return;
+            if (now < this.followPausedUntil) {
+                this.followMissed = true;
+                return;
+            }
+            if (now < this.agentFollowPausedUntil) return;
             this.lastAgentScroll = now;
             this.scrollIntoBand(from);
         },
@@ -2100,7 +2107,10 @@ export default {
         // l'agent, son début ramené dans la bande centrale, sans animation
         followAgentSelection({ from }) {
             if (this.collaborationStatus?.following !== FOLLOW_AGENT) return;
-            if (Date.now() < this.followPausedUntil) return;
+            if (Date.now() < this.followPausedUntil) {
+                this.followMissed = true;
+                return;
+            }
             const view = this.richEditor?.view;
             if (!view || !view.dom.isConnected) return;
             try {
@@ -2136,6 +2146,7 @@ export default {
         // collaborateur suivi est lu à chaque changement de l'awareness
         attachFollowListeners(key) {
             this.followPausedUntil = 0;
+            this.followMissed = false;
             window.addEventListener('wheel', this.pauseFollowing, { passive: true });
             window.addEventListener('touchmove', this.pauseFollowing, { passive: true });
             this.$el?.addEventListener('keydown', this.pauseFollowingInDocument, true);
@@ -2161,6 +2172,7 @@ export default {
             clearTimeout(this.followResumeTimer);
             this.followResumeTimer = null;
             this.followPausedUntil = 0;
+            this.followMissed = false;
             this.$el?.removeEventListener('keydown', this.pauseFollowingInDocument, true);
             this.stopFollowScroll();
             this.followAwareness?.off('change', this.onFollowAwarenessChange);
@@ -2181,11 +2193,16 @@ export default {
             clearTimeout(this.followResumeTimer);
             this.followResumeTimer = setTimeout(this.resumeFollowing, FOLLOW_RESUME_MS);
         },
+        // Fin de la pause : rien ne bouge, sauf si la personne suivie a agi
+        // pendant (texte ajouté ou modifié, curseur, sélection) : on y revient.
+        // Ensuite, c'est sa prochaine action qui fait défiler
         resumeFollowing() {
             this.followResumeTimer = null;
             this.followPausedUntil = 0;
+            const missed = this.followMissed;
+            this.followMissed = false;
             const key = this.collaborationStatus?.following;
-            if (!key) return;
+            if (!key || !missed) return;
             if (key !== FOLLOW_AGENT) {
                 if (this.followedClient != null) this.scheduleFollowScroll();
                 return;
@@ -2257,7 +2274,11 @@ export default {
         },
         // Un défilement au plus par image, quel que soit le rythme de frappe
         scheduleFollowScroll() {
-            if (this.followFrame || Date.now() < this.followPausedUntil) return;
+            if (Date.now() < this.followPausedUntil) {
+                this.followMissed = true;
+                return;
+            }
+            if (this.followFrame) return;
             this.followFrame = requestAnimationFrame(() => {
                 this.followFrame = null;
                 this.scrollToFollowedCursor();
