@@ -99,12 +99,20 @@ export const AgentReveal = Extension.create({
             onRevealingChange: () => {},
             /** Appelé après chaque paquet dévoilé, avec le caret (suivi du défilement) */
             onReveal: () => {},
+            /**
+             * Appelé à chaque changement de l'agent qui n'a pas de caret (un
+             * remplacement : une section écrite à la place de sa note, une
+             * modification ciblée), avec sa plage { from, to } (suivi du défilement)
+             */
+            onChange: () => {},
         };
     },
 
     addProseMirrorPlugins() {
         const options = this.options;
 
+        // Compteur des changements de l'agent : identifie le dernier (state.last.at)
+        let changeCount = 0;
         const caret = document.createElement('span');
         caret.className = 'brispr-caret';
         const caretLabel = document.createElement('span');
@@ -145,15 +153,16 @@ export const AgentReveal = Extension.create({
                 state: {
                     init() {
                         // credit : fraction de mot reportée d'un tick au suivant
-                        return { pending: [], ink: [], credit: 0 };
+                        // last : la plage du dernier changement de l'agent (cf. onChange)
+                        return { pending: [], ink: [], credit: 0, last: null };
                     },
 
                     apply(tr, value, oldState, newState) {
-                        let { pending, ink, credit } = value;
+                        let { pending, ink, credit, last } = value;
                         const now = Date.now();
 
                         if (tr.getMeta(agentRevealKey) === 'reveal-all') {
-                            return pending.length || ink.length ? { pending: [], ink: [], credit: 0 } : value;
+                            return pending.length || ink.length ? { pending: [], ink: [], credit: 0, last } : value;
                         }
 
                         if (tr.docChanged) {
@@ -167,10 +176,21 @@ export const AgentReveal = Extension.create({
                                     .map(r => ({ ...r, from: mapping.map(r.from, 1), to: mapping.map(r.to, -1) }))
                                     .filter(r => r.from < r.to);
                             }
+                            if (last) {
+                                const from = tr.mapping.map(last.from, 1);
+                                const to = Math.max(from, tr.mapping.map(last.to, -1));
+                                if (from !== last.from || to !== last.to) last = { ...last, from, to };
+                            }
 
                             if (isRemoteChange(tr) && options.shouldAnimate() && !hidden()) {
                                 const change = changedRange(oldState.doc, newState.doc);
                                 if (change && change.newEnd > change.start) {
+                                    last = {
+                                        from: change.start,
+                                        to: change.newEnd,
+                                        insert: change.oldEnd === change.start,
+                                        at: ++changeCount,
+                                    };
                                     if (change.oldEnd === change.start) {
                                         // Insertion pure : à dévoiler. Collée à la fin d'une
                                         // plage en attente, elle la prolonge (texte ajouté
@@ -218,9 +238,12 @@ export const AgentReveal = Extension.create({
                             if (!pending.length) credit = 0;
                         }
 
-                        return pending === value.pending && ink === value.ink && credit === value.credit
+                        return pending === value.pending &&
+                            ink === value.ink &&
+                            credit === value.credit &&
+                            last === value.last
                             ? value
-                            : { pending, ink, credit };
+                            : { pending, ink, credit, last };
                     },
                 },
 
@@ -242,6 +265,8 @@ export const AgentReveal = Extension.create({
                     pluginView = editorView;
                     let timer = null;
                     let revealing = false;
+                    // Le dernier changement annoncé (onChange), par sa plage telle qu'elle est arrivée
+                    let announced = null;
 
                     // Un paquet de mots ; onglet caché, tout d'un coup (et sync arrête le minuteur)
                     const tick = () => {
@@ -250,7 +275,12 @@ export const AgentReveal = Extension.create({
                     };
 
                     const sync = () => {
-                        const { pending, ink } = agentRevealKey.getState(editorView.state);
+                        const { pending, ink, last } = agentRevealKey.getState(editorView.state);
+                        // Un remplacement n'a pas de caret : sa plage sert au suivi
+                        if (last && !last.insert && last.at !== announced) {
+                            announced = last.at;
+                            options.onChange({ from: last.from, to: last.to });
+                        }
                         const busy = pending.length > 0 || ink.length > 0;
                         if (busy && !timer) {
                             timer = setInterval(tick, options.tickMs);
