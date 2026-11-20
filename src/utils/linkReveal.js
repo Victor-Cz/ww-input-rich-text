@@ -11,6 +11,10 @@
  */
 import { sanitizeLinkUrl } from './sanitizeUrl.js';
 
+// Plages lues une fois par document : les décorations les relisent à chaque
+// transaction (curseurs des autres, sélection…), le document change bien moins
+const rangesByDoc = new WeakMap();
+
 /** Le mark lien d'un nœud texte (ou null) */
 function linkOf(node, linkType) {
     if (!node || !node.isText) return null;
@@ -22,10 +26,13 @@ function linkOf(node, linkType) {
  * @description Toutes les plages de lien du document : [{ from, to, href }],
  * dans l'ordre. Deux nœuds texte qui se suivent dans le même bloc avec la même
  * adresse (texte en gras au milieu d'un lien, par exemple) font une seule plage.
+ * Calculées une fois par document (les nœuds sont immuables), rendues gelées.
  */
 export function linkRanges(doc, linkType) {
+    if (!doc || !linkType) return [];
+    const cached = rangesByDoc.get(doc);
+    if (cached && cached.linkType === linkType) return cached.ranges;
     const ranges = [];
-    if (!doc || !linkType) return ranges;
     doc.descendants((node, pos) => {
         const mark = linkOf(node, linkType);
         if (!mark) return;
@@ -37,6 +44,9 @@ export function linkRanges(doc, linkType) {
             ranges.push({ from: pos, to: pos + node.nodeSize, href });
         }
     });
+    ranges.forEach(Object.freeze);
+    Object.freeze(ranges);
+    rangesByDoc.set(doc, { linkType, ranges });
     return ranges;
 }
 

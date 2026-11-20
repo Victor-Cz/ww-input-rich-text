@@ -219,6 +219,11 @@ export const LinkReveal = Extension.create({
             return wrap;
         };
 
+        // Les dernières décorations, rendues telles quelles tant que le document,
+        // le lien révélé et le mode ne changent pas (transactions des curseurs,
+        // de l'agent…) : ni reconstruites, ni recomparées par la vue
+        let last = null;
+
         // L'infobulle native d'un lien : son adresse, puis comment l'ouvrir
         const lang = typeof document !== 'undefined' ? String(document.documentElement?.lang || '') : '';
         const openHint = modifier + (lang.startsWith('fr') ? ' + clic pour ouvrir' : ' + click to open');
@@ -267,20 +272,26 @@ export const LinkReveal = Extension.create({
                         }
                         if (!active && held) active = linkRangeAt(state.doc, held.from, linkType);
 
+                        const isEditing = !!(editing && canEdit);
+                        const key = active ? `${active.from}-${active.to}-${active.href}-${isEditing}-${canEdit}` : '';
+                        const shownEditing = isEditing ? editing : null;
+                        if (last && last.doc === state.doc && last.key === key && last.editing === shownEditing) {
+                            return last.set;
+                        }
+
                         const decorations = [];
                         for (const range of ranges) {
                             // Le survol montre l'adresse et comment ouvrir le lien (lecture seule comprise)
                             decorations.push(Decoration.inline(range.from, range.to, { title: titleOf(range.href) }));
                         }
                         if (active) {
-                            const isEditing = !!(editing && canEdit);
                             decorations.push(
                                 Decoration.widget(active.from, openWidget, {
                                     side: -1,
                                     key: `lr-open-${active.from}`,
                                     ignoreSelection: true,
                                 }),
-                                Decoration.widget(active.to, closeWidget(active, isEditing ? editing : null, canEdit), {
+                                Decoration.widget(active.to, closeWidget(active, shownEditing, canEdit), {
                                     side: 1,
                                     key: `lr-close-${active.from}-${active.to}-${isEditing ? 'edit' : 'view'}-${active.href}`,
                                     ignoreSelection: true,
@@ -289,7 +300,9 @@ export const LinkReveal = Extension.create({
                                 })
                             );
                         }
-                        return DecorationSet.create(state.doc, decorations);
+                        const set = DecorationSet.create(state.doc, decorations);
+                        last = { doc: state.doc, key, editing: shownEditing, set };
+                        return set;
                     },
                     handleDOMEvents: {
                         // Lecture seule : clic maintenu sur un lien = forme [texte](url)

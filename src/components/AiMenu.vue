@@ -224,6 +224,12 @@ export default {
             showSuccessCheck: false,
         };
     },
+    watch: {
+        // Caché, le menu ne suit pas le défilement : replacé à l'ouverture
+        isMenuVisible(visible) {
+            if (visible) this.$nextTick(() => this.updateMenuPosition());
+        },
+    },
     created() {
         // Plage visée, suivie pendant la demande (hors état réactif : objet Yjs)
         this.aiTarget = useAiTarget(this.richEditor);
@@ -231,12 +237,13 @@ export default {
     mounted() {
         // Écouter les clics en dehors du menu pour le masquer
         document.addEventListener('mousedown', this.onClickOutside);
-        window.addEventListener('scroll', this.updateMenuPosition, true);
+        window.addEventListener('scroll', this.onWindowScroll, true);
     },
     beforeUnmount() {
         // Nettoyer les écouteurs
         document.removeEventListener('mousedown', this.onClickOutside);
-        window.removeEventListener('scroll', this.updateMenuPosition, true);
+        window.removeEventListener('scroll', this.onWindowScroll, true);
+        if (this.scrollFrame) cancelAnimationFrame(this.scrollFrame);
 
         this.storedSelection = null;
         this.aiTarget.release();
@@ -598,6 +605,16 @@ export default {
                 return icon; // Pour les icônes HTML/SVG, retourner tel quel
             }
             return null;
+        },
+
+        // Tout défilement de la page (capture) : le menu ouvert est replacé une
+        // fois par image ; caché, rien à mesurer
+        onWindowScroll() {
+            if (!this.isMenuVisible || this.scrollFrame) return;
+            this.scrollFrame = requestAnimationFrame(() => {
+                this.scrollFrame = null;
+                if (this.isMenuVisible) this.updateMenuPosition();
+            });
         },
 
         updateMenuPosition() {

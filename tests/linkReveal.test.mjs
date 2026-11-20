@@ -137,3 +137,29 @@ test("une modification du texte avant le lien déplace la plage en cours d'édit
     state = state.apply(state.tr.setMeta(linkRevealKey, { type: 'stopEdit' }));
     assert.equal(linkRevealKey.getState(state).editing, null);
 });
+
+test('plages lues une fois par document, gelées', () => {
+    const ranges = linkRanges(doc, schema.marks.link);
+    assert.equal(linkRanges(doc, schema.marks.link), ranges, 'même document : mêmes plages');
+    assert.ok(Object.isFrozen(ranges) && Object.isFrozen(ranges[0]));
+    const other = schema.node('doc', null, [schema.node('paragraph', null, [t('a', [link('https://x.fr')])])]);
+    assert.deepEqual(linkRanges(other, schema.marks.link), [{ from: 1, to: 2, href: 'https://x.fr' }]);
+});
+
+test('décorations reprises telles quelles tant que rien ne change, refaites sinon', () => {
+    const plugin = pluginFor(true);
+    let state = EditorState.create({ doc, plugins: [plugin] });
+    state = state.apply(state.tr.setSelection(TextSelection.create(state.doc, 8)));
+    const decorations = () => plugin.props.decorations.call(plugin, state);
+    const first = decorations();
+    state = state.apply(state.tr.setMeta('cursor', true));
+    assert.equal(decorations(), first, 'transaction sans effet : même ensemble');
+    state = state.apply(state.tr.setSelection(TextSelection.create(state.doc, 9)));
+    assert.equal(decorations(), first, 'curseur déplacé dans le même lien : même ensemble');
+    state = state.apply(state.tr.setSelection(TextSelection.create(state.doc, 18)));
+    const second = decorations();
+    assert.notEqual(second, first, 'autre lien : refait');
+    assert.deepEqual(keys(second.find().map(d => ({ key: d.spec.key || null }))).sort(), ['lr-close-16-23-view', 'lr-open-16'].sort());
+    state = state.apply(state.tr.insertText('x', 1));
+    assert.notEqual(decorations(), second, 'document modifié : refait');
+});
