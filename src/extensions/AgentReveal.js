@@ -289,9 +289,16 @@ export const AgentReveal = Extension.create({
                         for (const r of ink) {
                             rangeDecorations(state.doc, r.from, r.to, r.direct ? 'brispr-ink -direct' : 'brispr-ink', decorations);
                         }
-                        for (const r of pending) rangeDecorations(state.doc, r.from, r.to, 'brispr-pending', decorations);
-                        if (pending.length) {
-                            decorations.push(Decoration.widget(pending[0].from, caret, { key: 'brispr-caret', side: -1 }));
+                        // Un bloc en attente garde sa place, invisible (brispr-held) : le suivi
+                        // mesure où il est et y défile, la page ne saute pas à son apparition.
+                        // Le mot à mot, lui, n'occupe que ce qui est déjà dévoilé
+                        for (const r of pending) {
+                            rangeDecorations(state.doc, r.from, r.to, r.block ? 'brispr-held' : 'brispr-pending', decorations);
+                        }
+                        // Le caret devant le texte qui s'écrit mot à mot (un bloc apparaît sans)
+                        const writing = pending.find(r => !r.block);
+                        if (writing) {
+                            decorations.push(Decoration.widget(writing.from, caret, { key: 'brispr-caret', side: -1 }));
                         }
                         return DecorationSet.create(state.doc, decorations);
                     },

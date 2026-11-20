@@ -4100,6 +4100,11 @@ export default {
         display: none !important;
     }
 
+    /* Bloc en attente (apparition d'un coup) : sa place est gardée */
+    .brispr-held {
+        visibility: hidden;
+    }
+
     .brispr-ink {
         animation: brispr-ink 1s ease-out;
 
