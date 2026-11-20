@@ -101,6 +101,12 @@ export const AgentReveal = Extension.create({
              * un défilement de suivi, pour qu'on voie l'écriture une fois arrivé
              */
             paused: () => false,
+            /**
+             * Comment apparaît un remplacement (une section écrite à la place de
+             * sa note, une modification ciblée) : 'block' d'un bloc teinté, 'words'
+             * mot à mot comme une insertion
+             */
+            replacements: () => 'block',
             onRevealingChange: () => {},
             /** Appelé après chaque paquet dévoilé, avec le caret (suivi du défilement) */
             onReveal: () => {},
@@ -175,7 +181,7 @@ export const AgentReveal = Extension.create({
                             if (pending.length || ink.length) {
                                 const mapping = remoteAwareMapping(tr, oldState.doc);
                                 pending = pending
-                                    .map(r => ({ from: mapping.map(r.from, 1), to: mapping.map(r.to, -1) }))
+                                    .map(r => ({ ...r, from: mapping.map(r.from, 1), to: mapping.map(r.to, -1) }))
                                     .filter(r => r.from < r.to);
                                 ink = ink
                                     .map(r => ({ ...r, from: mapping.map(r.from, 1), to: mapping.map(r.to, -1) }))
@@ -205,9 +211,18 @@ export const AgentReveal = Extension.create({
                                         else pending = [...pending, { from: change.start, to: change.newEnd }];
                                     } else {
                                         // Remplacement (une section écrite à la place de sa
-                                        // note, une modification ciblée) : le nouveau texte se
-                                        // dévoile aussi, mot à mot
-                                        pending = [...pending, { from: change.start, to: change.newEnd }];
+                                        // note, une modification ciblée) : le nouveau texte
+                                        // apparaît d'un bloc, teinté, au prochain paquet, ou mot
+                                        // à mot (cf. replacements) ; après un défilement de
+                                        // suivi dans les deux cas (cf. paused)
+                                        pending = [
+                                            ...pending,
+                                            {
+                                                from: change.start,
+                                                to: change.newEnd,
+                                                ...(options.replacements() === 'words' ? {} : { block: true }),
+                                            },
+                                        ];
                                     }
                                 }
                             }
@@ -215,6 +230,14 @@ export const AgentReveal = Extension.create({
 
                         if (tr.getMeta(agentRevealKey) === 'tick') {
                             ink = ink.filter(r => r.until > now);
+                            // Les remplacements d'un bloc, d'un coup
+                            if (pending.some(r => r.block) && !options.paused()) {
+                                ink = [
+                                    ...ink,
+                                    ...pending.filter(r => r.block).map(r => ({ from: r.from, to: r.to, until: now + INK_MS })),
+                                ];
+                                pending = pending.filter(r => !r.block);
+                            }
                             if (pending.length && !options.paused()) {
                                 const doc = newState.doc;
                                 const remaining = pending.reduce((n, r) => n + countWords(doc, r.from, r.to), 0);

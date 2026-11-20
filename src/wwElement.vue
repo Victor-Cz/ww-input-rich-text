@@ -1622,6 +1622,7 @@ export default {
                             },
                             // Le texte attend la fin d'un défilement de suivi pour se dévoiler
                             paused: () => !!this.followScrollFrame,
+                            replacements: () => (this.content.agentReplaceReveal === 'words' ? 'words' : 'block'),
                             onReveal: caret => this.followAgentCaret(caret),
                             onChange: range => this.followAgentChange(range),
                         }),

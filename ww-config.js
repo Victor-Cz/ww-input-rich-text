@@ -93,7 +93,7 @@ export default {
                 'epochLoadButtonText',
             ],
             'agentInfobox',
-            ['agentColor', 'agentIcon', 'agentWritingSpeed', 'agentFollow', 'agentLingerDelay'],
+            ['agentColor', 'agentIcon', 'agentWritingSpeed', 'agentReplaceReveal', 'agentFollow', 'agentLingerDelay'],
             'formInfobox',
             ['fieldName', 'customValidation', 'validation'],
             'readonly',
@@ -3827,6 +3827,27 @@ export default {
             propertyHelp: {
                 tooltip:
                     'Pace at which his text is revealed. Speeds up when more than 10 s behind what he has written, and once he is done',
+            },
+            /* wwEditor:end */
+        },
+        agentReplaceReveal: {
+            section: 'settings',
+            label: { en: 'Agent replacements', fr: "Remplacements de l'agent" },
+            type: 'TextSelect',
+            options: {
+                options: [
+                    { value: 'block', label: { en: 'Appear at once', fr: "D'un bloc" } },
+                    { value: 'words', label: { en: 'Word by word', fr: 'Mot à mot' } },
+                ],
+            },
+            defaultValue: 'block',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* wwEditor:start */
+            bindingValidation: { type: 'string', tooltip: "'block' or 'words'" },
+            propertyHelp: {
+                tooltip:
+                    'How text the agent writes in place of other text (a section in place of its note, a targeted edit) appears: at once, tinted, or word by word like new text. Both wait for a follow scroll to end.',
             },
             /* wwEditor:end */
         },
