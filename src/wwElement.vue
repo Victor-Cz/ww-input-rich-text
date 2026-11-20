@@ -290,6 +290,10 @@
                         :enabled="tableToolsEnabled" />
                 </template>
 
+                <!-- Poignée des sections (H2 / H3) au survol : glisser pour
+                     déplacer la section en bloc -->
+                <section-controls v-if="richEditor && sectionToolsEnabled" :editor="richEditor" />
+
                 <!-- Utilisation du composant AiMenu personnalisé -->
                 <ai-menu ref="aiMenu" :rich-editor="richEditor" :is-read-only="content.parameterAiMenuReadOnly ?? true"
                     :parameter-ai-menu-primary-color="content.parameterAiMenuPrimaryColor ?? '#007bff'"
@@ -318,6 +322,7 @@
 
 <script>
 import { Editor, EditorContent } from '@tiptap/vue-3';
+import { getHTMLFromFragment } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Mention from '@tiptap/extension-mention';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -348,6 +353,7 @@ import MagicMenu from './components/MagicMenu.vue';
 import LinkPopover from './components/LinkPopover.vue';
 import TableControls from './components/TableControls.vue';
 import TableContextMenu from './components/TableContextMenu.vue';
+import SectionControls from './components/SectionControls.vue';
 import VersionTimeline from './components/VersionTimeline.vue';
 import DiffRail from './components/DiffRail.vue';
 import { SelectionHighlighter } from './extensions/SelectionHighlighter.js';
@@ -361,7 +367,9 @@ import { CustomImage } from './extensions/CustomImage.js';
 import { SeoLink } from './extensions/SeoLink.js';
 import { LinkReveal } from './extensions/LinkReveal.js';
 import { LinkOpenCursor } from './extensions/LinkOpenCursor.js';
-import { frontmatterExtensions, readFrontmatter, htmlWithoutFrontmatter } from './extensions/Frontmatter.js';
+import { frontmatterExtensions, readFrontmatter } from './extensions/Frontmatter.js';
+import { sectionExtensions } from './extensions/Sections.js';
+import { exportedContent } from './utils/sectionNotes.js';
 import { sanitizeLinkUrl, sanitizeImageSrc, safeOpenUrl, isDangerousUrl } from './utils/sanitizeUrl.js';
 import { buildOutline, resolveOutlineLevels, toPublicOutline, toPublicHeading } from './utils/outline.js';
 import { EMPTY_EDITOR_UI, readEditorUi, TEXT_TYPES, uiInputsChanged } from './utils/editorUi.js';
@@ -369,6 +377,7 @@ import { mentionIds } from './utils/mentions.js';
 import { sameValue, shallowEqual } from './utils/sameValue.js';
 import { whenIdle } from './utils/idle.js';
 import { insideBand } from './utils/agentFollow.js';
+import { currentLang } from './i18n/lang.js';
 
 // Analyse SEO / GEO : elle parcourt tout le document, lancée après ce délai
 // sans modification, au moment où le navigateur est libre
@@ -418,6 +427,7 @@ export default {
         LinkPopover,
         TableControls,
         TableContextMenu,
+        SectionControls,
     },
     props: {
         content: { type: Object, required: true },
@@ -1141,6 +1151,10 @@ export default {
         tableToolsEnabled() {
             return this.isEditable && !this.isEditing && (this.content.parameterTableTools ?? true);
         },
+        // Poignée des sections : même raison, absente en lecture seule
+        sectionToolsEnabled() {
+            return this.isEditable && !this.isEditing;
+        },
         isMagicMenu() {
             return (this.content.parameterAiMenuVariant ?? 'classic') === 'magic';
         },
@@ -1323,6 +1337,12 @@ export default {
                 '--table-cell-padding-x': this.content.table?.cellPaddingX || '8px',
                 '--table-cell-padding-y': this.content.table?.cellPaddingY || '6px',
                 '--table-handle-color': this.content.table?.handleColor || '#099af2',
+                // Note de section vide (plan de l'article) : texte d'exemple
+                '--section-note-placeholder': JSON.stringify(
+                    currentLang() === 'fr'
+                        ? 'Objectif de la section, puis les points à couvrir'
+                        : 'Section goal, then the points to cover'
+                ),
                 // tooltip
                 '--tooltip-color': this.content.a?.tooltipColor || '#ffffff',
                 '--tooltip-background-color': this.content.a?.tooltipBackgroundColor || '#393d45',
@@ -1480,6 +1500,8 @@ export default {
                         emptyText: () => (wwLib.wwLang?.lang === 'fr' ? 'Vide' : 'Empty'),
                         visible: () => !!this.content.showFrontmatter,
                     }),
+                    // Plan de l'article : identifiants des H2 / H3, notes de section, déplacement des sections
+                    ...sectionExtensions(),
                     SeoLink.configure({
                         // target/rel sont calculés par lien (interne = lien normal,
                         // externe = _blank + noopener noreferrer nofollow). Le domaine
@@ -1923,9 +1945,10 @@ export default {
             this.richEditor.chain().redo().run();
         },
         getContent() {
+            // Ni le frontmatter (exposé à part, variable frontmatter) ni les notes de
+            // section ne sont du contenu (Markdown : leur sérialisation est vide)
             if (this.content.output === 'markdown') return this.richEditor.storage.markdown.getMarkdown();
-            // Le frontmatter n'est pas du contenu : il est exposé à part (variable frontmatter)
-            return htmlWithoutFrontmatter(this.richEditor);
+            return getHTMLFromFragment(exportedContent(this.richEditor.state.doc), this.richEditor.schema);
         },
         // Champs du frontmatter → variable `frontmatter` (seulement s'ils ont changé)
         syncFrontmatter() {
@@ -3351,6 +3374,60 @@ export default {
             }
         }
 
+        /* Note de section (plan de l'article, cf. extensions/Sections) : bloc
+           gris, texte plus petit et discret, sous une étiquette « Plan ». Ce
+           que la section doit dire, jamais dans la valeur */
+        [data-section-note] {
+            padding: 10px 14px 12px;
+            border-radius: 8px;
+            background-color: #f5f5f5;
+            color: #61656d;
+            font-size: 0.875em;
+            line-height: 1.5;
+
+            &::before {
+                content: 'Plan';
+                display: block;
+                margin-bottom: 4px;
+                font-size: 11px;
+                font-weight: 600;
+                letter-spacing: 0.04em;
+                line-height: 16px;
+                text-transform: uppercase;
+                color: #a1a1aa;
+                pointer-events: none;
+                user-select: none;
+            }
+
+            p,
+            li {
+                font-size: inherit;
+                color: inherit;
+                line-height: inherit;
+                margin: 0;
+            }
+
+            /* Plus précis que `p` ci-dessus, qui remet ses marges à zéro */
+            > :not(:first-child) {
+                margin-top: 4px;
+            }
+
+            ul {
+                margin: 0;
+                padding-left: 1.25em;
+            }
+
+            /* Note vide : un exemple, jamais un champ vide */
+            &:has(> p:only-child > br.ProseMirror-trailingBreak:only-child) > p::before {
+                content: var(--section-note-placeholder);
+                float: left;
+                height: 0;
+                color: #a1a1aa;
+                pointer-events: none;
+                user-select: none;
+            }
+        }
+
         /* Basic editor styles */
         cursor: text;
         height: 100%;
@@ -4107,10 +4184,12 @@ export default {
     }
 }
 
-/* Déplacement d'une ligne/colonne : curseur cohérent sur toute la page et
-   pas de sélection de texte parasite pendant le glisser */
+/* Déplacement d'une ligne/colonne ou d'une section : curseur cohérent sur
+   toute la page et pas de sélection de texte parasite pendant le glisser */
 body.ww-rich-text-table-dragging,
-body.ww-rich-text-table-dragging * {
+body.ww-rich-text-table-dragging *,
+body.ww-rich-text-section-dragging,
+body.ww-rich-text-section-dragging * {
     cursor: grabbing !important;
     user-select: none !important;
 }

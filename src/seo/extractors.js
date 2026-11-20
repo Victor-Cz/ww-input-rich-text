@@ -47,6 +47,9 @@ export function extractModel(doc) {
         // Le frontmatter (meta title / description) n'est pas du contenu : la meta
         // est analysée à part, via les options metaTitle / metaDescription
         if (typeName === 'frontmatter') return false;
+        // Une note de section (plan de l'article) dit ce que la section doit
+        // dire : ce n'est pas du texte de l'article (ni ses listes)
+        if (typeName === 'sectionNote') return false;
 
         if (LIST_TYPES.has(typeName)) listCount++;
         if (typeName === 'orderedList') orderedListCount++;

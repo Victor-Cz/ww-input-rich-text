@@ -26,7 +26,7 @@
  *
  * @module extensions/Frontmatter
  */
-import { Node, getHTMLFromFragment } from '@tiptap/core';
+import { Node } from '@tiptap/core';
 import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state';
 
 export const FRONTMATTER = 'frontmatter';
@@ -101,14 +101,6 @@ export function readFrontmatter(doc) {
         if (child.attrs.key) values[child.attrs.key] = child.textContent;
     });
     return values;
-}
-
-/** HTML du document sans le frontmatter (contenu exporté, comme côté serveur) */
-export function htmlWithoutFrontmatter(editor) {
-    const { doc } = editor.state;
-    const node = frontmatterNode(doc);
-    if (!node) return editor.getHTML();
-    return getHTMLFromFragment(doc.content.cut(node.nodeSize), editor.schema);
 }
 
 /** Champ du frontmatter qui contient la position, null sinon */
