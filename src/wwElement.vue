@@ -318,6 +318,7 @@
 
 <script>
 import { Editor, EditorContent } from '@tiptap/vue-3';
+import { getHTMLFromFragment } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Mention from '@tiptap/extension-mention';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -361,7 +362,9 @@ import { CustomImage } from './extensions/CustomImage.js';
 import { SeoLink } from './extensions/SeoLink.js';
 import { LinkReveal } from './extensions/LinkReveal.js';
 import { LinkOpenCursor } from './extensions/LinkOpenCursor.js';
-import { frontmatterExtensions, readFrontmatter, htmlWithoutFrontmatter } from './extensions/Frontmatter.js';
+import { frontmatterExtensions, readFrontmatter } from './extensions/Frontmatter.js';
+import { sectionExtensions } from './extensions/Sections.js';
+import { exportedContent } from './utils/sectionNotes.js';
 import { sanitizeLinkUrl, sanitizeImageSrc, safeOpenUrl, isDangerousUrl } from './utils/sanitizeUrl.js';
 import { buildOutline, resolveOutlineLevels, toPublicOutline, toPublicHeading } from './utils/outline.js';
 import { EMPTY_EDITOR_UI, readEditorUi, TEXT_TYPES, uiInputsChanged } from './utils/editorUi.js';
@@ -369,6 +372,7 @@ import { mentionIds } from './utils/mentions.js';
 import { sameValue, shallowEqual } from './utils/sameValue.js';
 import { whenIdle } from './utils/idle.js';
 import { insideBand } from './utils/agentFollow.js';
+import { currentLang } from './i18n/lang.js';
 
 // Analyse SEO / GEO : elle parcourt tout le document, lancée après ce délai
 // sans modification, au moment où le navigateur est libre
@@ -1323,6 +1327,12 @@ export default {
                 '--table-cell-padding-x': this.content.table?.cellPaddingX || '8px',
                 '--table-cell-padding-y': this.content.table?.cellPaddingY || '6px',
                 '--table-handle-color': this.content.table?.handleColor || '#099af2',
+                // Note de section vide (plan de l'article) : texte d'exemple
+                '--section-note-placeholder': JSON.stringify(
+                    currentLang() === 'fr'
+                        ? 'Objectif de la section, puis les points à couvrir'
+                        : 'Section goal, then the points to cover'
+                ),
                 // tooltip
                 '--tooltip-color': this.content.a?.tooltipColor || '#ffffff',
                 '--tooltip-background-color': this.content.a?.tooltipBackgroundColor || '#393d45',
@@ -1480,6 +1490,8 @@ export default {
                         emptyText: () => (wwLib.wwLang?.lang === 'fr' ? 'Vide' : 'Empty'),
                         visible: () => !!this.content.showFrontmatter,
                     }),
+                    // Plan de l'article : identifiants des H2 / H3, notes de section
+                    ...sectionExtensions(),
                     SeoLink.configure({
                         // target/rel sont calculés par lien (interne = lien normal,
                         // externe = _blank + noopener noreferrer nofollow). Le domaine
@@ -1923,9 +1935,10 @@ export default {
             this.richEditor.chain().redo().run();
         },
         getContent() {
+            // Ni le frontmatter (exposé à part, variable frontmatter) ni les notes de
+            // section ne sont du contenu (Markdown : leur sérialisation est vide)
             if (this.content.output === 'markdown') return this.richEditor.storage.markdown.getMarkdown();
-            // Le frontmatter n'est pas du contenu : il est exposé à part (variable frontmatter)
-            return htmlWithoutFrontmatter(this.richEditor);
+            return getHTMLFromFragment(exportedContent(this.richEditor.state.doc), this.richEditor.schema);
         },
         // Champs du frontmatter → variable `frontmatter` (seulement s'ils ont changé)
         syncFrontmatter() {
@@ -3345,6 +3358,60 @@ export default {
             /* Valeur vide */
             &:has(> br.ProseMirror-trailingBreak:only-child)::after {
                 content: attr(data-placeholder);
+                color: #a1a1aa;
+                pointer-events: none;
+                user-select: none;
+            }
+        }
+
+        /* Note de section (plan de l'article, cf. extensions/Sections) : bloc
+           gris, texte plus petit et discret, sous une étiquette « Plan ». Ce
+           que la section doit dire, jamais dans la valeur */
+        [data-section-note] {
+            padding: 10px 14px 12px;
+            border-radius: 8px;
+            background-color: #f5f5f5;
+            color: #61656d;
+            font-size: 0.875em;
+            line-height: 1.5;
+
+            &::before {
+                content: 'Plan';
+                display: block;
+                margin-bottom: 4px;
+                font-size: 11px;
+                font-weight: 600;
+                letter-spacing: 0.04em;
+                line-height: 16px;
+                text-transform: uppercase;
+                color: #a1a1aa;
+                pointer-events: none;
+                user-select: none;
+            }
+
+            p,
+            li {
+                font-size: inherit;
+                color: inherit;
+                line-height: inherit;
+                margin: 0;
+            }
+
+            /* Plus précis que `p` ci-dessus, qui remet ses marges à zéro */
+            > :not(:first-child) {
+                margin-top: 4px;
+            }
+
+            ul {
+                margin: 0;
+                padding-left: 1.25em;
+            }
+
+            /* Note vide : un exemple, jamais un champ vide */
+            &:has(> p:only-child > br.ProseMirror-trailingBreak:only-child) > p::before {
+                content: var(--section-note-placeholder);
+                float: left;
+                height: 0;
                 color: #a1a1aa;
                 pointer-events: none;
                 user-select: none;

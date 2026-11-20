@@ -146,6 +146,23 @@ toute façon refusées, la sélection couvrant alors tout le tableau dans ce sen
 clic droit dans une cellule (sans sélection multiple) affiche les deux, et les
 actions portent sur cette cellule.
 
+# Plan de l'article — sections et notes
+
+Le serveur collab (Search) écrit le plan dans l'article : H1, puis chaque section
+(H2, avec ses H3) suivie d'une note grise qui dit ce qu'elle doit établir. Schéma
+identique à celui du serveur (`src/extensions/Sections.js`) :
+
+- **`sectionId`** : attribut des titres (lu de `data-section-id`, jamais rendu dans
+  le HTML). Un H2 / H3 sans identifiant (ou en doublon : le premier le garde) en
+  reçoit un à la première modification locale, jamais en `readonly` ni pour une
+  modification venue d'un autre participant.
+- **Note de section** (`div[data-section-note]`, paragraphes = l'objectif, puces =
+  les points à couvrir) : bloc gris au texte plus petit, étiquette « Plan », un
+  texte d'exemple quand elle est vide. Modifiable. Jamais dans `value` (HTML ou
+  Markdown), dans `seo` / `geo` (texte, mots, listes) ni dans `outline` /
+  `currentHeading`. Entrée sur le paragraphe vide qui la termine en sort ;
+  effacer dans une note vide la supprime.
+
 # Menu AI - Types de modification personnalisés
 
 ## Vue d'ensemble

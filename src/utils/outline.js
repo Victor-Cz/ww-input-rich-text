@@ -58,6 +58,8 @@ export function buildOutline(doc, levels) {
     const stack = [];
 
     doc.descendants((node, pos) => {
+        // Une note de section (plan de l'article) n'est pas du texte de l'article
+        if (node.type.name === 'sectionNote') return false;
         // Les titres ne s'imbriquent pas : inutile de descendre dans un bloc texte
         if (node.type.name !== 'heading') return !node.isTextblock;
 
