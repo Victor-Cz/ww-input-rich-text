@@ -4,7 +4,7 @@
         editing: isEditing,
         'version-preview': isVersionPreview,
     }" data-capture
-        @wheel="onEditorWheel" @mouseover="onVersionDiffHover" :style="{
+        @mouseover="onVersionDiffHover" :style="{
         '--primary-color': content.parameterAiMenuPrimaryColor ?? '#007bff',
         '--primary-color-1A': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '1A', // 10%
         '--primary-color-33': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '33', // 20%
@@ -748,7 +748,10 @@ export default {
             if (value !== this.getContent()) this.setValue(this.getContent());
         },
         /* wwEditor:start */
-        editorConfig() {
+        // La computed rend un objet neuf à chaque remplacement de `content` :
+        // l'éditeur n'est rechargé que si sa configuration a vraiment changé
+        editorConfig(config, previous) {
+            if (JSON.stringify(config) === JSON.stringify(previous)) return;
             this.loadEditor();
         },
         'wwEditorState.boundProps.mentionList'(isBind) {
@@ -1412,8 +1415,9 @@ export default {
         },
     },
     methods: {
+        /* wwEditor:start */
+        // Écouté seulement dans l'éditeur WeWeb (cf. mounted), non passif
         onEditorWheel(event) {
-            /* wwEditor:start */
             // In edit mode the click-blocking overlay (.editing::before) sits above the
             // ProseMirror, so wheel events never reach the scroll container — forward them
             if (!this.isEditing || !this.richEditor) return;
@@ -1422,8 +1426,8 @@ export default {
             const previousScrollTop = dom.scrollTop;
             dom.scrollTop += event.deltaY;
             if (dom.scrollTop !== previousScrollTop) event.preventDefault();
-            /* wwEditor:end */
         },
+        /* wwEditor:end */
         loadEditor() {
             if (this.loading) return;
             this.loading = true;
@@ -3120,12 +3124,22 @@ export default {
         // Suivi de la section visible (écouteurs en capture : indépendants de
         // l'instance d'éditeur, ils survivent à un rechargement de celle-ci)
         if (this.outlineEnabled) this.attachOutlineListeners();
+
+        /* wwEditor:start */
+        // Molette transmise au texte sous le calque d'édition. Seulement dans
+        // l'éditeur WeWeb : un écouteur non passif à la racine ferait attendre
+        // chaque défilement de la page publiée
+        this.$el.addEventListener('wheel', this.onEditorWheel, { passive: false });
+        /* wwEditor:end */
     },
     beforeUnmount() {
         this.isDestroying = true;
 
         window.removeEventListener('wheel', this.pauseFollowingAgent);
         window.removeEventListener('touchmove', this.pauseFollowingAgent);
+        /* wwEditor:start */
+        this.$el?.removeEventListener('wheel', this.onEditorWheel);
+        /* wwEditor:end */
 
         // Nettoyer le debounce en cours
         if (this.debounce) {
