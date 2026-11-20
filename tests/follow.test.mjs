@@ -89,3 +89,23 @@ test("curseur qui bouge : seulement celui de l'utilisateur suivi, seulement s'il
     // Un client parti n'est plus dans les états
     assert.equal(movedCursorClient(states, [99], 'u2', seen), null);
 });
+
+test('nextAgentFollow : l’agent suivi est attendu après son départ, s’il revient sous le même nom', async () => {
+    const { nextAgentFollow, AGENT_FOLLOW_GRACE_MS } = await import('../src/utils/follow.js');
+    const claude = [{ agent: true, name: 'Claude • Victor' }];
+    let state = nextAgentFollow(null, claude, 0);
+    assert.deepEqual(state, { name: 'Claude • Victor', awaySince: null });
+    // Parti : attendu
+    state = nextAgentFollow(state, [], 1000);
+    assert.deepEqual(state, { name: 'Claude • Victor', awaySince: 1000 });
+    state = nextAgentFollow(state, [{ id: 'u-1' }], 5000);
+    assert.equal(state.awaySince, 1000, 'le départ compte depuis la première absence');
+    // Revenu : suivi encore
+    state = nextAgentFollow(state, claude, 60_000);
+    assert.deepEqual(state, { name: 'Claude • Victor', awaySince: null });
+    // Parti trop longtemps : lâché
+    state = nextAgentFollow(state, [], 100_000);
+    assert.equal(nextAgentFollow(state, [], 100_000 + AGENT_FOLLOW_GRACE_MS), null);
+    // Un autre agent : lâché
+    assert.equal(nextAgentFollow(state, [{ agent: true, name: 'Claude • Paul' }], 120_000), null);
+});
