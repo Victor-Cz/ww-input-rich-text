@@ -362,7 +362,7 @@ import { TextSuggestion } from './extensions/TextSuggestion.js';
 import { TextStrike } from './extensions/TextStrike.js';
 import { AgentReveal } from './extensions/AgentReveal.js';
 import { MousePresence } from './extensions/MousePresence.js';
-import { AgentSelection } from './extensions/AgentSelection.js';
+import { AgentSelection, agentSelectionKey } from './extensions/AgentSelection.js';
 import { AGENT } from './agent.js';
 import { CustomImage } from './extensions/CustomImage.js';
 import { SeoLink } from './extensions/SeoLink.js';
@@ -2021,9 +2021,10 @@ export default {
         // Rédaction en direct : le défilement accompagne le caret de Brispr
         // (selon agentFollow), sauf juste après un défilement de l'utilisateur
         followAgentCaret(caret, { force = false } = {}) {
-            if (!this.followsAgent || !caret?.isConnected) return;
-            // Le dernier caret, pour revenir dessus à la fin d'une pause
+            if (!caret?.isConnected) return;
+            // Le dernier caret, pour y aller au début du suivi ou à la fin d'une pause
             this.lastAgentCaret = caret;
+            if (!this.followsAgent) return;
             const now = Date.now();
             if (now < this.followPausedUntil) return;
             if (!force && (now < this.agentFollowPausedUntil || now - this.lastAgentScroll < 250)) return;
@@ -2049,7 +2050,6 @@ export default {
         // l'agent, son début ramené dans la bande centrale, sans animation
         followAgentSelection({ from }) {
             if (this.collaborationStatus?.following !== FOLLOW_AGENT) return;
-            this.lastAgentSelectionFrom = from;
             if (Date.now() < this.followPausedUntil) return;
             const view = this.richEditor?.view;
             if (!view || !view.dom.isConnected) return;
@@ -2085,13 +2085,15 @@ export default {
         // collaborateur suivi est lu à chaque changement de l'awareness
         attachFollowListeners(key) {
             this.followPausedUntil = 0;
-            this.lastAgentCaret = null;
-            this.lastAgentSelectionFrom = null;
             window.addEventListener('wheel', this.pauseFollowing, { passive: true });
             window.addEventListener('touchmove', this.pauseFollowing, { passive: true });
             this.$el?.addEventListener('mousedown', this.stopFollowingInDocument, true);
             this.$el?.addEventListener('keydown', this.stopFollowingInDocument, true);
-            if (key === FOLLOW_AGENT) return;
+            if (key === FOLLOW_AGENT) {
+                // Tout de suite là où il est : il peut ne plus rien faire de longtemps
+                this.jumpToAgent();
+                return;
+            }
             const awareness = this.provider?.awareness;
             if (!awareness) return;
             this.followAwareness = awareness;
@@ -2112,8 +2114,6 @@ export default {
             clearTimeout(this.followResumeTimer);
             this.followResumeTimer = null;
             this.followPausedUntil = 0;
-            this.lastAgentCaret = null;
-            this.lastAgentSelectionFrom = null;
             this.$el?.removeEventListener('mousedown', this.stopFollowingInDocument, true);
             this.$el?.removeEventListener('keydown', this.stopFollowingInDocument, true);
             this.followAwareness?.off('change', this.onFollowAwarenessChange);
@@ -2142,9 +2142,19 @@ export default {
                 if (this.followedClient != null) this.scheduleFollowScroll();
                 return;
             }
-            // L'agent : là où il écrit, sinon sa dernière sélection
-            if (this.lastAgentCaret?.isConnected) this.followAgentCaret(this.lastAgentCaret, { force: true });
-            else if (this.lastAgentSelectionFrom != null) this.followAgentSelection({ from: this.lastAgentSelectionFrom });
+            this.jumpToAgent();
+        },
+        // L'agent suivi : là où il écrit (son caret de dévoilement), sinon le
+        // début de la sélection qu'il montre en ce moment ; rien sinon
+        jumpToAgent() {
+            if (this.lastAgentCaret?.isConnected) {
+                this.followAgentCaret(this.lastAgentCaret, { force: true });
+                return;
+            }
+            const view = this.richEditor?.view;
+            const shown = view ? agentSelectionKey.getState(view.state) : null;
+            const first = shown?.find?.()[0];
+            if (first) this.followAgentSelection({ from: first.from });
         },
         stopFollowingInDocument(event) {
             if (this.richEditor?.view?.dom?.contains(event.target)) this.stopFollowing();
