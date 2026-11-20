@@ -377,7 +377,15 @@ import { EMPTY_EDITOR_UI, readEditorUi, TEXT_TYPES, uiInputsChanged } from './ut
 import { mentionIds } from './utils/mentions.js';
 import { sameValue, shallowEqual } from './utils/sameValue.js';
 import { whenIdle } from './utils/idle.js';
-import { bandScrollDelta, FOLLOW_AGENT, insideBand, movedCursorClient, nextFollowing } from './utils/follow.js';
+import {
+    bandScrollDelta,
+    easeOutCubic,
+    FOLLOW_AGENT,
+    followScrollDuration,
+    insideBand,
+    movedCursorClient,
+    nextFollowing,
+} from './utils/follow.js';
 import { currentLang } from './i18n/lang.js';
 
 // Analyse SEO / GEO : elle parcourt tout le document, lancée après ce délai
@@ -2031,18 +2039,12 @@ export default {
             if (!force && (now < this.agentFollowPausedUntil || now - this.lastAgentScroll < 250)) return;
             this.lastAgentScroll = now;
             // Le caret dans la bande centrale de ce qui défile, et dans la
-            // fenêtre : rien à faire
+            // fenêtre : rien à faire ; sinon ramené dans la bande
             const viewport = scrollArea(caret);
             const rect = caret.getBoundingClientRect();
             const windowHeight = (caret.ownerDocument.defaultView || window).innerHeight;
             if (insideBand(rect, viewport, AGENT_FOLLOW_BAND) && rect.top >= 0 && rect.bottom <= windowHeight) return;
-            // Marges de défilement : 'nearest' ramène alors le caret dans la
-            // bande centrale, et non juste à l'écran. Sans animation : un
-            // défilement doux relancé plusieurs fois par seconde occupait le
-            // navigateur en continu
-            caret.style.scrollMarginTop = `${Math.round(viewport.height * AGENT_FOLLOW_BAND.top)}px`;
-            caret.style.scrollMarginBottom = `${Math.round(viewport.height * (1 - AGENT_FOLLOW_BAND.bottom))}px`;
-            caret.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+            this.followScrollBy(viewport.scroller, bandScrollDelta(rect, viewport, AGENT_FOLLOW_BAND));
         },
         // Un changement de l'agent sans caret (une section écrite à la place
         // de sa note, une modification ciblée) : son début ramené dans la
@@ -2064,12 +2066,13 @@ export default {
                 const rect = view.coordsAtPos(Math.min(pos, view.state.doc.content.size));
                 const area = scrollArea(view.dom);
                 const delta = bandScrollDelta(rect, area, AGENT_FOLLOW_BAND);
-                if (delta) area.scroller.scrollBy({ top: delta, behavior: 'auto' });
+                if (delta) this.followScrollBy(area.scroller, delta);
             } catch {
                 // Position hors du rendu (document en cours de synchronisation) : rien
             }
         },
         pauseFollowingAgent() {
+            this.stopFollowScroll();
             this.agentFollowPausedUntil = Date.now() + AGENT_FOLLOW_RESUME_MS;
         },
         // Une nouvelle sélection de l'agent (AgentSelection) : si on suit
@@ -2083,7 +2086,7 @@ export default {
                 const rect = view.coordsAtPos(Math.min(from, view.state.doc.content.size));
                 const area = scrollArea(view.dom);
                 const delta = bandScrollDelta(rect, area, AGENT_FOLLOW_BAND);
-                if (delta) area.scroller.scrollBy({ top: delta, behavior: 'auto' });
+                if (delta) this.followScrollBy(area.scroller, delta);
             } catch {
                 // Position hors du rendu (document en cours de synchronisation) : rien
             }
@@ -2106,15 +2109,15 @@ export default {
         stopFollowing() {
             this.setFollowing(null);
         },
-        // Pendant un suivi : un défilement de l'utilisateur le met en pause
-        // (cf. pauseFollowing), un clic ou une frappe dans le document l'arrête ; le curseur d'un
+        // Pendant un suivi : un défilement ou une frappe de l'utilisateur dans
+        // le document le met en pause (cf. pauseFollowing), un clic ne
+        // l'arrête pas ; le curseur d'un
         // collaborateur suivi est lu à chaque changement de l'awareness
         attachFollowListeners(key) {
             this.followPausedUntil = 0;
             window.addEventListener('wheel', this.pauseFollowing, { passive: true });
             window.addEventListener('touchmove', this.pauseFollowing, { passive: true });
-            this.$el?.addEventListener('mousedown', this.stopFollowingInDocument, true);
-            this.$el?.addEventListener('keydown', this.stopFollowingInDocument, true);
+            this.$el?.addEventListener('keydown', this.pauseFollowingInDocument, true);
             if (key === FOLLOW_AGENT) {
                 // Tout de suite là où il est : il peut ne plus rien faire de longtemps
                 this.jumpToAgent();
@@ -2140,8 +2143,8 @@ export default {
             clearTimeout(this.followResumeTimer);
             this.followResumeTimer = null;
             this.followPausedUntil = 0;
-            this.$el?.removeEventListener('mousedown', this.stopFollowingInDocument, true);
-            this.$el?.removeEventListener('keydown', this.stopFollowingInDocument, true);
+            this.$el?.removeEventListener('keydown', this.pauseFollowingInDocument, true);
+            this.stopFollowScroll();
             this.followAwareness?.off('change', this.onFollowAwarenessChange);
             this.followAwareness = null;
             this.followedCursors = null;
@@ -2155,6 +2158,7 @@ export default {
         // sans défilement (chaque défilement relance l'attente), puis revient
         // sur la personne suivie
         pauseFollowing() {
+            this.stopFollowScroll();
             this.followPausedUntil = Date.now() + FOLLOW_RESUME_MS;
             clearTimeout(this.followResumeTimer);
             this.followResumeTimer = setTimeout(this.resumeFollowing, FOLLOW_RESUME_MS);
@@ -2189,8 +2193,33 @@ export default {
             const last = view ? agentRevealKey.getState(view.state)?.last : null;
             if (last) this.scrollIntoBand(last.from);
         },
-        stopFollowingInDocument(event) {
-            if (this.richEditor?.view?.dom?.contains(event.target)) this.stopFollowing();
+        // Une frappe dans le document : le suivi en pause, comme un défilement
+        pauseFollowingInDocument(event) {
+            if (this.richEditor?.view?.dom?.contains(event.target)) this.pauseFollowing();
+        },
+        // Défilement de suivi de `delta` px dans `scroller` (un élément ou la
+        // fenêtre) : doux et court (cf. followScrollDuration), relancé depuis
+        // la position atteinte si un autre arrive en route
+        followScrollBy(scroller, delta) {
+            if (!scroller || !delta) return;
+            const win = this.$el?.ownerDocument?.defaultView || window;
+            const isWindow = scroller === win;
+            const position = () => (isWindow ? win.scrollY : scroller.scrollTop);
+            const moveTo = y => (isWindow ? win.scrollTo(0, y) : (scroller.scrollTop = y));
+            this.stopFollowScroll();
+            const start = position();
+            const duration = followScrollDuration(delta);
+            const startedAt = performance.now();
+            const step = now => {
+                const progress = Math.min(1, (now - startedAt) / duration);
+                moveTo(start + delta * easeOutCubic(progress));
+                this.followScrollFrame = progress < 1 ? requestAnimationFrame(step) : null;
+            };
+            this.followScrollFrame = requestAnimationFrame(step);
+        },
+        stopFollowScroll() {
+            if (this.followScrollFrame) cancelAnimationFrame(this.followScrollFrame);
+            this.followScrollFrame = null;
         },
         // La souris des collaborateurs change aussi l'awareness : seul un
         // curseur de la personne suivie qui bouge fait défiler
@@ -2229,7 +2258,7 @@ export default {
                 const rect = view.coordsAtPos(Math.min(head, Math.max(view.state.doc.content.size - 1, 0)));
                 const area = scrollArea(view.dom);
                 const delta = bandScrollDelta(rect, area, AGENT_FOLLOW_BAND);
-                if (delta) area.scroller.scrollBy({ top: delta, behavior: 'auto' });
+                if (delta) this.followScrollBy(area.scroller, delta);
             } catch {
                 // Position introuvable (document en cours de synchronisation) : au prochain mouvement
             }

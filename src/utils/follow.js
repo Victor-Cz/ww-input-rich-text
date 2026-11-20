@@ -17,6 +17,18 @@ export const insideBand = (rect, viewport, band) =>
     rect.bottom <= viewport.top + viewport.height * band.bottom;
 
 /**
+ * @name followScrollDuration
+ * @description La durée (ms) d'un défilement de suivi de `distance` px : un
+ * petit effet doux de près, à peine plus long de loin (on y arrive vite)
+ */
+export function followScrollDuration(distance) {
+    return Math.round(Math.min(450, 160 + Math.abs(distance) * 0.12));
+}
+
+/** Décélération du défilement de suivi (0 → 1) */
+export const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+
+/**
  * @name bandScrollDelta
  * @description Le défilement (en px, négatif vers le haut) qui ramène
  * `rect` dans la bande `band` de `viewport` par le bord le plus proche :

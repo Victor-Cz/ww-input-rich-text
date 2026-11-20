@@ -109,3 +109,13 @@ test('nextAgentFollow : l’agent suivi est attendu après son départ, s’il r
     // Un autre agent : lâché
     assert.equal(nextAgentFollow(state, [{ agent: true, name: 'Claude • Paul' }], 120_000), null);
 });
+
+test('followScrollDuration : court de près, plafonné de loin ; easeOutCubic de 0 à 1', async () => {
+    const { followScrollDuration, easeOutCubic } = await import('../src/utils/follow.js');
+    assert.equal(followScrollDuration(0), 160);
+    assert.ok(followScrollDuration(-500) > 160 && followScrollDuration(-500) < 450);
+    assert.equal(followScrollDuration(20000), 450);
+    assert.equal(easeOutCubic(0), 0);
+    assert.equal(easeOutCubic(1), 1);
+    assert.ok(easeOutCubic(0.5) > 0.5, 'décélère');
+});
