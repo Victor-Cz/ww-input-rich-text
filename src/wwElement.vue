@@ -387,6 +387,10 @@ const SEO_ANALYSIS_DELAY_MS = 1500;
 // Rédaction en direct : un défilement de l'utilisateur suspend le suivi du
 // caret de Brispr, qui reprend après ce délai sans défilement
 const AGENT_FOLLOW_RESUME_MS = 3000;
+// Suivi de quelqu'un (clic sur son avatar) : un défilement de l'utilisateur le
+// met en pause, pour regarder ailleurs ; il reprend, et revient sur la personne
+// suivie, après ce délai sans défilement
+const FOLLOW_RESUME_MS = 8000;
 // Bande où le suivi garde le caret (de l'agent, ou de la personne suivie), en
 // fraction de la hauteur visible : il y reste plutôt que de longer le bord de l'écran
 const AGENT_FOLLOW_BAND = { top: 0.3, bottom: 0.6 };
@@ -717,6 +721,8 @@ export default {
         agentRevealing: false,
         agentFollowPausedUntil: 0,
         lastAgentScroll: 0,
+        // Suivi en pause après un défilement (cf. FOLLOW_RESUME_MS)
+        followPausedUntil: 0,
         agentIconSvg: '',
     }),
 
@@ -2014,10 +2020,13 @@ export default {
 
         // Rédaction en direct : le défilement accompagne le caret de Brispr
         // (selon agentFollow), sauf juste après un défilement de l'utilisateur
-        followAgentCaret(caret) {
+        followAgentCaret(caret, { force = false } = {}) {
             if (!this.followsAgent || !caret?.isConnected) return;
+            // Le dernier caret, pour revenir dessus à la fin d'une pause
+            this.lastAgentCaret = caret;
             const now = Date.now();
-            if (now < this.agentFollowPausedUntil || now - this.lastAgentScroll < 250) return;
+            if (now < this.followPausedUntil) return;
+            if (!force && (now < this.agentFollowPausedUntil || now - this.lastAgentScroll < 250)) return;
             this.lastAgentScroll = now;
             // Le caret dans la bande centrale de ce qui défile, et dans la
             // fenêtre : rien à faire
@@ -2040,6 +2049,8 @@ export default {
         // l'agent, son début ramené dans la bande centrale, sans animation
         followAgentSelection({ from }) {
             if (this.collaborationStatus?.following !== FOLLOW_AGENT) return;
+            this.lastAgentSelectionFrom = from;
+            if (Date.now() < this.followPausedUntil) return;
             const view = this.richEditor?.view;
             if (!view || !view.dom.isConnected) return;
             try {
@@ -2069,12 +2080,15 @@ export default {
         stopFollowing() {
             this.setFollowing(null);
         },
-        // Pendant un suivi : un défilement, un clic ou une frappe de
-        // l'utilisateur dans le document l'arrête ; le curseur d'un
+        // Pendant un suivi : un défilement de l'utilisateur le met en pause
+        // (cf. pauseFollowing), un clic ou une frappe dans le document l'arrête ; le curseur d'un
         // collaborateur suivi est lu à chaque changement de l'awareness
         attachFollowListeners(key) {
-            window.addEventListener('wheel', this.stopFollowing, { passive: true });
-            window.addEventListener('touchmove', this.stopFollowing, { passive: true });
+            this.followPausedUntil = 0;
+            this.lastAgentCaret = null;
+            this.lastAgentSelectionFrom = null;
+            window.addEventListener('wheel', this.pauseFollowing, { passive: true });
+            window.addEventListener('touchmove', this.pauseFollowing, { passive: true });
             this.$el?.addEventListener('mousedown', this.stopFollowingInDocument, true);
             this.$el?.addEventListener('keydown', this.stopFollowingInDocument, true);
             if (key === FOLLOW_AGENT) return;
@@ -2093,8 +2107,13 @@ export default {
             if (this.followedClient != null) this.scheduleFollowScroll();
         },
         detachFollowListeners() {
-            window.removeEventListener('wheel', this.stopFollowing);
-            window.removeEventListener('touchmove', this.stopFollowing);
+            window.removeEventListener('wheel', this.pauseFollowing);
+            window.removeEventListener('touchmove', this.pauseFollowing);
+            clearTimeout(this.followResumeTimer);
+            this.followResumeTimer = null;
+            this.followPausedUntil = 0;
+            this.lastAgentCaret = null;
+            this.lastAgentSelectionFrom = null;
             this.$el?.removeEventListener('mousedown', this.stopFollowingInDocument, true);
             this.$el?.removeEventListener('keydown', this.stopFollowingInDocument, true);
             this.followAwareness?.off('change', this.onFollowAwarenessChange);
@@ -2105,6 +2124,27 @@ export default {
                 cancelAnimationFrame(this.followFrame);
                 this.followFrame = null;
             }
+        },
+        // Un défilement de l'utilisateur : le suivi attend FOLLOW_RESUME_MS
+        // sans défilement (chaque défilement relance l'attente), puis revient
+        // sur la personne suivie
+        pauseFollowing() {
+            this.followPausedUntil = Date.now() + FOLLOW_RESUME_MS;
+            clearTimeout(this.followResumeTimer);
+            this.followResumeTimer = setTimeout(this.resumeFollowing, FOLLOW_RESUME_MS);
+        },
+        resumeFollowing() {
+            this.followResumeTimer = null;
+            this.followPausedUntil = 0;
+            const key = this.collaborationStatus?.following;
+            if (!key) return;
+            if (key !== FOLLOW_AGENT) {
+                if (this.followedClient != null) this.scheduleFollowScroll();
+                return;
+            }
+            // L'agent : là où il écrit, sinon sa dernière sélection
+            if (this.lastAgentCaret?.isConnected) this.followAgentCaret(this.lastAgentCaret, { force: true });
+            else if (this.lastAgentSelectionFrom != null) this.followAgentSelection({ from: this.lastAgentSelectionFrom });
         },
         stopFollowingInDocument(event) {
             if (this.richEditor?.view?.dom?.contains(event.target)) this.stopFollowing();
@@ -2121,7 +2161,7 @@ export default {
         },
         // Un défilement au plus par image, quel que soit le rythme de frappe
         scheduleFollowScroll() {
-            if (this.followFrame) return;
+            if (this.followFrame || Date.now() < this.followPausedUntil) return;
             this.followFrame = requestAnimationFrame(() => {
                 this.followFrame = null;
                 this.scrollToFollowedCursor();
