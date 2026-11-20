@@ -44,21 +44,21 @@
 
                     <!-- Bold, Italic, Underline -->
                     <button type="button" class="ww-rich-text__menu-item" @click="toggleBold"
-                        :class="{ 'is-active': richEditor.isActive('bold') }" :disabled="!isEditable" v-if="menu.bold">
+                        :class="{ 'is-active': editorUi.bold }" :disabled="!isEditable" v-if="menu.bold">
                         <i class="fas fa-bold"></i>
                     </button>
                     <button type="button" class="ww-rich-text__menu-item" @click="toggleItalic"
-                        :class="{ 'is-active': richEditor.isActive('italic') }" :disabled="!isEditable"
+                        :class="{ 'is-active': editorUi.italic }" :disabled="!isEditable"
                         v-if="menu.italic">
                         <i class="fas fa-italic"></i>
                     </button>
                     <button type="button" class="ww-rich-text__menu-item" @click="toggleUnderline"
-                        :class="{ 'is-active': richEditor.isActive('underline') }" :disabled="!isEditable"
+                        :class="{ 'is-active': editorUi.underline }" :disabled="!isEditable"
                         v-if="menu.underline">
                         <i class="fas fa-underline"></i>
                     </button>
                     <button type="button" class="ww-rich-text__menu-item" @click="toggleStrike"
-                        :class="{ 'is-active': richEditor.isActive('strike') }" :disabled="!isEditable"
+                        :class="{ 'is-active': editorUi.strike }" :disabled="!isEditable"
                         v-if="menu.strike">
                         <i class="fas fa-strikethrough"></i>
                     </button>
@@ -68,25 +68,25 @@
 
                     <!-- Text align -->
                     <button type="button" class="ww-rich-text__menu-item" @click="setTextAlign('left')"
-                        :class="{ 'is-active': richEditor.isActive({ textAlign: 'left' }) }" :disabled="!isEditable"
+                        :class="{ 'is-active': editorUi.textAlign === 'left' }" :disabled="!isEditable"
                         v-if="menu.alignLeft">
                         <i class="fas fa-align-left"></i>
                     </button>
 
                     <button type="button" class="ww-rich-text__menu-item" @click="setTextAlign('center')"
-                        :class="{ 'is-active': richEditor.isActive({ textAlign: 'center' }) }" :disabled="!isEditable"
+                        :class="{ 'is-active': editorUi.textAlign === 'center' }" :disabled="!isEditable"
                         v-if="menu.alignCenter">
                         <i class="fas fa-align-center"></i>
                     </button>
 
                     <button type="button" class="ww-rich-text__menu-item" @click="setTextAlign('right')"
-                        :class="{ 'is-active': richEditor.isActive({ textAlign: 'right' }) }" :disabled="!isEditable"
+                        :class="{ 'is-active': editorUi.textAlign === 'right' }" :disabled="!isEditable"
                         v-if="menu.alignRight">
                         <i class="fas fa-align-right"></i>
                     </button>
 
                     <button type="button" class="ww-rich-text__menu-item" @click="setTextAlign('justify')"
-                        :class="{ 'is-active': richEditor.isActive({ textAlign: 'justify' }) }" :disabled="!isEditable"
+                        :class="{ 'is-active': editorUi.textAlign === 'justify' }" :disabled="!isEditable"
                         v-if="menu.alignJustify">
                         <i class="fas fa-align-justify"></i>
                     </button>
@@ -99,7 +99,7 @@
                         @click="richEditor.commands.focus()" v-if="menu.textColor">
                         <i class="fas fa-palette"></i>
                         <input :id="`rich-color-${randomUid}`" type="color" @input="setColor($event.target.value)"
-                            :value="richEditor.getAttributes('textStyle').color" style="display: none"
+                            :value="editorUi.textStyleColor" style="display: none"
                             :disabled="!isEditable" />
                     </label>
 
@@ -107,17 +107,17 @@
 
                     <!-- List (Bullet, number) -->
                     <button type="button" class="ww-rich-text__menu-item" @click="toggleBulletList"
-                        :class="{ 'is-active': richEditor.isActive('bulletList') }" :disabled="!isEditable"
+                        :class="{ 'is-active': editorUi.bulletList }" :disabled="!isEditable"
                         v-if="menu.bulletList">
                         <i class="fas fa-list-ul"></i>
                     </button>
                     <button type="button" class="ww-rich-text__menu-item" @click="toggleOrderedList"
-                        :class="{ 'is-active': richEditor.isActive('orderedList') }" :disabled="!isEditable"
+                        :class="{ 'is-active': editorUi.orderedList }" :disabled="!isEditable"
                         v-if="menu.orderedList">
                         <i class="fas fa-list-ol"></i>
                     </button>
                     <button type="button" class="ww-rich-text__menu-item" @click="toggleTaskList"
-                        :class="{ 'is-active': richEditor.isActive('taskList') }" :disabled="!isEditable"
+                        :class="{ 'is-active': editorUi.taskList }" :disabled="!isEditable"
                         v-if="menu.taskList">
                         <i class="fas fa-check-square"></i>
                     </button>
@@ -126,43 +126,43 @@
                     <span class="separator" v-if="menu.table"></span>
 
                     <button type="button" class="ww-rich-text__menu-item"
-                        :class="{ 'is-highlighted': richEditor.isActive('table') }" @click="insertTable"
+                        :class="{ 'is-highlighted': editorUi.table }" @click="insertTable"
                         :disabled="!isEditable" v-if="menu.table">
                         <table-icon icon="table-insert" />
                     </button>
                     <button type="button" class="ww-rich-text__menu-item"
-                        :class="{ 'is-highlighted': richEditor.isActive('table') }" @click="insertRow('before')"
-                        :disabled="!isEditable" v-if="menu.table && richEditor.isActive('table')">
+                        :class="{ 'is-highlighted': editorUi.table }" @click="insertRow('before')"
+                        :disabled="!isEditable" v-if="menu.table && editorUi.table">
                         <table-icon icon="row-insert-before" />
                     </button>
                     <button type="button" class="ww-rich-text__menu-item"
-                        :class="{ 'is-highlighted': richEditor.isActive('table') }" @click="insertRow('after')"
-                        :disabled="!isEditable" v-if="menu.table && richEditor.isActive('table')">
+                        :class="{ 'is-highlighted': editorUi.table }" @click="insertRow('after')"
+                        :disabled="!isEditable" v-if="menu.table && editorUi.table">
                         <table-icon icon="row-insert-after" />
                     </button>
                     <button type="button" class="ww-rich-text__menu-item"
-                        :class="{ 'is-highlighted': richEditor.isActive('table') }" @click="insertColumn('before')"
-                        :disabled="!isEditable" v-if="menu.table && richEditor.isActive('table')">
+                        :class="{ 'is-highlighted': editorUi.table }" @click="insertColumn('before')"
+                        :disabled="!isEditable" v-if="menu.table && editorUi.table">
                         <table-icon icon="column-inster-before" />
                     </button>
                     <button type="button" class="ww-rich-text__menu-item"
-                        :class="{ 'is-highlighted': richEditor.isActive('table') }" @click="insertColumn('after')"
-                        :disabled="!isEditable" v-if="menu.table && richEditor.isActive('table')">
+                        :class="{ 'is-highlighted': editorUi.table }" @click="insertColumn('after')"
+                        :disabled="!isEditable" v-if="menu.table && editorUi.table">
                         <table-icon icon="column-insert-after" />
                     </button>
                     <button type="button" class="ww-rich-text__menu-item"
-                        :class="{ 'is-highlighted': richEditor.isActive('table') }" @click="deleteRow"
-                        :disabled="!isEditable" v-if="menu.table && richEditor.isActive('table')">
+                        :class="{ 'is-highlighted': editorUi.table }" @click="deleteRow"
+                        :disabled="!isEditable" v-if="menu.table && editorUi.table">
                         <table-icon icon="row-delete" />
                     </button>
                     <button type="button" class="ww-rich-text__menu-item"
-                        :class="{ 'is-highlighted': richEditor.isActive('table') }" @click="deleteColumn"
-                        :disabled="!isEditable" v-if="menu.table && richEditor.isActive('table')">
+                        :class="{ 'is-highlighted': editorUi.table }" @click="deleteColumn"
+                        :disabled="!isEditable" v-if="menu.table && editorUi.table">
                         <table-icon icon="column-delete" />
                     </button>
                     <button type="button" class="ww-rich-text__menu-item"
-                        :class="{ 'is-highlighted': richEditor.isActive('table') }" @click="deleteTable"
-                        :disabled="!isEditable" v-if="menu.table && richEditor.isActive('table')">
+                        :class="{ 'is-highlighted': editorUi.table }" @click="deleteTable"
+                        :disabled="!isEditable" v-if="menu.table && editorUi.table">
                         <table-icon icon="table-delete" />
                     </button>
 
@@ -170,7 +170,7 @@
 
                     <!-- Link -->
                     <button type="button" class="ww-rich-text__menu-item" @click="setLink()"
-                        :class="{ 'is-active': richEditor.isActive('link') }" :disabled="!isEditable" v-if="menu.link">
+                        :class="{ 'is-active': editorUi.link }" :disabled="!isEditable" v-if="menu.link">
                         <i class="fas fa-link"></i>
                     </button>
 
@@ -182,14 +182,14 @@
 
                     <!-- Code -->
                     <button type="button" class="ww-rich-text__menu-item" @click="toggleCodeBlock"
-                        :class="{ 'is-active': richEditor.isActive('codeBlock') }" :disabled="!isEditable"
+                        :class="{ 'is-active': editorUi.codeBlock }" :disabled="!isEditable"
                         v-if="menu.codeBlock">
                         <i class="fas fa-code"></i>
                     </button>
 
                     <!-- Quote -->
                     <button type="button" class="ww-rich-text__menu-item" @click="toggleBlockquote"
-                        :class="{ 'is-active': richEditor.isActive('blockquote') }" :disabled="!isEditable"
+                        :class="{ 'is-active': editorUi.blockquote }" :disabled="!isEditable"
                         v-if="menu.blockquote">
                         <i class="fas fa-quote-left"></i>
                     </button>
@@ -364,17 +364,14 @@ import { LinkOpenCursor } from './extensions/LinkOpenCursor.js';
 import { frontmatterExtensions, readFrontmatter, htmlWithoutFrontmatter } from './extensions/Frontmatter.js';
 import { sanitizeLinkUrl, sanitizeImageSrc, safeOpenUrl, isDangerousUrl } from './utils/sanitizeUrl.js';
 import { buildOutline, resolveOutlineLevels, toPublicOutline, toPublicHeading } from './utils/outline.js';
+import { EMPTY_EDITOR_UI, readEditorUi, TEXT_TYPES, uiInputsChanged } from './utils/editorUi.js';
+import { mentionIds } from './utils/mentions.js';
+import { sameValue, shallowEqual } from './utils/sameValue.js';
+import { whenIdle } from './utils/idle.js';
 
-function extractMentions(acc, currentNode) {
-    if (currentNode.type === 'mention') {
-        acc.push(currentNode.attrs.id);
-        return acc;
-    } else if (currentNode.content) {
-        return currentNode.content.reduce(extractMentions, acc);
-    } else {
-        return acc;
-    }
-}
+// Analyse SEO / GEO : elle parcourt tout le document, lancée après ce délai
+// sans modification, au moment où le navigateur est libre
+const SEO_ANALYSIS_DELAY_MS = 1500;
 
 // Rédaction en direct : un défilement de l'utilisateur suspend le suivi du
 // caret de Brispr, qui reprend après ce délai sans défilement
@@ -570,21 +567,26 @@ export default {
         // Wrap setters to silently ignore calls after variable cleanup
         let _isDestroyed = false;
         onBeforeUnmount(() => { _isDestroyed = true; });
+        // Une valeur identique à la valeur courante n'est pas republiée : chaque
+        // publication réveille les bindings de WeWeb (et peut boucler avec eux)
+        const unlessSame = (current, set) => value => {
+            if (!_isDestroyed && !sameValue(current.value, value)) set(value);
+        };
         const setValue = (...args) => { if (!_isDestroyed) _setValue(...args); };
-        const setMentions = (...args) => { if (!_isDestroyed) _setMentions(...args); };
-        const setStates = (...args) => { if (!_isDestroyed) _setStates(...args); };
+        const setMentions = unlessSame(variableMentions, _setMentions);
+        const setStates = unlessSame(states, _setStates);
         const setPendingChangesCount = (...args) => { if (!_isDestroyed) _setPendingChangesCount(...args); };
         const setCollaborationStatus = (...args) => { if (!_isDestroyed) _setCollaborationStatus(...args); };
-        const setSeo = (...args) => { if (!_isDestroyed) _setSeo(...args); };
-        const setGeo = (...args) => { if (!_isDestroyed) _setGeo(...args); };
+        const setSeo = unlessSame(seo, _setSeo);
+        const setGeo = unlessSame(geo, _setGeo);
         const setFrontmatter = (...args) => { if (!_isDestroyed) _setFrontmatter(...args); };
-        const setHistory = (...args) => { if (!_isDestroyed) _setHistory(...args); };
-        const setOutline = (...args) => { if (!_isDestroyed) _setOutline(...args); };
+        const setHistory = unlessSame(history, _setHistory);
+        const setOutline = unlessSame(outline, _setOutline);
         const setCurrentHeading = (...args) => { if (!_isDestroyed) _setCurrentHeading(...args); };
         const setIsVersionPreview = (...args) => { if (!_isDestroyed) _setIsVersionPreview(...args); };
         const setCurrentVersion = (...args) => { if (!_isDestroyed) _setCurrentVersion(...args); };
-        const setVersions = (...args) => { if (!_isDestroyed) _setVersions(...args); };
-        const setContributors = (...args) => { if (!_isDestroyed) _setContributors(...args); };
+        const setVersions = unlessSame(versions, _setVersions);
+        const setContributors = unlessSame(contributors, _setContributors);
 
 
         /* wwEditor:start */
@@ -683,7 +685,9 @@ export default {
         timelineTargetEl: null,
         // Surveillance de l'attache de la frise pendant l'historique
         timelineTargetTimer: null,
-        pendingSteps: [], // Accumulateur de diffs
+        // État du menu natif et des variables states / history (cf. utils/editorUi),
+        // relu seulement quand le document, la sélection ou les marques changent
+        editorUi: EMPTY_EDITOR_UI,
         seoHighlightVisible: false, // reflété dans seo.highlighting
         outlineItems: [], // sommaire courant (avec positions doc, usage interne)
         activeOutlineIndex: -1, // titre visible au scroll (-1 = au-dessus du premier)
@@ -846,15 +850,15 @@ export default {
                 }
             },
         },
+        // Recalculés quand editorUi change (ou les couleurs de content) ; une
+        // valeur identique n'est pas republiée (cf. setStates, setHistory)
         editorStates: {
-            deep: true,
             immediate: true,
             handler(value) {
                 this.setStates(value);
             },
         },
         historyStates: {
-            deep: true,
             immediate: true,
             handler(value) {
                 this.setHistory(value);
@@ -990,10 +994,7 @@ export default {
             deep: true,
             handler(options) {
                 if (!options) {
-                    if (this.seoDebounce) {
-                        clearTimeout(this.seoDebounce);
-                        this.seoDebounce = null;
-                    }
+                    this.cancelSeoAnalysis();
                     this.lastSeoOptionsKey = null;
                     this.seoRangesMap = null;
                     this.activeSeoHighlight = null;
@@ -1023,53 +1024,44 @@ export default {
         },
         editorStates() {
             if (!this.richEditor) return {};
-            const { from, to, empty } = this.richEditor.state.selection;
-            const selectedText = empty ? '' : this.richEditor.state.doc.textBetween(from, to, ' ', ' ');
-            const selectedTrimmed = selectedText.trim();
+            const ui = this.editorUi;
+            const selectedTrimmed = ui.selectedText.trim();
             return {
                 selected: {
-                    text: selectedText,
+                    text: ui.selectedText,
                     wordCount: selectedTrimmed ? selectedTrimmed.split(/\s+/).length : 0,
-                    charCount: selectedText.length,
+                    charCount: ui.selectedText.length,
                 },
-                textType: Object.keys(TAGS_MAP).find(key => TAGS_MAP[key] === this.currentTextType),
+                textType: TEXT_TYPES[ui.textType].tag,
                 textColor: this.currentColor,
-                bold: this.richEditor.isActive('bold'),
-                italic: this.richEditor.isActive('italic'),
-                underline: this.richEditor.isActive('underline'),
-                strike: this.richEditor.isActive('strike'),
-                bulletList: this.richEditor.isActive('bulletList'),
-                orderedList: this.richEditor.isActive('orderedList'),
-                checkList: this.richEditor.isActive('taskList'),
-                link: this.richEditor.isActive('link'),
-                codeBlock: this.richEditor.isActive('codeBlock'),
-                blockquote: this.richEditor.isActive('blockquote'),
-                textAlign: this.richEditor.isActive({ textAlign: 'left' })
-                    ? 'left'
-                    : this.richEditor.isActive({ textAlign: 'center' })
-                        ? 'center'
-                        : this.richEditor.isActive({ textAlign: 'right' })
-                            ? 'right'
-                            : this.richEditor.isActive({ textAlign: 'justify' })
-                                ? 'justify'
-                                : false,
-                table: this.richEditor.isActive('table'),
+                bold: ui.bold,
+                italic: ui.italic,
+                underline: ui.underline,
+                strike: ui.strike,
+                bulletList: ui.bulletList,
+                orderedList: ui.orderedList,
+                checkList: ui.taskList,
+                link: ui.link,
+                codeBlock: ui.codeBlock,
+                blockquote: ui.blockquote,
+                textAlign: ui.textAlign,
+                table: ui.table,
             };
         },
         historyStates() {
             if (!this.richEditor) return { canUndo: false, canRedo: false };
             return {
-                canUndo: this.richEditor.can().undo(),
-                canRedo: this.richEditor.can().redo(),
+                canUndo: this.editorUi.canUndo,
+                canRedo: this.editorUi.canRedo,
             };
         },
         currentColor() {
-            if (this.richEditor.getAttributes('textStyle')?.color)
-                return this.richEditor.getAttributes('textStyle')?.color;
-            else if (this.richEditor.isActive('link')) return this.content.a.color;
-            else if (this.richEditor.isActive('codeBlock')) return this.content.code.color;
-            else if (this.richEditor.isActive('blockquote')) return this.content.blockquote.color;
-            else return this.content[Object.keys(TAGS_MAP).find(key => TAGS_MAP[key] === this.currentTextType)]?.color;
+            const ui = this.editorUi;
+            if (ui.textStyleColor) return ui.textStyleColor;
+            else if (ui.link) return this.content.a.color;
+            else if (ui.codeBlock) return this.content.code.color;
+            else if (ui.blockquote) return this.content.blockquote.color;
+            else return this.content[TEXT_TYPES[ui.textType].tag]?.color;
         },
         mentionList() {
             const data = wwLib.wwCollection.getCollectionData(this.content.mentionList);
@@ -1187,24 +1179,14 @@ export default {
         },
         currentTextType: {
             get() {
-                const currentType = this.textTypeOptions.find(option => option.active);
-                return currentType ? currentType.value : 0;
+                return this.editorUi.textType;
             },
             set(value) {
                 this.setTag(value);
             },
         },
         textTypeOptions() {
-            if (!this.richEditor) return [];
-            return [
-                { label: 'Paragraph', value: 0, active: this.richEditor.isActive('paragraph') },
-                { label: 'Heading 1', value: 1, active: this.richEditor.isActive('heading', { level: 1 }) },
-                { label: 'Heading 2', value: 2, active: this.richEditor.isActive('heading', { level: 2 }) },
-                { label: 'Heading 3', value: 3, active: this.richEditor.isActive('heading', { level: 3 }) },
-                { label: 'Heading 4', value: 4, active: this.richEditor.isActive('heading', { level: 4 }) },
-                { label: 'Heading 5', value: 5, active: this.richEditor.isActive('heading', { level: 5 }) },
-                { label: 'Heading 6', value: 6, active: this.richEditor.isActive('heading', { level: 6 }) },
-            ];
+            return TEXT_TYPES;
         },
         hasHeader() {
             return !!this.content.showHeader && !!this.content.headerElement;
@@ -1438,6 +1420,7 @@ export default {
             if (this.loading) return;
             this.loading = true;
             if (this.richEditor) this.richEditor.destroy();
+            this.editorUiState = null;
             // Un éditeur fraîchement chargé repart en édition normale
             this.setIsVersionPreview(false);
 
@@ -1570,7 +1553,8 @@ export default {
                 }
 
                 // Ajouter mention si activé
-                if (this.editorConfig.mention.enabled) {
+                const mentionsEnabled = !!this.editorConfig.mention.enabled;
+                if (mentionsEnabled) {
                     extensions.push(
                         Mention.configure({
                             HTMLAttributes: {
@@ -1592,6 +1576,10 @@ export default {
                 // Ajouter les extensions de collaboration si actif
                 const collabExtensions = this.getCollaborationExtensions();
                 extensions.push(...collabExtensions);
+                // Les steps ne s'accumulent (getAndClearChanges) que hors collaboration :
+                // une modification distante remplace le document entier, chacune le
+                // garderait en mémoire sans fin
+                const recordSteps = collabExtensions.length === 0;
 
                 // Déterminer le contenu initial
                 // En mode collaboration, on laisse Y.js gérer le contenu (même si la connexion n'est pas encore établie)
@@ -1618,13 +1606,14 @@ export default {
                         this.$emit('trigger-event', { name: 'blur', event: { editor, event } });
                     },
                     extensions,
-                    onCreate: () => {
+                    onCreate: ({ editor }) => {
                         this.setValue(this.getContent());
-                        this.setMentions(this.richEditor.getJSON().content.reduce(extractMentions, []));
+                        this.setMentions(mentionsEnabled ? mentionIds(editor.state.doc) : []);
                         this.syncFrontmatter();
                         // Initialiser l'accumulateur de diffs à vide lors de la création
                         this.pendingSteps = [];
                         this.setPendingChangesCount(0);
+                        this.watchEditorUi(editor);
                         this.scheduleSeoAnalysis(true);
                         // Débouncé : `this.richEditor` n'est pas encore assigné ici
                         this.scheduleOutlineUpdate();
@@ -1632,7 +1621,7 @@ export default {
                     onUpdate: ({ transaction }) => {
                         if (this.isDestroying) return;
                         // Intercepter les transactions pour enregistrer les steps
-                        if (transaction.docChanged) {
+                        if (recordSteps && transaction.docChanged) {
                             transaction.steps.forEach(step => {
                                 this.pendingSteps.push(step.toJSON());
                             });
@@ -1646,9 +1635,12 @@ export default {
                     // qui pose la meta `preventUpdate`. C'est ici — et uniquement ici —
                     // que l'état dérivé du document (sommaire, mentions, analyse SEO)
                     // est resynchronisé, quel que soit le chemin d'entrée du contenu.
+                    // L'état du menu y est relu aussi, s'il peut avoir changé.
                     onTransaction: ({ editor, transaction }) => {
-                        if (this.isDestroying || !transaction.docChanged) return;
-                        this.setMentions(editor.getJSON().content.reduce(extractMentions, []));
+                        if (this.isDestroying) return;
+                        this.watchEditorUi(editor);
+                        if (!transaction.docChanged) return;
+                        if (mentionsEnabled) this.setMentions(mentionIds(editor.state.doc));
                         this.syncFrontmatter();
                         this.scheduleOutlineUpdate();
                         this.scheduleSeoAnalysis();
@@ -1699,10 +1691,34 @@ export default {
                     content: String(this.content.initialValue || ''),
                     editable: this.isEditable,
                     extensions: [StarterKit],
+                    onCreate: ({ editor }) => this.watchEditorUi(editor),
+                    onTransaction: ({ editor }) => this.watchEditorUi(editor),
                 });
             }
 
             this.loading = false;
+        },
+        // L'état du menu (editorUi) dépend du document, de la sélection et des
+        // marques en attente : relu une fois par image, et seulement s'ils ont
+        // changé depuis la dernière lecture. L'état lu est gardé hors réactivité
+        watchEditorUi(editor) {
+            const state = editor.view.state;
+            if (!uiInputsChanged(this.editorUiState, state)) return;
+            this.editorUiState = state;
+            if (this.editorUiFrame) return;
+            this.editorUiFrame = requestAnimationFrame(() => {
+                this.editorUiFrame = null;
+                this.refreshEditorUi();
+            });
+        },
+        refreshEditorUi() {
+            const editor = this.richEditor;
+            if (!editor || editor.isDestroyed || this.isDestroying) return;
+            const ui = readEditorUi(editor.view.state, {
+                canUndo: editor.can().undo(),
+                canRedo: editor.can().redo(),
+            });
+            if (!shallowEqual(ui, this.editorUi)) this.editorUi = ui;
         },
         handleOnUpdate() {
             if (this.isDestroying) return;
@@ -2718,18 +2734,26 @@ export default {
         // SEO analysis
         scheduleSeoAnalysis(immediate = false) {
             if (!this.contentAnalysisEnabled || !this.richEditor || this.isDestroying) return;
-            if (this.seoDebounce) {
-                clearTimeout(this.seoDebounce);
-                this.seoDebounce = null;
-            }
+            this.cancelSeoAnalysis();
             if (immediate) {
                 this.runSeoAnalysis();
                 return;
             }
+            // Après SEO_ANALYSIS_DELAY_MS sans modification, quand le navigateur est libre
             this.seoDebounce = setTimeout(() => {
                 this.seoDebounce = null;
-                this.runSeoAnalysis();
-            }, 500);
+                this.cancelSeoIdle = whenIdle(() => {
+                    this.cancelSeoIdle = null;
+                    this.runSeoAnalysis();
+                });
+            }, SEO_ANALYSIS_DELAY_MS);
+        },
+
+        cancelSeoAnalysis() {
+            clearTimeout(this.seoDebounce);
+            this.seoDebounce = null;
+            this.cancelSeoIdle?.();
+            this.cancelSeoIdle = null;
         },
 
         async runSeoAnalysis() {
@@ -3047,6 +3071,10 @@ export default {
             return toPublicOutline(this.outlineItems, this.activeOutlineIndex);
         },
     },
+    created() {
+        // Accumulateur de diffs (action getAndClearChanges), hors réactivité
+        this.pendingSteps = [];
+    },
     mounted() {
         console.log('[Editor] Component mounted, checking collaboration config:', {
             autoConnect: this.collabConfig.autoConnect,
@@ -3091,9 +3119,12 @@ export default {
         }
 
         // Nettoyer l'analyse SEO en attente
-        if (this.seoDebounce) {
-            clearTimeout(this.seoDebounce);
-            this.seoDebounce = null;
+        this.cancelSeoAnalysis();
+
+        // Et la lecture de l'état du menu
+        if (this.editorUiFrame) {
+            cancelAnimationFrame(this.editorUiFrame);
+            this.editorUiFrame = null;
         }
 
         // Nettoyer le suivi du sommaire
