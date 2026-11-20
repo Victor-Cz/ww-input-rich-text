@@ -360,6 +360,7 @@ import { AGENT } from './agent.js';
 import { CustomImage } from './extensions/CustomImage.js';
 import { SeoLink } from './extensions/SeoLink.js';
 import { LinkReveal } from './extensions/LinkReveal.js';
+import { LinkOpenCursor } from './extensions/LinkOpenCursor.js';
 import { frontmatterExtensions, readFrontmatter, htmlWithoutFrontmatter } from './extensions/Frontmatter.js';
 import { sanitizeLinkUrl, sanitizeImageSrc, safeOpenUrl, isDangerousUrl } from './utils/sanitizeUrl.js';
 import { buildOutline, resolveOutlineLevels, toPublicOutline, toPublicHeading } from './utils/outline.js';
@@ -1554,6 +1555,8 @@ export default {
                         enabled: () => this.content.linkEditing === 'inline',
                         editable: () => this.isEditable,
                     }),
+                    // La main sur un lien seulement pendant ⌘ (le clic seul place le curseur)
+                    LinkOpenCursor,
                 ];
 
                 // Rédaction en direct : dévoile le texte que Brispr écrit
@@ -3456,6 +3459,11 @@ export default {
             text-align: var(--a-textAlign);
             color: var(--a-color);
             line-height: var(--a-lineHeight);
+            // Le clic seul place le curseur : la main seulement avec ⌘ (cf. extensions/LinkOpenCursor)
+            cursor: inherit;
+        }
+
+        &.-link-open a {
             cursor: pointer;
         }
 
