@@ -383,7 +383,7 @@ import {
     FOLLOW_AGENT,
     followScrollDuration,
     insideBand,
-    movedCursorClient,
+    followedCursorMoved,
     nextFollowing,
 } from './utils/follow.js';
 import { currentLang } from './i18n/lang.js';
@@ -2108,9 +2108,9 @@ export default {
 
         // ===== Suivre quelqu'un (clic sur son avatar) =====
 
-        // Action : suivre l'utilisateur d'id `userId` (collaborationStatus.users),
-        // ou l'agent ('agent'). Rappelée sur la même personne, elle arrête ;
-        // soi-même se suit sur un autre écran ; un absent ne change rien
+        // Action : suivre un écran (le clientId d'une entrée de
+        // collaborationStatus.users) ou l'agent ('agent'). Rappelée sur le
+        // même, elle arrête ; son propre écran ou un absent ne changent rien
         followUser(userId) {
             const status = this.collaborationStatus || {};
             this.setFollowing(
@@ -2142,15 +2142,11 @@ export default {
             this.followAwareness = awareness;
             this.followedCursors = new Map();
             awareness.on('change', this.onFollowAwarenessChange);
-            // Tout de suite là où il est (le dernier de ses onglets qui a un curseur)
-            this.followedClient = movedCursorClient(
-                awareness.getStates(),
-                [...awareness.getStates().keys()],
-                key,
-                this.followedCursors,
-                awareness.clientID
-            );
-            if (this.followedClient != null) this.scheduleFollowScroll();
+            // L'écran suivi (son clientId), et tout de suite là où est son curseur
+            this.followedClient = Number(key);
+            if (followedCursorMoved(awareness.getStates(), [this.followedClient], this.followedClient, this.followedCursors)) {
+                this.scheduleFollowScroll();
+            }
         },
         detachFollowListeners() {
             window.removeEventListener('wheel', this.pauseFollowing);
@@ -2236,21 +2232,21 @@ export default {
             if (this.followScrollFrame) cancelAnimationFrame(this.followScrollFrame);
             this.followScrollFrame = null;
         },
-        // La souris des collaborateurs change aussi l'awareness : seul un
-        // curseur de la personne suivie qui bouge fait défiler
+        // La souris des collaborateurs change aussi l'awareness : seul le
+        // curseur de l'écran suivi qui bouge fait défiler
         onFollowAwarenessChange({ added, updated }) {
             const key = this.collaborationStatus?.following;
             if (!key || key === FOLLOW_AGENT || !this.followAwareness || !this.followedCursors) return;
-            const moved = movedCursorClient(
-                this.followAwareness.getStates(),
-                [...added, ...updated],
-                key,
-                this.followedCursors,
-                this.followAwareness.clientID
-            );
-            if (moved == null) return;
-            this.followedClient = moved;
-            this.scheduleFollowScroll();
+            if (
+                followedCursorMoved(
+                    this.followAwareness.getStates(),
+                    [...added, ...updated],
+                    this.followedClient,
+                    this.followedCursors
+                )
+            ) {
+                this.scheduleFollowScroll();
+            }
         },
         // Un défilement au plus par image, quel que soit le rythme de frappe
         scheduleFollowScroll() {

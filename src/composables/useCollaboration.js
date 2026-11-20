@@ -270,8 +270,10 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         Array.from(provider.value?.awareness?.getStates().entries() ?? [])
             .filter(([, state]) => state.user)
             .map(([clientId, state]) => ({
-                // La connexion : une même personne sur deux écrans en a deux
+                // La connexion (un écran) : une même personne sur deux écrans en
+                // a deux ; self, celle de cet éditeur (on ne la suit pas)
                 clientId,
+                ...(clientId === provider.value?.awareness?.clientID ? { self: true } : {}),
                 name: state.user.name,
                 color: isAgentUser(state.user) ? agentColor() : state.user.color,
                 id: state.user.id || null,

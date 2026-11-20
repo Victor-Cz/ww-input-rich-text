@@ -75,11 +75,10 @@ export function nextAgentFollow(previous, users, now, grace = AGENT_FOLLOW_GRACE
 
 /**
  * @name followedPresent
- * @description La personne suivie est-elle dans la liste des utilisateurs
- * (collaborationStatus.users) ? `agent` : un agent présent ; sinon un
- * utilisateur (pas un agent) de cet id, sur une autre connexion que
- * `localClientId` (celle d'où l'on suit) : soi-même se suit sur un autre
- * écran, jamais sur celui-ci
+ * @description L'écran suivi est-il dans la liste des utilisateurs
+ * (collaborationStatus.users) ? `agent` : un agent présent ; sinon la clé est
+ * le `clientId` d'une connexion (un écran) d'un humain, autre que
+ * `localClientId` : on suit un écran, jamais le sien
  */
 export function followedPresent(users, key, localClientId = null) {
     if (!key || !Array.isArray(users)) return false;
@@ -88,17 +87,17 @@ export function followedPresent(users, key, localClientId = null) {
         user =>
             user &&
             !user.agent &&
-            user.id != null &&
-            String(user.id) === key &&
-            (localClientId == null || user.clientId !== localClientId)
+            user.clientId != null &&
+            String(user.clientId) === key &&
+            (localClientId == null || String(user.clientId) !== String(localClientId))
     );
 }
 
 /**
  * @name nextFollowing
- * @description Qui suivre après l'action « suivre » `requested` : la même
- * personne arrête le suivi ; une clé vide ou une personne absente de `users`
- * (cf. followedPresent : soi-même seulement sur un autre écran) ne changent rien
+ * @description Qui suivre après l'action « suivre » `requested` (le clientId
+ * d'un écran, ou `agent`) : le même arrête le suivi ; une clé vide, son propre
+ * écran ou un écran absent de `users` ne changent rien
  */
 export function nextFollowing(current, requested, { users = [], localClientId = null } = {}) {
     const key = requested == null ? '' : String(requested).trim();
@@ -108,24 +107,17 @@ export function nextFollowing(current, requested, { users = [], localClientId = 
 }
 
 /**
- * @name movedCursorClient
- * @description Parmi les clients `changed` de l'awareness (`states` :
- * Map clientId → état), celui de l'utilisateur `userId` dont le curseur a
- * bougé depuis la dernière lecture (`seen` : Map clientId → curseur lu,
- * tenue à jour ici), hors `localClientId`. La souris et le reste de l'état ne comptent pas. null
- * si aucun curseur de cet utilisateur n'a bougé, ou s'il n'en a plus
+ * @name followedCursorMoved
+ * @description Le curseur de l'écran suivi (`clientId`) a-t-il bougé parmi
+ * les clients `changed` de l'awareness (`states` : Map clientId → état) depuis
+ * la dernière lecture (`seen` : Map clientId → curseur lu, tenue à jour ici) ?
+ * La souris et le reste de l'état ne comptent pas ; sans curseur, non
  */
-export function movedCursorClient(states, changed, userId, seen, localClientId = null) {
-    let moved = null;
-    for (const clientId of changed) {
-        // Soi-même suivi sur un autre écran : jamais la connexion d'où l'on suit
-        if (localClientId != null && clientId === localClientId) continue;
-        const state = states.get(clientId);
-        if (state?.user?.id == null || String(state.user.id) !== userId) continue;
-        const cursor = JSON.stringify(state.cursor ?? null);
-        if (seen.get(clientId) === cursor) continue;
-        seen.set(clientId, cursor);
-        if (state.cursor) moved = clientId;
-    }
-    return moved;
+export function followedCursorMoved(states, changed, clientId, seen) {
+    if (clientId == null || !changed.includes(clientId)) return false;
+    const state = states.get(clientId);
+    const cursor = JSON.stringify(state?.cursor ?? null);
+    if (seen.get(clientId) === cursor) return false;
+    seen.set(clientId, cursor);
+    return !!state?.cursor;
 }
