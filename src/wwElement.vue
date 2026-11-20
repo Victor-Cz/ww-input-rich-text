@@ -290,6 +290,10 @@
                         :enabled="tableToolsEnabled" />
                 </template>
 
+                <!-- Poignée des sections (H2 / H3) au survol : glisser pour
+                     déplacer la section en bloc -->
+                <section-controls v-if="richEditor && sectionToolsEnabled" :editor="richEditor" />
+
                 <!-- Utilisation du composant AiMenu personnalisé -->
                 <ai-menu ref="aiMenu" :rich-editor="richEditor" :is-read-only="content.parameterAiMenuReadOnly ?? true"
                     :parameter-ai-menu-primary-color="content.parameterAiMenuPrimaryColor ?? '#007bff'"
@@ -349,6 +353,7 @@ import MagicMenu from './components/MagicMenu.vue';
 import LinkPopover from './components/LinkPopover.vue';
 import TableControls from './components/TableControls.vue';
 import TableContextMenu from './components/TableContextMenu.vue';
+import SectionControls from './components/SectionControls.vue';
 import VersionTimeline from './components/VersionTimeline.vue';
 import DiffRail from './components/DiffRail.vue';
 import { SelectionHighlighter } from './extensions/SelectionHighlighter.js';
@@ -422,6 +427,7 @@ export default {
         LinkPopover,
         TableControls,
         TableContextMenu,
+        SectionControls,
     },
     props: {
         content: { type: Object, required: true },
@@ -1145,6 +1151,10 @@ export default {
         tableToolsEnabled() {
             return this.isEditable && !this.isEditing && (this.content.parameterTableTools ?? true);
         },
+        // Poignée des sections : même raison, absente en lecture seule
+        sectionToolsEnabled() {
+            return this.isEditable && !this.isEditing;
+        },
         isMagicMenu() {
             return (this.content.parameterAiMenuVariant ?? 'classic') === 'magic';
         },
@@ -1490,7 +1500,7 @@ export default {
                         emptyText: () => (wwLib.wwLang?.lang === 'fr' ? 'Vide' : 'Empty'),
                         visible: () => !!this.content.showFrontmatter,
                     }),
-                    // Plan de l'article : identifiants des H2 / H3, notes de section
+                    // Plan de l'article : identifiants des H2 / H3, notes de section, déplacement des sections
                     ...sectionExtensions(),
                     SeoLink.configure({
                         // target/rel sont calculés par lien (interne = lien normal,
@@ -4174,10 +4184,12 @@ export default {
     }
 }
 
-/* Déplacement d'une ligne/colonne : curseur cohérent sur toute la page et
-   pas de sélection de texte parasite pendant le glisser */
+/* Déplacement d'une ligne/colonne ou d'une section : curseur cohérent sur
+   toute la page et pas de sélection de texte parasite pendant le glisser */
 body.ww-rich-text-table-dragging,
-body.ww-rich-text-table-dragging * {
+body.ww-rich-text-table-dragging *,
+body.ww-rich-text-section-dragging,
+body.ww-rich-text-section-dragging * {
     cursor: grabbing !important;
     user-select: none !important;
 }

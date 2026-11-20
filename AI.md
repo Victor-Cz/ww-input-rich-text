@@ -162,6 +162,12 @@ identique à celui du serveur (`src/extensions/Sections.js`) :
   Markdown), dans `seo` / `geo` (texte, mots, listes) ni dans `outline` /
   `currentHeading`. Entrée sur le paragraphe vide qui la termine en sort ;
   effacer dans une note vide la supprime.
+- **Déplacer une section en bloc** : poignée à gauche d'un H2 / H3 au survol
+  (glisser-déposer, `Échap` annule), ou `⌘⇧↑` / `⌘⇧↓` (`Ctrl` hors Mac) sur la
+  section du curseur (sa sous-section H3 s'il y est). Un H2 se pose entre les
+  sections H2 (avec ses H3), un H3 entre les sous-sections, d'un H2 à l'autre
+  aussi. Un déplacement = une transaction, un pas d'annulation. Poignée absente
+  en `readonly` et dans l'éditeur WeWeb.
 
 # Menu AI - Types de modification personnalisés
 

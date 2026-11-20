@@ -6,12 +6,156 @@
 // Seuls les blocs de premier niveau comptent : un titre dans une citation,
 // une liste ou un tableau n'ouvre pas de section. Un H1 ou un H4 ne ferme
 // rien : ils font partie du corps de la section où ils sont.
+//
+// Déplacer une section la retire et la remet ailleurs, en une transaction :
+// une section H2 se pose entre les sections H2, une sous-section H3 entre
+// les sous-sections, d'un H2 à l'autre aussi.
+import { NodeSelection, TextSelection } from 'prosemirror-state';
 
 /** Niveau de section d'un bloc de premier niveau : 2 (H2), 3 (H3), 0 sinon */
 export function sectionLevel(node) {
     if (node.type.name !== 'heading') return 0;
     const level = node.attrs?.level;
     return level === 2 || level === 3 ? level : 0;
+}
+
+/**
+ * @name documentSections
+ * @description Sections et sous-sections du document, dans l'ordre :
+ * `{ level, from, to, parent }` — `from` est la position du titre, `to` la fin
+ * de la section ; `parent` est la section H2 d'une sous-section H3, null pour
+ * un H3 de l'introduction (et pour les H2).
+ */
+export function documentSections(doc) {
+    const end = doc.content.size;
+    const sections = [];
+    let h2 = null;
+    let h3 = null;
+    doc.forEach((node, pos) => {
+        const level = sectionLevel(node);
+        if (!level) return;
+        if (h3) {
+            h3.to = pos;
+            h3 = null;
+        }
+        if (level === 2) {
+            if (h2) h2.to = pos;
+            h2 = { level, from: pos, to: end, parent: null };
+            sections.push(h2);
+        } else {
+            h3 = { level, from: pos, to: end, parent: h2 };
+            sections.push(h3);
+        }
+    });
+    return sections;
+}
+
+/** La section dont le titre est le bloc de premier niveau à `pos`, null sinon */
+export function sectionStartingAt(doc, pos) {
+    return documentSections(doc).find(section => section.from === pos) || null;
+}
+
+/**
+ * @name sectionAround
+ * @description La section la plus profonde qui contient la position : la
+ * sous-section H3 où est le curseur, sinon sa section H2. null dans
+ * l'introduction.
+ */
+export function sectionAround(doc, pos) {
+    let found = null;
+    for (const section of documentSections(doc)) {
+        if (section.from > pos) break;
+        if (pos < section.to) found = section;
+    }
+    return found;
+}
+
+/**
+ * @name dropTargets
+ * @description Positions où la section peut être posée, dans l'ordre du
+ * document. H2 : au début de chaque section H2, et à la fin du document.
+ * H3 : dans chaque section H2, au début de chacune de ses sous-sections et
+ * à sa fin ; de même entre les H3 qui précèdent le premier H2, s'il y en a
+ * (document sans H2…). Le début et la fin de la section elle-même y
+ * figurent (la poser là ne la déplace pas).
+ */
+export function dropTargets(doc, section) {
+    const sections = documentSections(doc);
+    const h2s = sections.filter(item => item.level === 2);
+    if (section.level === 2) {
+        return h2s.length ? [...h2s.map(item => item.from), doc.content.size] : [];
+    }
+    const targets = [];
+    // null : les H3 d'avant le premier H2
+    for (const parent of [null, ...h2s]) {
+        const children = sections.filter(item => item.level === 3 && item.parent === parent);
+        if (!parent && !children.length) continue;
+        targets.push(...children.map(item => item.from));
+        targets.push(parent ? parent.to : children[children.length - 1].to);
+    }
+    return targets;
+}
+
+/**
+ * @name stepTarget
+ * @description Où poser la section pour la monter (`up`) ou la descendre
+ * (`down`) d'un cran : la position avant la section qui la précède, ou après
+ * celle qui la suit. null si elle est déjà en tête ou en fin.
+ */
+export function stepTarget(doc, section, direction) {
+    const targets = dropTargets(doc, section);
+    if (direction === 'up') {
+        const before = targets.filter(pos => pos < section.from);
+        return before.length ? before[before.length - 1] : null;
+    }
+    return targets.find(pos => pos > section.to) ?? null;
+}
+
+/**
+ * @name moveSection
+ * @description Déplace la section à `target` dans la transaction (une
+ * suppression et une insertion de la même plage). Rend la nouvelle position
+ * du titre, null si `target` est dans la section (rien ne bouge).
+ */
+export function moveSection(tr, section, target) {
+    const { from, to } = section;
+    if (target >= from && target <= to) return null;
+    const content = tr.doc.slice(from, to).content;
+    if (target > to) {
+        // Insérer d'abord : les positions de la section, avant, restent valides
+        tr.insert(target, content);
+        tr.delete(from, to);
+        return target - (to - from);
+    }
+    tr.delete(from, to);
+    tr.insert(target, content);
+    return target;
+}
+
+/**
+ * @name selectionAfterMove
+ * @description La sélection dans le document déplacé (`doc`, titre à
+ * `start`) : elle suit la section si elle y était, sinon le curseur se pose
+ * au début du titre de la section.
+ */
+export function selectionAfterMove(selection, section, start, doc) {
+    const moved = pos => start + (pos - section.from);
+    if (selection.from < section.from || selection.to > section.to) return TextSelection.create(doc, start + 1);
+    if (selection instanceof NodeSelection) return NodeSelection.create(doc, moved(selection.from));
+    return TextSelection.between(doc.resolve(moved(selection.anchor)), doc.resolve(moved(selection.head)));
+}
+
+/**
+ * @name nearestTarget
+ * @description La cible la plus proche d'une ordonnée : `points` = [{ pos, y }].
+ * null sans cible.
+ */
+export function nearestTarget(points, y) {
+    let best = null;
+    for (const point of points) {
+        if (!best || Math.abs(point.y - y) < Math.abs(best.y - y)) best = point;
+    }
+    return best ? best.pos : null;
 }
 
 /**
