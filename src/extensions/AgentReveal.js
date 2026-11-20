@@ -14,6 +14,8 @@ import { changedRange, isRemoteChange, remoteAwareMapping } from '../utils/remot
 //
 // Une insertion pure est mise en file ; la modification d'un texte déjà là
 // (liens, espaces, image) n'est pas cachée, elle reçoit seulement l'encre.
+// Onglet caché, personne ne regarde : rien n'est mis en file, et ce qui
+// attendait se dévoile d'un coup (le minuteur s'arrête).
 
 export const agentRevealKey = new PluginKey('agentReveal');
 
@@ -85,7 +87,7 @@ export const AgentReveal = Extension.create({
             label: 'Brispr',
             /** SVG de l'icône à côté du nom ('' : pas d'icône). La couleur vient de --brispr-color */
             icon: () => '',
-            tickMs: 50,
+            tickMs: 100,
             /** Vitesse de dévoilement, en mots par seconde */
             wordsPerSecond: () => 40,
             // L'animation ne traîne jamais plus loin derrière le contenu reçu
@@ -131,6 +133,11 @@ export const AgentReveal = Extension.create({
             caretIcon.innerHTML = svg;
         };
 
+        // La vue, pour savoir si son onglet est caché (lu à chaque fois : la vue
+        // peut changer de document, iframe de WeWeb)
+        let pluginView = null;
+        const hidden = () => !!pluginView?.dom.ownerDocument?.hidden;
+
         return [
             new Plugin({
                 key: agentRevealKey,
@@ -145,16 +152,23 @@ export const AgentReveal = Extension.create({
                         let { pending, ink, credit } = value;
                         const now = Date.now();
 
-                        if (tr.docChanged) {
-                            const mapping = remoteAwareMapping(tr, oldState.doc);
-                            pending = pending
-                                .map(r => ({ from: mapping.map(r.from, 1), to: mapping.map(r.to, -1) }))
-                                .filter(r => r.from < r.to);
-                            ink = ink
-                                .map(r => ({ ...r, from: mapping.map(r.from, 1), to: mapping.map(r.to, -1) }))
-                                .filter(r => r.from < r.to);
+                        if (tr.getMeta(agentRevealKey) === 'reveal-all') {
+                            return pending.length || ink.length ? { pending: [], ink: [], credit: 0 } : value;
+                        }
 
-                            if (isRemoteChange(tr) && options.shouldAnimate()) {
+                        if (tr.docChanged) {
+                            // Rien en cours : pas de diff du document (modification distante) pour rien
+                            if (pending.length || ink.length) {
+                                const mapping = remoteAwareMapping(tr, oldState.doc);
+                                pending = pending
+                                    .map(r => ({ from: mapping.map(r.from, 1), to: mapping.map(r.to, -1) }))
+                                    .filter(r => r.from < r.to);
+                                ink = ink
+                                    .map(r => ({ ...r, from: mapping.map(r.from, 1), to: mapping.map(r.to, -1) }))
+                                    .filter(r => r.from < r.to);
+                            }
+
+                            if (isRemoteChange(tr) && options.shouldAnimate() && !hidden()) {
                                 const change = changedRange(oldState.doc, newState.doc);
                                 if (change && change.newEnd > change.start) {
                                     if (change.oldEnd === change.start) {
@@ -225,18 +239,21 @@ export const AgentReveal = Extension.create({
                 },
 
                 view(editorView) {
+                    pluginView = editorView;
                     let timer = null;
                     let revealing = false;
+
+                    // Un paquet de mots ; onglet caché, tout d'un coup (et sync arrête le minuteur)
+                    const tick = () => {
+                        const meta = hidden() ? 'reveal-all' : 'tick';
+                        editorView.dispatch(editorView.state.tr.setMeta(agentRevealKey, meta).setMeta('addToHistory', false));
+                    };
 
                     const sync = () => {
                         const { pending, ink } = agentRevealKey.getState(editorView.state);
                         const busy = pending.length > 0 || ink.length > 0;
                         if (busy && !timer) {
-                            timer = setInterval(() => {
-                                editorView.dispatch(
-                                    editorView.state.tr.setMeta(agentRevealKey, 'tick').setMeta('addToHistory', false)
-                                );
-                            }, options.tickMs);
+                            timer = setInterval(tick, options.tickMs);
                         } else if (!busy && timer) {
                             clearInterval(timer);
                             timer = null;
@@ -257,6 +274,7 @@ export const AgentReveal = Extension.create({
                         destroy() {
                             if (timer) clearInterval(timer);
                             if (revealing) options.onRevealingChange(false);
+                            pluginView = null;
                         },
                     };
                 },

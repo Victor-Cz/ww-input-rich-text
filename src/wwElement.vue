@@ -368,6 +368,7 @@ import { EMPTY_EDITOR_UI, readEditorUi, TEXT_TYPES, uiInputsChanged } from './ut
 import { mentionIds } from './utils/mentions.js';
 import { sameValue, shallowEqual } from './utils/sameValue.js';
 import { whenIdle } from './utils/idle.js';
+import { insideBand } from './utils/agentFollow.js';
 
 // Analyse SEO / GEO : elle parcourt tout le document, lancée après ce délai
 // sans modification, au moment où le navigateur est libre
@@ -380,13 +381,20 @@ const AGENT_FOLLOW_RESUME_MS = 3000;
 // y reste plutôt que de longer le bord de l'écran
 const AGENT_FOLLOW_BAND = { top: 0.3, bottom: 0.6 };
 
-/** Hauteur visible de ce qui fait défiler `el` : conteneur défilant le plus proche, sinon la fenêtre */
-function scrollViewportHeight(el) {
-    for (let node = el.parentElement; node && node !== document.body; node = node.parentElement) {
-        const { overflowY } = getComputedStyle(node);
-        if (/auto|scroll|overlay/.test(overflowY) && node.scrollHeight > node.clientHeight) return node.clientHeight;
+/**
+ * Zone visible { top, height } (coordonnées écran) de ce qui fait défiler `el` :
+ * conteneur défilant le plus proche, sinon la fenêtre (celle de son document)
+ */
+function scrollViewport(el) {
+    const doc = el.ownerDocument;
+    const win = doc.defaultView || window;
+    for (let node = el.parentElement; node && node !== doc.body; node = node.parentElement) {
+        const { overflowY } = win.getComputedStyle(node);
+        if (/auto|scroll|overlay/.test(overflowY) && node.scrollHeight > node.clientHeight) {
+            return { top: node.getBoundingClientRect().top + node.clientTop, height: node.clientHeight };
+        }
     }
-    return window.innerHeight;
+    return { top: 0, height: win.innerHeight };
 }
 
 const TAGS_MAP = {
@@ -1957,12 +1965,19 @@ export default {
             const now = Date.now();
             if (now < this.agentFollowPausedUntil || now - this.lastAgentScroll < 250) return;
             this.lastAgentScroll = now;
+            // Le caret dans la bande centrale de ce qui défile, et dans la
+            // fenêtre : rien à faire
+            const viewport = scrollViewport(caret);
+            const rect = caret.getBoundingClientRect();
+            const windowHeight = (caret.ownerDocument.defaultView || window).innerHeight;
+            if (insideBand(rect, viewport, AGENT_FOLLOW_BAND) && rect.top >= 0 && rect.bottom <= windowHeight) return;
             // Marges de défilement : 'nearest' ramène alors le caret dans la
-            // bande centrale, et non juste à l'écran
-            const height = scrollViewportHeight(caret);
-            caret.style.scrollMarginTop = `${Math.round(height * AGENT_FOLLOW_BAND.top)}px`;
-            caret.style.scrollMarginBottom = `${Math.round(height * (1 - AGENT_FOLLOW_BAND.bottom))}px`;
-            caret.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            // bande centrale, et non juste à l'écran. Sans animation : un
+            // défilement doux relancé plusieurs fois par seconde occupait le
+            // navigateur en continu
+            caret.style.scrollMarginTop = `${Math.round(viewport.height * AGENT_FOLLOW_BAND.top)}px`;
+            caret.style.scrollMarginBottom = `${Math.round(viewport.height * (1 - AGENT_FOLLOW_BAND.bottom))}px`;
+            caret.scrollIntoView({ block: 'nearest', behavior: 'auto' });
         },
         pauseFollowingAgent() {
             this.agentFollowPausedUntil = Date.now() + AGENT_FOLLOW_RESUME_MS;
@@ -3152,7 +3167,6 @@ export default {
     /* Teintes de Brispr, dérivées de --brispr-color (paramètre agentColor,
        peut-être une couleur de thème : pas de suffixe hex) */
     --brispr-ink: color-mix(in srgb, var(--brispr-color) 18%, transparent);
-    --brispr-caret-dim: color-mix(in srgb, var(--brispr-color) 35%, transparent);
     display: flex;
     flex-direction: column;
     min-height: 150px;
@@ -3707,16 +3721,29 @@ export default {
         animation: brispr-ink 1s ease-out;
     }
 
-    /* Seule la barre pulse : l'étiquette reste pleine */
+    /* Seule la barre pulse : l'étiquette reste pleine. La barre est un
+       pseudo-élément posé sur la bordure (transparente, elle garde la place)
+       dont seule l'opacité s'anime : le compositeur s'en charge, sans
+       repeindre le texte à chaque image */
     .brispr-caret {
         position: relative;
-        border-left: 2px solid var(--brispr-color);
+        border-left: 2px solid transparent;
         margin-left: -1px;
         margin-right: -1px;
         pointer-events: none;
         width: 0;
         z-index: 99;
-        animation: brispr-caret-pulse 1s ease-in-out infinite;
+
+        &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: -2px;
+            width: 2px;
+            background-color: var(--brispr-color);
+            animation: brispr-caret-pulse 1s ease-in-out infinite;
+        }
     }
 
     .brispr-caret__label {
@@ -4086,7 +4113,7 @@ body.ww-rich-text-table-dragging * {
 
 @keyframes brispr-caret-pulse {
     50% {
-        border-left-color: var(--brispr-caret-dim);
+        opacity: 0.35;
     }
 }
 </style>

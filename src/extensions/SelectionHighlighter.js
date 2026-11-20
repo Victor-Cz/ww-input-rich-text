@@ -29,6 +29,8 @@ export const SelectionHighlighter = Extension.create({
             const meta = tr.getMeta(selectionHighlighterKey)
 
             if (!meta) {
+              // Rien à suivre : pas de diff du document (modification distante) pour rien
+              if (oldDecoSet === DecorationSet.empty) return oldDecoSet
               return oldDecoSet.map(remoteAwareMapping(tr, oldState.doc), tr.doc)
             }
 

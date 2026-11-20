@@ -45,6 +45,8 @@ export const TextStrike = Extension.create({
               )
               return DecorationSet.create(tr.doc, decorations)
             }
+            // Rien à suivre : pas de diff du document (modification distante) pour rien
+            if (old === DecorationSet.empty) return old
             return old.map(remoteAwareMapping(tr, oldState.doc), tr.doc)
           },
         },
