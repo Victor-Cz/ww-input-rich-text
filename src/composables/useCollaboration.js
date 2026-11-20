@@ -1,4 +1,4 @@
-import { ref, computed, watch, onBeforeUnmount } from 'vue';
+import { ref, shallowRef, markRaw, computed, watch, onBeforeUnmount } from 'vue';
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import * as Y from 'yjs';
 import Collaboration from '@tiptap/extension-collaboration';
@@ -29,7 +29,9 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // pour éviter les problèmes de référence avec Tiptap
     let ydocInstance = null;
     const ydoc = computed(() => ydocInstance);
-    const provider = ref(null);
+    // Le provider hors réactivité (shallowRef + markRaw) : l'awareness et les
+    // messages, très fréquents, ne passent pas par les proxys de Vue
+    const provider = shallowRef(null);
     const isCollaborating = ref(false);
     const connectionAttempts = ref(0);
 
@@ -485,12 +487,10 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 const users = readUsers();
 
                 // Curseurs et souris changent l'awareness à chaque mouvement :
-                // sur le serveur du template ou avec la souris des
-                // collaborateurs, rien n'est republié tant que la liste des
-                // utilisateurs ne change pas (Brispr seul : inchangé)
+                // rien n'est republié tant que la liste des utilisateurs ne
+                // change pas
                 const signature = JSON.stringify(users);
-                const quiet = isTemplate() || !!content.value.showMousePresence;
-                if (quiet && signature === lastUsersSignature) {
+                if (signature === lastUsersSignature) {
                     resolveAnonymousColorCollision();
                     resolveDuplicateSessionColorCollision();
                     return;
@@ -526,8 +526,6 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 // Éviter que deux sessions d'un même utilisateur identifié
                 // partagent la même couleur de curseur
                 resolveDuplicateSessionColorCollision();
-
-                console.log('[Collaboration] Awareness update - Users with colors:', users);
 
                 publishUsers(users);
             });
@@ -712,7 +710,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             });
 
             // Créer le provider Hocuspocus
-            provider.value = new HocuspocusProvider(providerConfig);
+            provider.value = markRaw(new HocuspocusProvider(providerConfig));
 
             // Configurer les event listeners
             setupCollaborationListeners();
@@ -767,7 +765,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             staleEpoch: false,
             agentWriting: false,
             agentName: null,
-        agentIcon: null,
+            agentIcon: null,
             channels: {},
         };
         setCollaborationStatus(currentStatus);
@@ -834,22 +832,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
 
     // Obtenir les extensions Tiptap pour la collaboration
     const getCollaborationExtensions = () => {
-        console.log('[Collaboration] getCollaborationExtensions called:', {
-            isCollaborating: isCollaborating.value,
-            hasYdoc: !!ydocInstance,
-            hasProvider: !!provider.value,
-            ydocInstance: ydocInstance,
-        });
-
-        if (!isCollaborating.value || !ydocInstance) {
-            console.log(
-                '[Collaboration] ⚠️ Cannot load extensions: isCollaborating=' +
-                    isCollaborating.value +
-                    ', hasYdoc=' +
-                    !!ydocInstance
-            );
-            return [];
-        }
+        if (!isCollaborating.value || !ydocInstance) return [];
 
         if (!provider.value) {
             console.warn('[Collaboration] ⚠️ Provider is null, CollaborationCursor may not work');
@@ -908,13 +891,6 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 })
             );
         }
-
-        console.log('[Collaboration] ✅ Extensions configured:', {
-            extensionsCount: extensions.length,
-            userName: collabConfig.value.userName,
-            hasProviderAwareness: !!provider.value?.awareness,
-            ydocPassedToCollaboration: !!ydocInstance,
-        });
 
         return extensions;
     };

@@ -1442,28 +1442,6 @@ export default {
             this.setIsVersionPreview(false);
 
             try {
-                // Vérifier les imports d'extensions
-                console.log('[Editor] Checking extension imports:', {
-                    StarterKit: !!StarterKit,
-                    SeoLink: !!SeoLink,
-                    TextStyle: !!TextStyle,
-                    Color: !!Color,
-                    Underline: !!Underline,
-                    Table: !!Table,
-                    TableCell: !!TableCell,
-                    TableHeader: !!TableHeader,
-                    TableRow: !!TableRow,
-                    TaskList: !!TaskList,
-                    TaskItem: !!TaskItem,
-                    TextAlign: !!TextAlign,
-                    Placeholder: !!Placeholder,
-                    Markdown: !!Markdown,
-                    Image: !!Image,
-                    SelectionHighlighter: !!SelectionHighlighter,
-                    TextSuggestion: !!TextSuggestion,
-                    TextStrike: !!TextStrike,
-                });
-
                 // Identifier quelle extension est undefined
                 const undefinedExtensions = [];
                 if (!StarterKit) undefinedExtensions.push('StarterKit');
@@ -1612,45 +1590,15 @@ export default {
                 }
 
                 // Ajouter les extensions de collaboration si actif
-                console.log('[Editor] Checking collaboration state:', {
-                    isCollaborating: this.isCollaborating,
-                    hasYdoc: !!this.ydoc,
-                    hasProvider: !!this.provider,
-                    shouldEnableCollaboration: this.shouldEnableCollaboration,
-                });
-
                 const collabExtensions = this.getCollaborationExtensions();
-                if (collabExtensions && collabExtensions.length > 0) {
-                    extensions.push(...collabExtensions);
-                    console.log('[Editor] ✅ Collaboration extensions loaded:', collabExtensions.length, collabExtensions.map(ext => ext.name));
-                } else {
-                    console.log('[Editor] ⚠️ No collaboration extensions loaded');
-                }
+                extensions.push(...collabExtensions);
 
                 // Déterminer le contenu initial
                 // En mode collaboration, on laisse Y.js gérer le contenu (même si la connexion n'est pas encore établie)
                 const initialContent = this.shouldEnableCollaboration ? undefined : String(this.content.initialValue || '');
 
-                console.log('[Editor] Creating editor with:', {
-                    isCollaborating: this.isCollaborating,
-                    hasInitialContent: !!initialContent,
-                    hasInitialValue: !!this.content.initialValue,
-                    extensionsCount: extensions.length,
-                    extensionNames: extensions.map(ext => ext.name || ext.type || 'unknown'),
-                });
-
-                // Log spécial pour la collaboration
-                if (this.isCollaborating) {
-                    const collabExt = extensions.find(ext => ext.name === 'collaboration');
-                    if (collabExt) {
-                        console.log('[Editor] Collaboration extension found:', {
-                            hasOptions: !!collabExt.options,
-                            hasDocument: !!collabExt.options?.document,
-                            documentType: collabExt.options?.document?.constructor?.name,
-                        });
-                    } else {
-                        console.error('[Editor] ❌ Collaboration extension NOT found in extensions array!');
-                    }
+                if (this.isCollaborating && !extensions.some(ext => ext.name === 'collaboration')) {
+                    console.error('[Editor] ❌ Collaboration extension NOT found in extensions array!');
                 }
 
                 // En-tête : le menu collé en haut couvre le début de la zone qui
@@ -1671,8 +1619,6 @@ export default {
                     },
                     extensions,
                     onCreate: () => {
-                        console.log('[Editor] Editor created successfully');
-
                         this.setValue(this.getContent());
                         this.setMentions(this.richEditor.getJSON().content.reduce(extractMentions, []));
                         this.syncFrontmatter();
@@ -1746,8 +1692,6 @@ export default {
                         },
                     },
                 });
-
-                console.log('[Editor] Editor instance created:', !!this.richEditor);
             } catch (error) {
                 console.error('[Editor] Error creating editor:', error);
                 // Créer un éditeur basique en fallback
