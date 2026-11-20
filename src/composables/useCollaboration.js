@@ -8,7 +8,7 @@ import { AGENT } from '../agent.js';
 import { SAVE_REQUEST, applyChannelMessage, lastMessage, saveStatusOf } from '../utils/collabChannels.js';
 import { createCursorAwareness } from '../utils/cursorAwareness.js';
 import { brandColorOf } from '../utils/collabUsers.js';
-import { followedPresent } from '../utils/follow.js';
+import { AGENT_FOLLOW_GRACE_MS, FOLLOW_AGENT, followedPresent, nextAgentFollow } from '../utils/follow.js';
 
 // Curseurs des collaborateurs sur une awareness filtrée (cf. utils/cursorAwareness),
 // libérée avec l'éditeur : l'extension n'enlève jamais son écouteur
@@ -69,6 +69,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         channels: {},
         // La personne suivie (id d'un utilisateur, ou 'agent'), cf. setFollowing
         following: null,
+        // L'agent suivi est parti un moment : le suivi l'attend (cf. nextAgentFollow)
+        followingAway: false,
     };
 
     // Helper pour mettre à jour le statut
@@ -274,9 +276,30 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                     : {}),
             }));
 
+    // Le suivi de l'agent : son nom et depuis quand il est parti (cf.
+    // nextAgentFollow) ; le minuteur relit la liste à la fin de l'attente
+    let followedAgent = null;
+    let agentFollowTimer = null;
+
+    // Qui suivre après un changement de la liste : un collaborateur qui part
+    // est lâché ; l'agent est attendu AGENT_FOLLOW_GRACE_MS (il s'absente
+    // entre deux appels), s'il revient sous le même nom
+    const followUpdate = users => {
+        const key = currentStatus.following;
+        if (!key) return {};
+        if (key !== FOLLOW_AGENT) return followedPresent(users, key) ? {} : { following: null };
+        clearTimeout(agentFollowTimer);
+        followedAgent = nextAgentFollow(followedAgent, users, Date.now());
+        if (!followedAgent) return { following: null, followingAway: false };
+        const { awaySince } = followedAgent;
+        if (awaySince != null) {
+            agentFollowTimer = setTimeout(() => publishUsers(), awaySince + AGENT_FOLLOW_GRACE_MS - Date.now() + 50);
+        }
+        return { followingAway: awaySince != null };
+    };
+
     // Publie la liste (statut + collab:awareness-update), avec Brispr tant
-    // qu'il s'attarde après son départ. La personne suivie qui n'y est plus
-    // n'est plus suivie
+    // qu'il s'attarde après son départ, et qui suivre (cf. followUpdate)
     const publishUsers = (users = readUsers()) => {
         if (lingeringAgent && !users.some(user => user.agent)) {
             users = [...users, { ...lingeringAgent, color: agentColor() }];
@@ -285,7 +308,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         updateStatus({
             users,
             userCount: users.length,
-            ...(currentStatus.following && !followedPresent(users, currentStatus.following) ? { following: null } : {}),
+            ...followUpdate(users),
         });
 
         emit('trigger-event', {
@@ -758,6 +781,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         clearAgentLinger();
         lingeringAgent = null;
         lastUsersSignature = null;
+        followedAgent = null;
+        clearTimeout(agentFollowTimer);
 
         // Réinitialiser l'état local et le statut externe
         currentStatus = {
@@ -777,6 +802,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             agentIcon: null,
             channels: {},
             following: null,
+            followingAway: false,
         };
         setCollaborationStatus(currentStatus);
     };
@@ -971,11 +997,13 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // La personne suivie (collaborationStatus.following) : l'id d'un
     // utilisateur, 'agent', ou null. Le composant fait défiler et dit le
     // changement (collab:follow-change) ; la liste des utilisateurs arrête le
-    // suivi de qui part (cf. publishUsers)
+    // suivi de qui part, attend un moment l'agent (cf. followUpdate)
     const setFollowing = key => {
         const following = key || null;
         if ((currentStatus.following ?? null) === following) return;
-        updateStatus({ following });
+        clearTimeout(agentFollowTimer);
+        followedAgent = following === FOLLOW_AGENT ? nextAgentFollow(null, currentStatus.users, Date.now()) : null;
+        updateStatus({ following, followingAway: false });
     };
 
     const getEpoch = () => currentEpoch;
@@ -1011,6 +1039,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // Cleanup automatique
     onBeforeUnmount(() => {
         clearAgentLinger();
+        clearTimeout(agentFollowTimer);
         if (provider.value) {
             provider.value.destroy();
         }

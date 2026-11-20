@@ -32,6 +32,36 @@ export function bandScrollDelta(rect, viewport, band) {
 }
 
 /**
+ * Combien de temps l'agent suivi peut s'absenter sans que le suivi s'arrête :
+ * l'auteur du serveur disparaît de la liste 10 s après son dernier appel, et
+ * un agent revient souvent après un moment de réflexion ou une question à la
+ * personne. Au-delà, c'est une autre séance : on ne le suit plus
+ */
+export const AGENT_FOLLOW_GRACE_MS = 10 * 60 * 1000;
+
+/**
+ * @name nextAgentFollow
+ * @description Le suivi de l'agent après un changement de la liste des
+ * utilisateurs `users`, depuis `previous` ({ name, awaySince } ou null) :
+ * - un agent présent : suivi, s'il porte le nom de celui qu'on suivait (un
+ *   autre agent, « Claude • Paul » après « Claude • Victor », arrête le
+ *   suivi) ; awaySince null ;
+ * - aucun agent : suivi encore `grace` ms depuis son départ (awaySince), puis
+ *   arrêté.
+ * Rend le nouvel état, ou null quand le suivi s'arrête
+ */
+export function nextAgentFollow(previous, users, now, grace = AGENT_FOLLOW_GRACE_MS) {
+    const agent = Array.isArray(users) ? users.find(user => user?.agent) : null;
+    if (agent) {
+        const name = agent.name ? String(agent.name) : '';
+        if (previous?.name && name && previous.name !== name) return null;
+        return { name: previous?.name || name, awaySince: null };
+    }
+    const awaySince = previous?.awaySince ?? now;
+    return now - awaySince >= grace ? null : { name: previous?.name ?? '', awaySince };
+}
+
+/**
  * @name followedPresent
  * @description La personne suivie est-elle dans la liste des utilisateurs
  * (collaborationStatus.users) ? `agent` : un agent présent ; sinon un
