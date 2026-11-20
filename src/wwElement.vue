@@ -935,6 +935,9 @@ export default {
                 this.loadEditor();
             }
         },
+        'collabConfig.userColor'(color, previous) {
+            if (color !== previous) this.updateUserColor();
+        },
         'collabConfig.userName'(newName, oldName) {
             if (newName !== oldName) {
                 this.updateUserName(newName);

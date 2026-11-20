@@ -101,6 +101,11 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         authToken: content.value.authToken || '',
         userName: content.value.userName || 'Anonymous',
         userId: content.value.userId || '',
+        // La couleur de l'utilisateur, celle de son avatar (hex) : son curseur
+        // et sa sélection la prennent chez tout le monde
+        userColor: /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(String(content.value.userColor || '').trim())
+            ? String(content.value.userColor).trim()
+            : '',
         versionDiffColorMode: content.value.versionDiffColorMode || 'default',
         autoConnect: content.value.autoConnect ?? true,
         saveMode: content.value.saveMode || 'manual',
@@ -159,9 +164,10 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // Couleur du curseur local : déterministe pour un utilisateur identifié,
     // dérivée du clientID Yjs (unique par session) pour un anonyme
     const localCursorColor = () =>
-        isAnonymousLocal() && ydocInstance
+        collabConfig.value.userColor ||
+        (isAnonymousLocal() && ydocInstance
             ? colorForUser(`anon-${ydocInstance.clientID}`)
-            : colorForUser(localUserKey());
+            : colorForUser(localUserKey()));
 
     // Garantit des couleurs distinctes entre anonymes : si un autre
     // participant (de clientID inférieur — un seul des deux bouge) a la même
@@ -193,7 +199,8 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // La couleur de remplacement décale depuis la couleur de base dans la
     // palette (base+1, base+2, …), garantie distincte des autres sessions.
     const resolveDuplicateSessionColorCollision = () => {
-        if (isAnonymousLocal() || !provider.value?.awareness) return;
+        // Une couleur donnée (celle de son avatar) reste la même sur tous ses écrans
+        if (collabConfig.value.userColor || isAnonymousLocal() || !provider.value?.awareness) return;
         const awareness = provider.value.awareness;
         const myClientId = awareness.clientID;
         const states = awareness.getStates();
@@ -239,9 +246,10 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // Clé = la même que PermanentUserData (userId, fallback userName),
     // alimenté pour soi à l'init et pour les autres via l'awareness.
     const ychangeColorMapping = new Map();
-    const registerUserColor = key => {
+    const registerUserColor = (key, color = null) => {
         if (!key) return;
-        const dark = colorForUser(key);
+        // La couleur annoncée par l'utilisateur (son avatar), sinon dérivée de son identité
+        const dark = (key !== AGENT.id && color) || colorForUser(key);
         // La couleur de Brispr est un paramètre : peut-être pas un hex (couleur de thème)
         const light = /^#[0-9a-f]{6}$/i.test(dark) ? `${dark}26` : `color-mix(in srgb, ${dark} 15%, transparent)`;
         ychangeColorMapping.set(String(key), { light, dark });
@@ -535,7 +543,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
 
                 // Alimenter le mapping de couleurs des diffs de version
                 // avec les utilisateurs présents (même clé que PermanentUserData)
-                users.forEach(user => registerUserColor(user.id || user.name));
+                users.forEach(user => registerUserColor(user.id || user.name, user.color));
 
                 // Un agent qui écrit (Brispr, ou l'auteur d'une écriture du
                 // serveur) : gardé pour rester affiché un moment après son
@@ -700,7 +708,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                     localUserKey()
                 );
             }
-            registerUserColor(localUserKey());
+            registerUserColor(localUserKey(), localCursorColor());
             // Brispr garde sa couleur dans les diffs, même une fois parti
             registerUserColor(AGENT.id);
 
@@ -938,6 +946,17 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // Mettre à jour le nom d'utilisateur dans awareness. La couleur courante
     // est préservée (elle peut avoir été réattribuée par un résolveur de
     // collision) ; fallback sur la couleur dérivée de l'identité
+    // La couleur de l'utilisateur changée (userColor) : son curseur la prend
+    const updateUserColor = () => {
+        const awareness = provider.value?.awareness;
+        if (!awareness) return;
+        const current = awareness.getStates().get(awareness.clientID)?.user;
+        if (!current) return;
+        const color = localCursorColor();
+        if (current.color !== color) awareness.setLocalStateField('user', { ...current, color });
+        registerUserColor(localUserKey(), color);
+    };
+
     const updateUserName = newName => {
         if (provider.value?.awareness) {
             const awareness = provider.value.awareness;
@@ -1072,6 +1091,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         getConnectionStatus,
         getCollaborationExtensions,
         updateUserName,
+        updateUserColor,
         getRandomColor,
         colorForUser,
         releaseAgent,
