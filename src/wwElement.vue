@@ -473,6 +473,7 @@ export default {
                 userCount: 0,
                 agentWriting: false,
                 agentName: null,
+                agentIcon: null,
                 channels: {},
             })),
             readonly: true,
@@ -1104,6 +1105,14 @@ export default {
         agentName() {
             return this.collaborationStatus?.agentName || AGENT.name;
         },
+        // L'icône de l'étiquette de l'agent : celle qu'il apporte (favicon de
+        // son fournisseur, adresse https), sinon celle du paramètre agentIcon
+        agentIconMarkup() {
+            const url = this.collaborationStatus?.agentIcon;
+            if (!url) return this.agentIconSvg;
+            const src = String(url).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+            return `<img src="${src}" alt="" referrerpolicy="no-referrer" />`;
+        },
         // Versions : brispr-collab seulement
         versionsAvailable() {
             return this.shouldEnableCollaboration && !this.isTemplate();
@@ -1564,7 +1573,7 @@ export default {
                     extensions.push(
                         AgentReveal.configure({
                             label: () => this.agentName,
-                            icon: () => this.agentIconSvg,
+                            icon: () => this.agentIconMarkup,
                             wordsPerSecond: () => Math.max(1, Number(this.content.agentWritingSpeed) || 40),
                             shouldAnimate: () =>
                                 !!this.collaborationStatus?.agentWriting && !!this.collaborationStatus?.synced,
@@ -3765,10 +3774,16 @@ export default {
             display: none;
         }
 
-        svg {
+        svg,
+        img {
             display: block;
             width: 100%;
             height: 100%;
+        }
+
+        img {
+            border-radius: 3px;
+            object-fit: contain;
         }
     }
 

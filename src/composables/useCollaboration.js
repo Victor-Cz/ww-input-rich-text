@@ -52,6 +52,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         staleEpoch: false,
         agentWriting: false,
         agentName: null,
+        agentIcon: null,
         channels: {},
     };
 
@@ -99,6 +100,13 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // L'agent qui écrit : Brispr (brispr-collab) ou l'écrivain du serveur du
     // template (POST /collab/write : { user: { name, writer: true } }, sans id)
     const isAgentUser = user => !!user && (user.id === AGENT.id || user.writer === true);
+
+    // L'agent écrit-il ? Brispr écrit tant qu'il est là ; l'auteur du serveur
+    // du template le dit (writing faux : il lit le document, POST /collab/presence)
+    const isWritingAgent = user => user.id === AGENT.id || user.writing === true;
+
+    // L'icône d'un agent (favicon de son fournisseur…) : une adresse https, sinon rien
+    const agentIconOf = user => (typeof user.icon === 'string' && /^https:\/\//.test(user.icon) ? user.icon : null);
 
     // Vérification si la collaboration doit être activée
     const shouldEnableCollaboration = computed(() => {
@@ -239,7 +247,13 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 name: state.user.name,
                 color: isAgentUser(state.user) ? agentColor() : state.user.color,
                 id: state.user.id || null,
-                ...(isAgentUser(state.user) ? { agent: true } : {}),
+                ...(isAgentUser(state.user)
+                    ? {
+                          agent: true,
+                          writing: isWritingAgent(state.user),
+                          ...(agentIconOf(state.user) ? { icon: agentIconOf(state.user) } : {}),
+                      }
+                    : {}),
             }));
 
     // Publie la liste (statut + collab:awareness-update), avec Brispr tant
@@ -478,9 +492,10 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 // avec les utilisateurs présents (même clé que PermanentUserData)
                 users.forEach(user => registerUserColor(user.id || user.name));
 
-                // Brispr présent = il est en train d'écrire l'article. Gardé
-                // pour rester affiché un moment après son départ
-                const agent = users.find(user => user.agent);
+                // Un agent qui écrit (Brispr, ou l'auteur d'une écriture du
+                // serveur) : gardé pour rester affiché un moment après son
+                // départ. Un agent qui ne fait que lire part avec sa présence
+                const agent = users.find(user => user.agent && user.writing);
                 if (agent) {
                     lingeringAgent = agent;
                     clearAgentLinger();
@@ -491,6 +506,9 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
                 }
                 if (agent && agent.name !== currentStatus.agentName) {
                     updateStatus({ agentName: agent.name || null });
+                }
+                if (agent && (agent.icon || null) !== currentStatus.agentIcon) {
+                    updateStatus({ agentIcon: agent.icon || null });
                 }
 
                 // Éviter que deux anonymes partagent la même couleur
@@ -740,6 +758,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
             staleEpoch: false,
             agentWriting: false,
             agentName: null,
+        agentIcon: null,
             channels: {},
         };
         setCollaborationStatus(currentStatus);
