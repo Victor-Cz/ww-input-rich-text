@@ -360,7 +360,7 @@ import { SelectionHighlighter } from './extensions/SelectionHighlighter.js';
 import { SeoHighlighter } from './extensions/SeoHighlighter.js';
 import { TextSuggestion } from './extensions/TextSuggestion.js';
 import { TextStrike } from './extensions/TextStrike.js';
-import { AgentReveal } from './extensions/AgentReveal.js';
+import { AgentReveal, agentRevealKey } from './extensions/AgentReveal.js';
 import { MousePresence } from './extensions/MousePresence.js';
 import { AgentSelection, agentSelectionKey } from './extensions/AgentSelection.js';
 import { AGENT } from './agent.js';
@@ -1601,6 +1601,7 @@ export default {
                                 this.agentRevealing = revealing;
                             },
                             onReveal: caret => this.followAgentCaret(caret),
+                            onChange: range => this.followAgentChange(range),
                         }),
                         // Souris des collaborateurs (showMousePresence), pas sur une version affichée
                         MousePresence.configure({
@@ -2043,6 +2044,31 @@ export default {
             caret.style.scrollMarginBottom = `${Math.round(viewport.height * (1 - AGENT_FOLLOW_BAND.bottom))}px`;
             caret.scrollIntoView({ block: 'nearest', behavior: 'auto' });
         },
+        // Un changement de l'agent sans caret (une section écrite à la place
+        // de sa note, une modification ciblée) : son début ramené dans la
+        // bande centrale, aux mêmes conditions que le caret
+        followAgentChange({ from }) {
+            this.lastAgentCaret = null;
+            if (!this.followsAgent) return;
+            const now = Date.now();
+            if (now < this.followPausedUntil || now < this.agentFollowPausedUntil) return;
+            this.lastAgentScroll = now;
+            this.scrollIntoBand(from);
+        },
+        // La position `pos` du texte ramenée dans la bande centrale de ce qui
+        // défile, sans animation, seulement si elle en sort
+        scrollIntoBand(pos) {
+            const view = this.richEditor?.view;
+            if (!view || !view.dom.isConnected) return;
+            try {
+                const rect = view.coordsAtPos(Math.min(pos, view.state.doc.content.size));
+                const area = scrollArea(view.dom);
+                const delta = bandScrollDelta(rect, area, AGENT_FOLLOW_BAND);
+                if (delta) area.scroller.scrollBy({ top: delta, behavior: 'auto' });
+            } catch {
+                // Position hors du rendu (document en cours de synchronisation) : rien
+            }
+        },
         pauseFollowingAgent() {
             this.agentFollowPausedUntil = Date.now() + AGENT_FOLLOW_RESUME_MS;
         },
@@ -2154,7 +2180,14 @@ export default {
             const view = this.richEditor?.view;
             const shown = view ? agentSelectionKey.getState(view.state) : null;
             const first = shown?.find?.()[0];
-            if (first) this.followAgentSelection({ from: first.from });
+            if (first) {
+                this.followAgentSelection({ from: first.from });
+                return;
+            }
+            // Son dernier changement (une section, une modification), relu
+            // tel qu'il est maintenant dans le texte
+            const last = view ? agentRevealKey.getState(view.state)?.last : null;
+            if (last) this.scrollIntoBand(last.from);
         },
         stopFollowingInDocument(event) {
             if (this.richEditor?.view?.dom?.contains(event.target)) this.stopFollowing();
