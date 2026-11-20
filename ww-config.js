@@ -93,7 +93,7 @@ export default {
                 'epochLoadButtonText',
             ],
             'agentInfobox',
-            ['agentColor', 'agentIcon', 'agentWritingSpeed', 'agentFollow', 'agentLingerDelay'],
+            ['agentColor', 'agentIcon', 'agentWritingSpeed', 'agentRevealMode', 'agentFollow', 'agentLingerDelay'],
             'formInfobox',
             ['fieldName', 'customValidation', 'validation'],
             'readonly',
@@ -3827,6 +3827,28 @@ export default {
             propertyHelp: {
                 tooltip:
                     'Pace at which his text is revealed. Speeds up when more than 10 s behind what he has written, and once he is done',
+            },
+            /* wwEditor:end */
+        },
+        agentRevealMode: {
+            section: 'settings',
+            label: { en: 'Agent text appearance', fr: "Apparition du texte de l'agent" },
+            type: 'TextSelect',
+            options: {
+                options: [
+                    { value: 'auto', label: { en: 'Auto (by size)', fr: 'Auto (selon la taille)' } },
+                    { value: 'block', label: { en: 'Appear at once', fr: "D'un bloc" } },
+                    { value: 'words', label: { en: 'Word by word', fr: 'Mot à mot' } },
+                ],
+            },
+            defaultValue: 'auto',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* wwEditor:start */
+            bindingValidation: { type: 'string', tooltip: "'auto', 'block' or 'words'" },
+            propertyHelp: {
+                tooltip:
+                    'How the text the agent writes appears. Auto: a big change (several paragraphs or more than 25 words: a section in place of its note, the whole text) at once, tinted with the agent color; a small one (a word replaced, a sentence) word by word, to show its precision. Waits for a follow scroll to end.',
             },
             /* wwEditor:end */
         },
