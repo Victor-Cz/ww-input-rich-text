@@ -1172,10 +1172,13 @@ export default {
                 aiMenu: this.content.parameterAiMenu ?? true,
             };
         },
+        // Ce que l'éditeur fige à sa création : un changement le recharge (éditeur WeWeb)
         editorConfig() {
             return {
                 placeholder: wwLib.wwLang.getText(this.content.placeholder),
                 autofocus: this.content.autofocus,
+                // Nœud image : CustomImage (gabarit WeWeb) ou Image
+                useImageLayout: !!this.content.useImageLayout,
                 image: {
                     inline: this.content.img?.inline,
                     allowBase64: true,
@@ -1509,7 +1512,7 @@ export default {
                     }),
                     Markdown.configure({ breaks: true }),
                     // Use CustomImage if useImageLayout is enabled, otherwise standard Image
-                    this.content.useImageLayout
+                    this.editorConfig.useImageLayout
                         ? CustomImage.configure({
                               ...this.editorConfig.image,
                               generateImageId: ImageManager.generateImageId,
