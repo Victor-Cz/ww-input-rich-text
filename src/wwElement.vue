@@ -1620,6 +1620,8 @@ export default {
                             onRevealingChange: revealing => {
                                 this.agentRevealing = revealing;
                             },
+                            // Le texte attend la fin d'un défilement de suivi pour se dévoiler
+                            paused: () => !!this.followScrollFrame,
                             onReveal: caret => this.followAgentCaret(caret),
                             onChange: range => this.followAgentChange(range),
                         }),

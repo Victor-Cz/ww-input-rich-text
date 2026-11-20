@@ -96,6 +96,11 @@ export const AgentReveal = Extension.create({
             flushMs: 2000,
             /** Brispr est-il en train d'écrire (présence + document synchronisé) ? */
             shouldAnimate: () => false,
+            /**
+             * Vrai pour retenir le dévoilement (le texte attend, caché) : pendant
+             * un défilement de suivi, pour qu'on voie l'écriture une fois arrivé
+             */
+            paused: () => false,
             onRevealingChange: () => {},
             /** Appelé après chaque paquet dévoilé, avec le caret (suivi du défilement) */
             onReveal: () => {},
@@ -199,7 +204,10 @@ export const AgentReveal = Extension.create({
                                         if (last) last.to = change.newEnd;
                                         else pending = [...pending, { from: change.start, to: change.newEnd }];
                                     } else {
-                                        ink = [...ink, { from: change.start, to: change.newEnd, until: now + INK_MS }];
+                                        // Remplacement (une section écrite à la place de sa
+                                        // note, une modification ciblée) : le nouveau texte se
+                                        // dévoile aussi, mot à mot
+                                        pending = [...pending, { from: change.start, to: change.newEnd }];
                                     }
                                 }
                             }
@@ -207,7 +215,7 @@ export const AgentReveal = Extension.create({
 
                         if (tr.getMeta(agentRevealKey) === 'tick') {
                             ink = ink.filter(r => r.until > now);
-                            if (pending.length) {
+                            if (pending.length && !options.paused()) {
                                 const doc = newState.doc;
                                 const remaining = pending.reduce((n, r) => n + countWords(doc, r.from, r.to), 0);
                                 const writing = options.shouldAnimate();
