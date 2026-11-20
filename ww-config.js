@@ -74,6 +74,7 @@ export default {
                 'authToken',
                 'userName',
                 'userId',
+                'userColor',
                 'autoConnect',
                 'saveMode',
                 'saveDebounce',
@@ -3543,6 +3544,22 @@ export default {
             /* eslint-disable-next-line */
             /* wwEditor:start */
             placeholder: '= auth.user.name',
+            /* wwEditor:end */
+        },
+        userColor: {
+            section: 'settings',
+            label: { en: 'User color', fr: "Couleur de l'utilisateur" },
+            type: 'Color',
+            defaultValue: '',
+            bindable: true,
+            hidden: content => !content.enableCollaboration,
+            /* eslint-disable-next-line */
+            /* wwEditor:start */
+            bindingValidation: { type: 'string', tooltip: 'Hex color (#rrggbb), the same as the user avatar' },
+            propertyHelp: {
+                tooltip:
+                    "Color of this user's cursor and selection, seen by everyone: give the color of their avatar. Empty: a color derived from their id",
+            },
             /* wwEditor:end */
         },
         userId: {
