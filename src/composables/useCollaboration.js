@@ -6,6 +6,15 @@ import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
 import { YChangeMark, YChangeNodeAttrs } from '../extensions/YChange.js';
 import { AGENT } from '../agent.js';
 import { SAVE_REQUEST, applyChannelMessage, lastMessage, saveStatusOf } from '../utils/collabChannels.js';
+import { createCursorAwareness } from '../utils/cursorAwareness.js';
+
+// Curseurs des collaborateurs sur une awareness filtrée (cf. utils/cursorAwareness),
+// libérée avec l'éditeur : l'extension n'enlève jamais son écouteur
+const FilteredCollaborationCursor = CollaborationCursor.extend({
+    onDestroy() {
+        this.options.provider.awareness.destroy();
+    },
+});
 
 /**
  * Composable pour gérer la collaboration Hocuspocus/Yjs dans l'éditeur Tiptap
@@ -884,11 +893,13 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         ];
 
         // Ajouter CollaborationCursor (pas en aperçu d'archive : les curseurs
-        // temps réel appartiennent au document vivant)
+        // temps réel appartiennent au document vivant). Il ne voit de
+        // l'awareness que les curseurs et les utilisateurs : la souris des
+        // collaborateurs ne lui fait pas dispatcher de transaction
         if (prov && !archiveDocInstance) {
             extensions.push(
-                CollaborationCursor.configure({
-                    provider: prov,
+                FilteredCollaborationCursor.configure({
+                    provider: { awareness: createCursorAwareness(prov.awareness) },
                     user: {
                         name: collabConfig.value.userName || 'Anonymous',
                         color: localCursorColor(),

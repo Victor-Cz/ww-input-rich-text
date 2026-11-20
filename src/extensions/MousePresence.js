@@ -2,7 +2,14 @@ import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from 'prosemirror-state';
 import * as Y from 'yjs';
 import { absolutePositionToRelativePosition, relativePositionToAbsolutePosition, ySyncPluginKey } from 'y-prosemirror';
-import { clampPosition, POINTER_FIELD, POINTER_THROTTLE_MS, remotePointers } from '../utils/mousePointers.js';
+import {
+    clampPosition,
+    POINTER_FIELD,
+    POINTER_THROTTLE_MS,
+    remotePointers,
+    SCROLL_SETTLE_MS,
+    withinDeadZone,
+} from '../utils/mousePointers.js';
 
 export const mousePresenceKey = new PluginKey('mousePresence');
 
@@ -19,8 +26,11 @@ const ARROW =
  * largeur. Rien n'est publié ni dessiné quand enabled() est faux (paramètre
  * coupé, aperçu de version) ; la souris est retirée en quittant le texte ou
  * l'onglet. Un défilement sans mouvement republie la souris là où elle se
- * trouve désormais (écouté sur la fenêtre du texte : iframe dans WeWeb). Hors
- * du texte, et sur le menu même collé par-dessus, la souris n'est pas publiée.
+ * trouve désormais, une fois posé (écouté sur la fenêtre du texte : iframe
+ * dans WeWeb, seulement quand la souris est montrée). Hors du texte, et sur le
+ * menu même collé par-dessus, la souris n'est pas publiée. Chaque envoi part
+ * chez tous les participants : au plus un par POINTER_THROTTLE_MS, et pas
+ * pour un tremblement de quelques pixels.
  */
 export const MousePresence = Extension.create({
     name: 'mousePresence',
@@ -139,6 +149,9 @@ export const MousePresence = Extension.create({
                         return encode(x, y);
                     };
 
+                    // Le point (écran) de la souris publiée en dernier : la zone morte s'y mesure
+                    let publishedPoint = null;
+
                     const flush = () => {
                         timer = null;
                         lastSent = Date.now();
@@ -146,10 +159,18 @@ export const MousePresence = Extension.create({
                         lastEvent = null;
                         if (!event || !options.enabled()) return;
                         try {
-                            publish(encodeAt(event.clientX, event.clientY));
+                            const pointer = encodeAt(event.clientX, event.clientY);
+                            publish(pointer);
+                            publishedPoint = pointer ? { x: event.clientX, y: event.clientY } : null;
                         } catch {
                             publish(null);
+                            publishedPoint = null;
                         }
+                    };
+
+                    const flushSoon = () => {
+                        if (timer) return;
+                        timer = setTimeout(flush, Math.max(0, lastSent + POINTER_THROTTLE_MS - Date.now()));
                     };
 
                     // Le dernier point de la souris sur le texte : un défilement sans
@@ -160,26 +181,36 @@ export const MousePresence = Extension.create({
                         bindWindow();
                         if (!options.enabled()) return;
                         lastPoint = { clientX: event.clientX, clientY: event.clientY };
-                        lastEvent = event;
-                        if (timer) return;
-                        timer = setTimeout(flush, Math.max(0, lastSent + POINTER_THROTTLE_MS - Date.now()));
+                        lastEvent = lastPoint;
+                        // Zone morte : un tremblement autour de la souris publiée ne part pas
+                        if (published && withinDeadZone(publishedPoint, { x: event.clientX, y: event.clientY })) return;
+                        flushSoon();
                     };
 
                     const leave = () => {
                         lastPoint = null;
                         lastEvent = null;
+                        publishedPoint = null;
                         clearTimeout(timer);
                         timer = null;
                         publish(null);
                     };
 
-                    // Défilement : la souris immobile survole un autre endroit du texte
-                    const onScroll = () => {
-                        schedule();
+                    // Défilement : les souris des autres sont replacées à chaque image (le
+                    // texte peut défiler sous le calque, .ProseMirror sans en-tête), la
+                    // sienne, immobile, survole un autre endroit du texte : republiée une
+                    // fois le défilement posé, pas à chaque événement
+                    let scrollTimer = null;
+                    const afterScroll = () => {
+                        scrollTimer = null;
                         if (!lastPoint || !options.enabled()) return;
                         lastEvent = lastPoint;
-                        if (timer) return;
-                        timer = setTimeout(flush, Math.max(0, lastSent + POINTER_THROTTLE_MS - Date.now()));
+                        flushSoon();
+                    };
+                    const onScroll = () => {
+                        schedule();
+                        clearTimeout(scrollTimer);
+                        scrollTimer = setTimeout(afterScroll, SCROLL_SETTLE_MS);
                     };
 
                     const onVisibility = () => {
@@ -276,11 +307,12 @@ export const MousePresence = Extension.create({
                     // La fenêtre et le document du texte : dans l'éditeur WeWeb, la page vit
                     // dans une iframe, et la vue naît sur un élément détaché (document du
                     // code) avant d'y être placée. Branchés une fois le texte dans la page,
-                    // rebranchés si son document change
+                    // rebranchés si son document change, et seulement quand la souris est
+                    // montrée : sinon défilement, taille et visibilité n'ont rien à refaire
                     let doc = null;
                     let win = null;
                     function bindWindow() {
-                        const current = view.dom.isConnected ? view.dom.ownerDocument : null;
+                        const current = view.dom.isConnected && options.enabled() ? view.dom.ownerDocument : null;
                         if (current === doc) return;
                         unbindWindow();
                         if (!current) return;
@@ -294,6 +326,8 @@ export const MousePresence = Extension.create({
                         doc?.removeEventListener('visibilitychange', onVisibility);
                         win?.removeEventListener('resize', schedule);
                         win?.removeEventListener('scroll', onScroll, { capture: true });
+                        clearTimeout(scrollTimer);
+                        scrollTimer = null;
                         doc = null;
                         win = null;
                     }

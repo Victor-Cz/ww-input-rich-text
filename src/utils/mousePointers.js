@@ -7,8 +7,14 @@
 /** Le champ d'awareness de la souris : { anchor, dx, dy } ou null */
 export const POINTER_FIELD = 'pointer';
 
-/** Au plus un envoi par cet intervalle (ms) */
-export const POINTER_THROTTLE_MS = 50;
+/** Au plus un envoi par cet intervalle (ms) : chaque envoi va à tous les participants */
+export const POINTER_THROTTLE_MS = 100;
+
+/** Un mouvement plus court (px) depuis la souris publiée n'est pas republié */
+export const POINTER_DEAD_ZONE_PX = 4;
+
+/** Défilement : la souris est republiée une fois le défilement posé depuis ce délai (ms) */
+export const SCROLL_SETTLE_MS = 150;
 
 const isFiniteNumber = value => typeof value === 'number' && Number.isFinite(value);
 
@@ -43,6 +49,13 @@ export function remotePointers(states, localClientId) {
     }
     return pointers.sort((a, b) => a.clientId - b.clientId);
 }
+
+/**
+ * Le point { x, y } est-il à moins de POINTER_DEAD_ZONE_PX du point publié ?
+ * Sans point publié, non
+ */
+export const withinDeadZone = (published, point) =>
+    !!published && !!point && Math.hypot(point.x - published.x, point.y - published.y) < POINTER_DEAD_ZONE_PX;
 
 /** Position dans les bornes du document */
 export const clampPosition = (pos, size) => Math.max(0, Math.min(pos, size));

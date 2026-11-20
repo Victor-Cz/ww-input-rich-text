@@ -1,7 +1,7 @@
 // Souris des collaborateurs : ce qui s'affiche des états d'awareness
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { clampPosition, isPointer, remotePointers } from '../src/utils/mousePointers.js';
+import { clampPosition, isPointer, POINTER_DEAD_ZONE_PX, remotePointers, withinDeadZone } from '../src/utils/mousePointers.js';
 
 const anchor = { type: null, tname: 'default', item: { client: 1, clock: 3 }, assoc: 0 };
 
@@ -34,3 +34,11 @@ test('forme et bornes', () => {
     assert.equal(clampPosition(5, 10), 5);
 });
 
+
+test('zone morte : un tremblement ne republie pas, un vrai mouvement si', () => {
+    const published = { x: 100, y: 50 };
+    assert.equal(withinDeadZone(published, { x: 102, y: 51 }), true);
+    assert.equal(withinDeadZone(published, { x: 100 + POINTER_DEAD_ZONE_PX, y: 50 }), false);
+    assert.equal(withinDeadZone(published, { x: 103, y: 53 }), false);
+    assert.equal(withinDeadZone(null, { x: 100, y: 50 }), false, 'rien de publié : on publie');
+});
