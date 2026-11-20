@@ -199,8 +199,7 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     // La couleur de remplacement décale depuis la couleur de base dans la
     // palette (base+1, base+2, …), garantie distincte des autres sessions.
     const resolveDuplicateSessionColorCollision = () => {
-        // Une couleur donnée (celle de son avatar) reste la même sur tous ses écrans
-        if (collabConfig.value.userColor || isAnonymousLocal() || !provider.value?.awareness) return;
+        if (isAnonymousLocal() || !provider.value?.awareness) return;
         const awareness = provider.value.awareness;
         const myClientId = awareness.clientID;
         const states = awareness.getStates();
@@ -220,7 +219,9 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
         if (!conflict) return;
 
         const used = new Set(siblings.map(([, state]) => state.user.color));
-        const baseIndex = USER_COLORS.indexOf(colorForUser(myKey));
+        // Le premier écran garde sa couleur (celle de son avatar si elle est
+        // donnée, cf. userColor) ; les suivants en prennent une autre de la palette
+        const baseIndex = Math.max(0, USER_COLORS.indexOf(colorForUser(myKey)));
         for (let offset = 1; offset < USER_COLORS.length; offset++) {
             const candidate = USER_COLORS[(baseIndex + offset) % USER_COLORS.length];
             if (!used.has(candidate)) {
