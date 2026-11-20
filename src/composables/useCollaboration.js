@@ -258,9 +258,11 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
 
     // Utilisateurs présents d'après l'awareness, Brispr avec la couleur du paramètre
     const readUsers = () =>
-        Array.from(provider.value?.awareness?.getStates().values() ?? [])
-            .filter(state => state.user)
-            .map(state => ({
+        Array.from(provider.value?.awareness?.getStates().entries() ?? [])
+            .filter(([, state]) => state.user)
+            .map(([clientId, state]) => ({
+                // La connexion : une même personne sur deux écrans en a deux
+                clientId,
                 name: state.user.name,
                 color: isAgentUser(state.user) ? agentColor() : state.user.color,
                 id: state.user.id || null,
@@ -287,7 +289,9 @@ export function useCollaboration(props, content, emit, setCollaborationStatus) {
     const followUpdate = users => {
         const key = currentStatus.following;
         if (!key) return {};
-        if (key !== FOLLOW_AGENT) return followedPresent(users, key) ? {} : { following: null };
+        if (key !== FOLLOW_AGENT) {
+            return followedPresent(users, key, provider.value?.awareness?.clientID ?? null) ? {} : { following: null };
+        }
         clearTimeout(agentFollowTimer);
         followedAgent = nextAgentFollow(followedAgent, users, Date.now());
         if (!followedAgent) return { following: null, followingAway: false };

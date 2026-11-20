@@ -44,18 +44,16 @@ test("présent : un utilisateur par son id, l'agent par « agent »", () => {
 });
 
 test('suivre bascule : la même personne arrête', () => {
-    assert.equal(nextFollowing(null, 'u2', { localId: 'u1', users }), 'u2');
-    assert.equal(nextFollowing('u2', 'u2', { localId: 'u1', users }), null);
-    assert.equal(nextFollowing('u2', FOLLOW_AGENT, { localId: 'u1', users }), FOLLOW_AGENT);
-    assert.equal(nextFollowing(FOLLOW_AGENT, ' agent ', { localId: 'u1', users }), null);
+    assert.equal(nextFollowing(null, 'u2', { users }), 'u2');
+    assert.equal(nextFollowing('u2', 'u2', { users }), null);
+    assert.equal(nextFollowing('u2', FOLLOW_AGENT, { users }), FOLLOW_AGENT);
+    assert.equal(nextFollowing(FOLLOW_AGENT, ' agent ', { users }), null);
 });
 
-test('soi-même, une clé vide ou un absent ne changent rien', () => {
-    assert.equal(nextFollowing(null, 'u1', { localId: 'u1', users }), null);
-    assert.equal(nextFollowing('u2', 'u1', { localId: 'u1', users }), 'u2');
-    assert.equal(nextFollowing('u2', '', { localId: 'u1', users }), 'u2');
-    assert.equal(nextFollowing(null, undefined, { localId: 'u1', users }), null);
-    assert.equal(nextFollowing(null, 'u3', { localId: 'u1', users }), null);
+test('une clé vide ou un absent ne changent rien', () => {
+    assert.equal(nextFollowing('u2', '', { users }), 'u2');
+    assert.equal(nextFollowing(null, undefined, { users }), null);
+    assert.equal(nextFollowing(null, 'u3', { users }), null);
     assert.equal(nextFollowing(undefined, 'u3', { users }), null);
 });
 
@@ -118,4 +116,22 @@ test('followScrollDuration : court de près, plafonné de loin ; easeOutCubic de
     assert.equal(easeOutCubic(0), 0);
     assert.equal(easeOutCubic(1), 1);
     assert.ok(easeOutCubic(0.5) > 0.5, 'décélère');
+});
+
+test('soi-même : suivi sur un autre écran, jamais sur celui d\'où l\'on suit', () => {
+    const screens = [
+        { name: 'Moi', id: 'u1', clientId: 10 },
+        { name: 'Moi', id: 'u1', clientId: 11 },
+        { name: 'Léa', id: 'u2', clientId: 20 },
+    ];
+    assert.equal(nextFollowing(null, 'u1', { users: screens, localClientId: 10 }), 'u1');
+    assert.equal(nextFollowing(null, 'u1', { users: screens.slice(0, 1), localClientId: 10 }), null, 'un seul écran');
+    assert.equal(followedPresent(screens.slice(0, 1), 'u1', 10), false);
+    assert.equal(followedPresent(screens, 'u2', 10), true);
+    const states = new Map([
+        [10, { user: { id: 'u1' }, cursor: { head: 1 } }],
+        [11, { user: { id: 'u1' }, cursor: { head: 2 } }],
+    ]);
+    assert.equal(movedCursorClient(states, [10, 11], 'u1', new Map(), 10), 11);
+    assert.equal(movedCursorClient(states, [10], 'u1', new Map(), 10), null);
 });

@@ -77,26 +77,34 @@ export function nextAgentFollow(previous, users, now, grace = AGENT_FOLLOW_GRACE
  * @name followedPresent
  * @description La personne suivie est-elle dans la liste des utilisateurs
  * (collaborationStatus.users) ? `agent` : un agent présent ; sinon un
- * utilisateur (pas un agent) de cet id
+ * utilisateur (pas un agent) de cet id, sur une autre connexion que
+ * `localClientId` (celle d'où l'on suit) : soi-même se suit sur un autre
+ * écran, jamais sur celui-ci
  */
-export function followedPresent(users, key) {
+export function followedPresent(users, key, localClientId = null) {
     if (!key || !Array.isArray(users)) return false;
     if (key === FOLLOW_AGENT) return users.some(user => user?.agent);
-    return users.some(user => user && !user.agent && user.id != null && String(user.id) === key);
+    return users.some(
+        user =>
+            user &&
+            !user.agent &&
+            user.id != null &&
+            String(user.id) === key &&
+            (localClientId == null || user.clientId !== localClientId)
+    );
 }
 
 /**
  * @name nextFollowing
  * @description Qui suivre après l'action « suivre » `requested` : la même
- * personne arrête le suivi ; soi-même (`localId`), une clé vide ou une
- * personne absente de `users` ne changent rien
+ * personne arrête le suivi ; une clé vide ou une personne absente de `users`
+ * (cf. followedPresent : soi-même seulement sur un autre écran) ne changent rien
  */
-export function nextFollowing(current, requested, { localId = null, users = [] } = {}) {
+export function nextFollowing(current, requested, { users = [], localClientId = null } = {}) {
     const key = requested == null ? '' : String(requested).trim();
     if (!key) return current ?? null;
     if (key === current) return null;
-    if (localId != null && localId !== '' && key === String(localId)) return current ?? null;
-    return followedPresent(users, key) ? key : current ?? null;
+    return followedPresent(users, key, localClientId) ? key : current ?? null;
 }
 
 /**
@@ -104,12 +112,14 @@ export function nextFollowing(current, requested, { localId = null, users = [] }
  * @description Parmi les clients `changed` de l'awareness (`states` :
  * Map clientId → état), celui de l'utilisateur `userId` dont le curseur a
  * bougé depuis la dernière lecture (`seen` : Map clientId → curseur lu,
- * tenue à jour ici). La souris et le reste de l'état ne comptent pas. null
+ * tenue à jour ici), hors `localClientId`. La souris et le reste de l'état ne comptent pas. null
  * si aucun curseur de cet utilisateur n'a bougé, ou s'il n'en a plus
  */
-export function movedCursorClient(states, changed, userId, seen) {
+export function movedCursorClient(states, changed, userId, seen, localClientId = null) {
     let moved = null;
     for (const clientId of changed) {
+        // Soi-même suivi sur un autre écran : jamais la connexion d'où l'on suit
+        if (localClientId != null && clientId === localClientId) continue;
         const state = states.get(clientId);
         if (state?.user?.id == null || String(state.user.id) !== userId) continue;
         const cursor = JSON.stringify(state.cursor ?? null);
