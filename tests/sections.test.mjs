@@ -78,17 +78,65 @@ test('documentSections : un H2 va jusqu’au H2 suivant, un H3 jusqu’au H3 ou 
     ]);
 });
 
-test('documentSections : un H1 ou un H4 ne ferme rien, un titre imbriqué n’ouvre rien', () => {
+test('documentSections : un H4 ne ferme rien, un titre imbriqué n’ouvre rien, un H1 ferme H2 et H3', () => {
     const other = schema.node('doc', null, [
         h(2, 'A'),
-        h(1, 'Autre H1'),
         h(4, 'H4'),
         schema.node('blockquote', null, [h(2, 'Cité')]),
+        h(3, 'A1'),
+        p('a1'),
+        h(1, 'Autre H1'),
         h(2, 'B'),
     ]);
     const sections = documentSections(other);
-    assert.equal(sections.length, 2);
-    assert.deepEqual(titles(other.cut(sections[0].from, sections[0].to)), ['## A', '# Autre H1', '#### H4', 'Cité']);
+    assert.equal(sections.length, 3);
+    assert.deepEqual(titles(other.cut(sections[0].from, sections[0].to)), ['## A', '#### H4', 'Cité', '### A1', 'a1']);
+    assert.deepEqual(titles(other.cut(sections[1].from, sections[1].to)), ['### A1', 'a1']);
+    assert.deepEqual(sections.map(section => section.part), [0, 0, 1]);
+});
+
+test('article du CMS en réécriture : le plan, puis l’ancien texte (H1, H2, texte) qui reste à sa place', () => {
+    const rewrite = schema.node('doc', null, [
+        h(1, 'Titre'),
+        p('intro'),
+        h(2, 'A'),
+        p('a'),
+        h(3, 'A1'),
+        p('a1'),
+        h(2, 'B'),
+        p('b'),
+        h(1, 'Ancien titre'),
+        p('ancienne intro'),
+        h(2, 'Old1'),
+        p('o1'),
+        h(2, 'Old2'),
+        p('o2'),
+    ]);
+    const pos = [];
+    rewrite.forEach((_node, offset) => pos.push(offset));
+    const b = sectionStartingAt(rewrite, pos[6]);
+    assert.equal(b.to, pos[8]); // B s'arrête à l'ancien H1
+    // La dernière section du plan ne descend pas dans l'ancien texte, ne l'emporte pas en montant
+    assert.deepEqual(dropTargets(rewrite, b), [pos[2], pos[6], pos[8]]);
+    assert.equal(stepTarget(rewrite, b, 'down'), null);
+    const up = EditorState.create({ doc: rewrite }).tr;
+    moveSection(up, b, stepTarget(rewrite, b, 'up'));
+    assert.deepEqual(titles(up.doc), [
+        '# Titre', 'intro', '## B', 'b', '## A', 'a', '### A1', 'a1',
+        '# Ancien titre', 'ancienne intro', '## Old1', 'o1', '## Old2', 'o2',
+    ]);
+    // A descend après B, avant l'ancien H1 ; A1 reste dans le plan
+    const a = sectionStartingAt(rewrite, pos[2]);
+    assert.equal(stepTarget(rewrite, a, 'down'), pos[8]);
+    const a1 = sectionStartingAt(rewrite, pos[4]);
+    assert.deepEqual(dropTargets(rewrite, a1), [pos[4], pos[6], pos[8]]);
+    // Les anciens H2 se déplacent entre eux, sans remonter dans le plan
+    const old1 = sectionStartingAt(rewrite, pos[10]);
+    assert.deepEqual(dropTargets(rewrite, old1), [pos[10], pos[12], rewrite.content.size]);
+    assert.equal(stepTarget(rewrite, old1, 'up'), null);
+    const down = EditorState.create({ doc: rewrite }).tr;
+    moveSection(down, old1, stepTarget(rewrite, old1, 'down'));
+    assert.deepEqual(titles(down.doc).slice(8), ['# Ancien titre', 'ancienne intro', '## Old2', 'o2', '## Old1', 'o1']);
 });
 
 test('sectionAround : la sous-section du curseur, sinon sa section ; rien dans l’introduction', () => {

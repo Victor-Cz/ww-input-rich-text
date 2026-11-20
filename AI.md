@@ -166,7 +166,9 @@ identique à celui du serveur (`src/extensions/Sections.js`) :
   (glisser-déposer, `Échap` annule), ou `⌘⇧↑` / `⌘⇧↓` (`Ctrl` hors Mac) sur la
   section du curseur (sa sous-section H3 s'il y est). Un H2 se pose entre les
   sections H2 (avec ses H3), un H3 entre les sous-sections, d'un H2 à l'autre
-  aussi. Un déplacement = une transaction, un pas d'annulation. Poignée absente
+  aussi, sans passer un H1 : un H1 ferme la section (l'ancien texte d'un article
+  réécrit, après le plan, ne suit pas sa dernière section). Un déplacement = une
+  transaction, un pas d'annulation. Poignée absente
   en `readonly` et dans l'éditeur WeWeb.
 
 # Menu AI - Types de modification personnalisés
