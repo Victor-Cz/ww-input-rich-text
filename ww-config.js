@@ -3848,7 +3848,7 @@ export default {
             bindingValidation: { type: 'string', tooltip: "'auto', 'block' or 'words'" },
             propertyHelp: {
                 tooltip:
-                    'How the text the agent writes appears. Auto: a replacement (a section in place of its note, a targeted edit) at once, tinted with the agent color; an addition at once when big (several paragraphs or more than 25 words), word by word when small. Waits for a follow scroll to end.',
+                    'How the text the agent writes appears. Auto: a big change (several paragraphs or more than 25 words: a section in place of its note, the whole text) at once, tinted with the agent color; a small one (a word replaced, a sentence) word by word, to show its precision. Waits for a follow scroll to end.',
             },
             /* wwEditor:end */
         },

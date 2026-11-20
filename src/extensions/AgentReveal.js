@@ -205,10 +205,10 @@ export const AgentReveal = Extension.create({
                                     };
                                     // Une insertion collée à la fin d'une plage en attente la
                                     // prolonge (texte ajouté dans un bloc en cours d'écriture).
-                                    // Sinon (cf. revealAsBlock, mode) : un remplacement (une section
-                                    // à la place de sa note, une modification ciblée) d'un coup, un
-                                    // ajout d'un bloc ou mot à mot selon sa taille ; après un
-                                    // défilement de suivi dans tous les cas (paused)
+                                    // Sinon, ajout ou remplacement (cf. revealAsBlock, mode) : d'un
+                                    // bloc s'il est gros (une section à la place de sa note), mot à
+                                    // mot s'il est petit (un mot, une phrase) ; après un défilement
+                                    // de suivi dans tous les cas (paused)
                                     const extended =
                                         change.oldEnd === change.start && pending.find(r => r.to === change.start);
                                     if (extended) {
@@ -218,7 +218,6 @@ export const AgentReveal = Extension.create({
                                         const block = revealAsBlock(options.mode(), {
                                             words: countWords(doc, change.start, change.newEnd),
                                             multiBlock: !doc.resolve(change.start).sameParent(doc.resolve(change.newEnd)),
-                                            replace: change.oldEnd !== change.start,
                                         });
                                         pending = [
                                             ...pending,
