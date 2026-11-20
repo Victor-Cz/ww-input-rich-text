@@ -234,7 +234,9 @@ export const AgentReveal = Extension.create({
                             if (pending.some(r => r.block) && !options.paused()) {
                                 ink = [
                                     ...ink,
-                                    ...pending.filter(r => r.block).map(r => ({ from: r.from, to: r.to, until: now + INK_MS })),
+                                    ...pending
+                                        .filter(r => r.block)
+                                        .map(r => ({ from: r.from, to: r.to, until: now + INK_MS, direct: true })),
                                 ];
                                 pending = pending.filter(r => !r.block);
                             }
@@ -283,7 +285,10 @@ export const AgentReveal = Extension.create({
                         const { pending, ink } = agentRevealKey.getState(state);
                         if (!pending.length && !ink.length) return DecorationSet.empty;
                         const decorations = [];
-                        for (const r of ink) rangeDecorations(state.doc, r.from, r.to, 'brispr-ink', decorations);
+                        // Un remplacement apparu d'un bloc (direct) a sa propre teinte
+                        for (const r of ink) {
+                            rangeDecorations(state.doc, r.from, r.to, r.direct ? 'brispr-ink -direct' : 'brispr-ink', decorations);
+                        }
                         for (const r of pending) rangeDecorations(state.doc, r.from, r.to, 'brispr-pending', decorations);
                         if (pending.length) {
                             decorations.push(Decoration.widget(pending[0].from, caret, { key: 'brispr-caret', side: -1 }));

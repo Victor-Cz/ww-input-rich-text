@@ -13,6 +13,7 @@
         '--primary-color-active': (content.parameterAiMenuPrimaryColor ?? '#007bff') + '99', // 60%
         '--primary-color-hover': (content.parameterAiMenuPrimaryColor ?? '#007bff') + 'CC', // 80%
         '--brispr-color': agentColor,
+        '--brispr-direct-color': agentParamColor,
         ...cssVariables,
         ...columnStyles
     }">
@@ -1174,6 +1175,11 @@ export default {
         // celle de sa marque s'il en a une, comme son avatar, sinon le paramètre
         agentColor() {
             return this.agentBrandColor || this.content.agentColor || AGENT.color;
+        },
+        // La couleur du paramètre de l'agent (le violet de Search) : la teinte
+        // d'un remplacement apparu d'un bloc, quelle que soit sa marque
+        agentParamColor() {
+            return this.content.agentColor || AGENT.color;
         },
         // Suivi du caret de Brispr (agentFollow) : toujours, en lecture seule,
         // jamais. Quelqu'un de suivi (action followUser) passe avant : l'agent
@@ -3477,6 +3483,8 @@ export default {
     /* Teintes de Brispr, dérivées de --brispr-color (paramètre agentColor,
        peut-être une couleur de thème : pas de suffixe hex) */
     --brispr-ink: color-mix(in srgb, var(--brispr-color) 18%, transparent);
+    /* Remplacement apparu d'un bloc : la couleur du paramètre agentColor */
+    --brispr-direct-ink: color-mix(in srgb, var(--brispr-direct-color) 18%, transparent);
     display: flex;
     flex-direction: column;
     min-height: 150px;
@@ -4094,6 +4102,10 @@ export default {
 
     .brispr-ink {
         animation: brispr-ink 1s ease-out;
+
+        &.-direct {
+            --brispr-ink: var(--brispr-direct-ink);
+        }
     }
 
     /* Seule la barre pulse : l'étiquette reste pleine. La barre est un
