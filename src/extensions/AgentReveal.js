@@ -2,6 +2,7 @@ import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
 import { changedRange, isRemoteChange, remoteAwareMapping } from '../utils/remoteMapping.js';
+import { revealAsBlock } from '../utils/revealMode.js';
 
 // Dévoile, au fil de l'écriture, le texte que Brispr vient d'insérer dans le
 // document partagé (rédaction en direct, sessions d'agent de brispr-collab).
@@ -102,11 +103,11 @@ export const AgentReveal = Extension.create({
              */
             paused: () => false,
             /**
-             * Comment apparaît un remplacement (une section écrite à la place de
-             * sa note, une modification ciblée) : 'block' d'un bloc teinté, 'words'
-             * mot à mot comme une insertion
+             * Comment apparaît le texte de l'agent (cf. revealAsBlock) : 'auto'
+             * d'un bloc pour un gros changement, mot à mot pour un ajustement ;
+             * 'block' toujours d'un bloc teinté ; 'words' toujours mot à mot
              */
-            replacements: () => 'block',
+            mode: () => 'auto',
             onRevealingChange: () => {},
             /** Appelé après chaque paquet dévoilé, avec le caret (suivi du défilement) */
             onReveal: () => {},
@@ -202,26 +203,26 @@ export const AgentReveal = Extension.create({
                                         insert: change.oldEnd === change.start,
                                         at: ++changeCount,
                                     };
-                                    if (change.oldEnd === change.start) {
-                                        // Insertion pure : à dévoiler. Collée à la fin d'une
-                                        // plage en attente, elle la prolonge (texte ajouté
-                                        // dans un bloc en cours d'écriture)
-                                        const last = pending.find(r => r.to === change.start);
-                                        if (last) last.to = change.newEnd;
-                                        else pending = [...pending, { from: change.start, to: change.newEnd }];
+                                    // Une insertion collée à la fin d'une plage en attente la
+                                    // prolonge (texte ajouté dans un bloc en cours d'écriture).
+                                    // Sinon (cf. revealAsBlock, mode) : un remplacement (une section
+                                    // à la place de sa note, une modification ciblée) d'un coup, un
+                                    // ajout d'un bloc ou mot à mot selon sa taille ; après un
+                                    // défilement de suivi dans tous les cas (paused)
+                                    const extended =
+                                        change.oldEnd === change.start && pending.find(r => r.to === change.start);
+                                    if (extended) {
+                                        extended.to = change.newEnd;
                                     } else {
-                                        // Remplacement (une section écrite à la place de sa
-                                        // note, une modification ciblée) : le nouveau texte
-                                        // apparaît d'un bloc, teinté, au prochain paquet, ou mot
-                                        // à mot (cf. replacements) ; après un défilement de
-                                        // suivi dans les deux cas (cf. paused)
+                                        const doc = newState.doc;
+                                        const block = revealAsBlock(options.mode(), {
+                                            words: countWords(doc, change.start, change.newEnd),
+                                            multiBlock: !doc.resolve(change.start).sameParent(doc.resolve(change.newEnd)),
+                                            replace: change.oldEnd !== change.start,
+                                        });
                                         pending = [
                                             ...pending,
-                                            {
-                                                from: change.start,
-                                                to: change.newEnd,
-                                                ...(options.replacements() === 'words' ? {} : { block: true }),
-                                            },
+                                            { from: change.start, to: change.newEnd, ...(block ? { block: true } : {}) },
                                         ];
                                     }
                                 }

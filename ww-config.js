@@ -93,7 +93,7 @@ export default {
                 'epochLoadButtonText',
             ],
             'agentInfobox',
-            ['agentColor', 'agentIcon', 'agentWritingSpeed', 'agentReplaceReveal', 'agentFollow', 'agentLingerDelay'],
+            ['agentColor', 'agentIcon', 'agentWritingSpeed', 'agentRevealMode', 'agentFollow', 'agentLingerDelay'],
             'formInfobox',
             ['fieldName', 'customValidation', 'validation'],
             'readonly',
@@ -3830,24 +3830,25 @@ export default {
             },
             /* wwEditor:end */
         },
-        agentReplaceReveal: {
+        agentRevealMode: {
             section: 'settings',
-            label: { en: 'Agent replacements', fr: "Remplacements de l'agent" },
+            label: { en: 'Agent text appearance', fr: "Apparition du texte de l'agent" },
             type: 'TextSelect',
             options: {
                 options: [
+                    { value: 'auto', label: { en: 'Auto (by size)', fr: 'Auto (selon la taille)' } },
                     { value: 'block', label: { en: 'Appear at once', fr: "D'un bloc" } },
                     { value: 'words', label: { en: 'Word by word', fr: 'Mot à mot' } },
                 ],
             },
-            defaultValue: 'block',
+            defaultValue: 'auto',
             bindable: true,
             hidden: content => !content.enableCollaboration,
             /* wwEditor:start */
-            bindingValidation: { type: 'string', tooltip: "'block' or 'words'" },
+            bindingValidation: { type: 'string', tooltip: "'auto', 'block' or 'words'" },
             propertyHelp: {
                 tooltip:
-                    'How text the agent writes in place of other text (a section in place of its note, a targeted edit) appears: at once, tinted, or word by word like new text. Both wait for a follow scroll to end.',
+                    'How the text the agent writes appears. Auto: a replacement (a section in place of its note, a targeted edit) at once, tinted with the agent color; an addition at once when big (several paragraphs or more than 25 words), word by word when small. Waits for a follow scroll to end.',
             },
             /* wwEditor:end */
         },
