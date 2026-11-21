@@ -21,7 +21,7 @@
                 <!-- En-tête : l'en-tête, le menu et le texte défilent ensemble, le
                      menu reste collé en haut une fois l'en-tête passé. Sans
                      en-tête, ces deux enveloppes s'effacent (display: contents) -->
-                <div class="ww-rich-text__scroll" :class="{ '-header': hasHeader }">
+                <div class="ww-rich-text__scroll" :class="{ '-header': hasHeader, '-menu-bottom': menuAtBottom }">
                 <div class="ww-rich-text__header" :class="{ '-aligned': content.headerAlignText ?? true }"
                     v-if="hasHeader">
                     <wwElement v-bind="content.headerElement" />
@@ -31,7 +31,7 @@
                      (l'utilisateur pilote sa visibilité via isVersionPreview) ;
                      la frise apparaît par-dessus le slot, ou dans le conteneur
                      externe si un sélecteur est fourni -->
-                <div class="ww-rich-text__menu-slot"
+                <div class="ww-rich-text__menu-slot" ref="menuSlot"
                     :class="{ '-history': versionHistory.active, '-centered': content.centerMenu }">
                 <div class="ww-rich-text__menu native-menu" v-if="!hideMenu && !content.customMenu" :style="menuStyles">
                     <!-- Texte type (normal, ...) -->
@@ -1260,6 +1260,11 @@ export default {
             const mode = this.content.agentFollow ?? 'always';
             return mode === 'always' || (mode === 'readonly' && (this.isReadonly || !this.content.editable));
         },
+        // Menu en bas de l'éditeur (menuPosition), collé au bas de ce qui
+        // défile : sur mobile et tablette, à portée du pouce
+        menuAtBottom() {
+            return this.content.menuPosition === 'bottom';
+        },
         hideMenu() {
             return this.content.hideMenu || this.isReadonly;
         },
@@ -1778,7 +1783,11 @@ export default {
                 // défile. Seuil et marge du défilement de ProseMirror passent sous
                 // lui, pour que le curseur ne s'y cache pas. Accesseurs : la
                 // hauteur est relue à chaque défilement.
-                const stickyHeight = () => (this.hasHeader ? this.$refs.stickyBar?.offsetHeight || 0 : 0);
+                const stickyHeight = () =>
+                    this.hasHeader && !this.menuAtBottom ? this.$refs.stickyBar?.offsetHeight || 0 : 0;
+                // Menu en bas (menuPosition) : il couvre la fin de la zone visible
+                const bottomBarHeight = () =>
+                    this.hasHeader && this.menuAtBottom ? this.$refs.menuSlot?.offsetHeight || 0 : 0;
 
                 this.richEditor = new Editor({
                     content: initialContent,
@@ -1843,7 +1852,9 @@ export default {
                                 return stickyHeight();
                             },
                             right: 0,
-                            bottom: 0,
+                            get bottom() {
+                                return bottomBarHeight();
+                            },
                             left: 0,
                         },
                         scrollMargin: {
@@ -1851,7 +1862,9 @@ export default {
                                 return stickyHeight() + 5;
                             },
                             right: 5,
-                            bottom: 5,
+                            get bottom() {
+                                return bottomBarHeight() + 5;
+                            },
                             left: 5,
                         },
                         handleClickOn: (_view, _pos, node) => {
@@ -4522,6 +4535,46 @@ export default {
     max-width: 100%;
     max-height: 100%;
     pointer-events: auto;
+}
+
+/* ===== Menu en bas (menuPosition: bottom) =====
+   Même DOM, autre ordre : l'indicateur de section reste en haut, le texte au
+   milieu, le menu en bas. Avec en-tête (zone qui défile), le menu colle au
+   bas de ce qui défile, au-dessus de la zone sûre de l'écran */
+.ww-rich-text__scroll.-menu-bottom {
+    > .ww-rich-text__sticky > .ww-rich-text__outline {
+        order: 1;
+    }
+
+    > .ww-rich-text__input {
+        order: 2;
+    }
+
+    > .ww-rich-text__sticky > .ww-rich-text__menu-slot {
+        order: 3;
+    }
+
+    &.-header > .ww-rich-text__sticky {
+        display: contents;
+    }
+
+    &.-header > .ww-rich-text__sticky > .ww-rich-text__outline {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    &.-header > .ww-rich-text__sticky > .ww-rich-text__menu-slot {
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+
+        > .ww-rich-text__menu {
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+    }
 }
 
 /* ===== Mode historique =====

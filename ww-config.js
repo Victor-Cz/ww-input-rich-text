@@ -42,6 +42,7 @@ export default {
             'headerAlignText',
             'customMenu',
             'centerMenu',
+            'menuPosition',
             'menuColor',
             'editorPadding',
             'editorMaxWidth',
@@ -959,6 +960,25 @@ export default {
                 en: 'The menu keeps its own width and is centered on the text column: it can be wider than the column, never wider than the editor. Give the custom menu container an auto width.',
                 fr: "Le menu garde sa propre largeur et se centre sur la colonne de texte : il peut être plus large que la colonne, jamais que l'éditeur. Donnez une largeur auto au conteneur du menu personnalisé.",
             },
+        },
+        menuPosition: {
+            label: { en: 'Menu position', fr: 'Position du menu' },
+            type: 'TextSelect',
+            options: {
+                options: [
+                    { value: 'top', label: { en: 'Top', fr: 'En haut' } },
+                    { value: 'bottom', label: { en: 'Bottom', fr: 'En bas' } },
+                ],
+            },
+            defaultValue: 'top',
+            bindable: true,
+            /* wwEditor:start */
+            bindingValidation: { type: 'string', tooltip: "'top' or 'bottom'" },
+            propertyHelp: {
+                tooltip:
+                    'Top: the menu sticks to the top of the text. Bottom: it sticks to the bottom of the editor, within thumb reach (bind it to the breakpoint: bottom on mobile and tablet).',
+            },
+            /* wwEditor:end */
         },
         initialValue: {
             section: 'settings',
