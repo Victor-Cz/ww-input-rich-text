@@ -251,8 +251,21 @@
                 </div>
                 </div>
 
-                <editor-content class="ww-rich-text__input" :editor="richEditor" :style="richStyles" />
+                <editor-content class="ww-rich-text__input" :class="{ '-empty-layout': showEmptyLayout }"
+                    ref="editorContent" :editor="richEditor" :style="richStyles" />
                 </div>
+
+                <!-- État vide (useEmptyLayout) : les éléments WeWeb de l'utilisateur
+                     par-dessus la zone de texte, rendus dans la racine
+                     d'editor-content (qui ne rend pas d'enfants Vue) pour la
+                     couvrir sans la mesurer. Le placeholder natif s'efface -->
+                <teleport v-if="showEmptyLayout && emptyLayoutTarget" :to="emptyLayoutTarget">
+                    <div class="ww-rich-text__empty" contenteditable="false" @mousedown="onEmptyLayoutMouseDown">
+                        <div class="ww-rich-text__empty-content">
+                            <wwElement v-bind="content.emptyLayoutElement" />
+                        </div>
+                    </div>
+                </teleport>
 
                 <!-- Réglette des modifications : carte du document le long du
                      bord droit, active pendant une comparaison de versions -->
@@ -376,6 +389,7 @@ import { sanitizeLinkUrl, sanitizeImageSrc, safeOpenUrl, isDangerousUrl } from '
 import { buildOutline, resolveOutlineLevels, toPublicOutline, toPublicHeading } from './utils/outline.js';
 import { EMPTY_EDITOR_UI, readEditorUi, TEXT_TYPES, uiInputsChanged } from './utils/editorUi.js';
 import { mentionIds } from './utils/mentions.js';
+import { isDocEmpty } from './utils/emptyDoc.js';
 import { sameValue, shallowEqual } from './utils/sameValue.js';
 import { whenIdle } from './utils/idle.js';
 import {
@@ -598,6 +612,16 @@ export default {
             readonly: true,
         });
 
+        // true quand le texte se réduit à un paragraphe vide (cf. utils/emptyDoc),
+        // en collaboration seulement une fois le document synchronisé
+        const { value: isEmpty, setValue: _setIsEmpty } = wwLib.wwVariable.useComponentVariable({
+            uid: props.uid,
+            name: 'isEmpty',
+            type: 'boolean',
+            defaultValue: false,
+            readonly: true,
+        });
+
         // Wrap setters to silently ignore calls after variable cleanup
         let _isDestroyed = false;
         onBeforeUnmount(() => { _isDestroyed = true; });
@@ -621,6 +645,7 @@ export default {
         const setCurrentVersion = (...args) => { if (!_isDestroyed) _setCurrentVersion(...args); };
         const setVersions = unlessSame(versions, _setVersions);
         const setContributors = unlessSame(contributors, _setContributors);
+        const setIsEmpty = unlessSame(isEmpty, _setIsEmpty);
 
 
         /* wwEditor:start */
@@ -688,6 +713,8 @@ export default {
             setVersions,
             contributors,
             setContributors,
+            isEmpty,
+            setIsEmpty,
             randomUid,
             /* wwEditor:start */
             createElement,
@@ -733,6 +760,11 @@ export default {
         // Suivi en pause après un défilement (cf. FOLLOW_RESUME_MS)
         followPausedUntil: 0,
         agentIconSvg: '',
+        // Corps du document réduit à un paragraphe vide (cf. utils/emptyDoc),
+        // relu à chaque modification du document
+        docEmpty: false,
+        // Racine d'editor-content, où l'état vide est rendu
+        emptyLayoutTarget: null,
     }),
 
     watch: {
@@ -862,6 +894,27 @@ export default {
             },
             immediate: true,
         },
+        // Conteneur de l'état vide créé à la première activation (éléments existants)
+        'content.useEmptyLayout': {
+            async handler(value) {
+                if (value && !this.content.emptyLayoutElement) {
+                    const element = await this.createElement('ww-flexbox', {
+                        _state: {
+                            name: 'Empty state',
+                            style: {
+                                default: {
+                                    width: 'auto',
+                                },
+                            },
+                        },
+                    });
+                    this.$emit('update:content:effect', {
+                        emptyLayoutElement: element,
+                    });
+                }
+            },
+            immediate: true,
+        },
         // Auto-create linkPopoverLayoutElement when useLinkLayoutPopover is enabled
         'content.useLinkLayoutPopover': {
             async handler(value) {
@@ -888,6 +941,19 @@ export default {
             this.$emit('update:sidepanel-content', { path: 'selectedTag', value: null });
         },
         /* wwEditor:end */
+        documentIsEmpty: {
+            immediate: true,
+            handler(value) {
+                this.setIsEmpty(value);
+            },
+        },
+        // L'état vide est rendu dans la racine d'editor-content, présente
+        // une fois l'éditeur créé
+        richEditor() {
+            this.$nextTick(() => {
+                this.emptyLayoutTarget = this.$refs.editorContent?.$el || null;
+            });
+        },
         isReadonly: {
             immediate: true,
             handler(value) {
@@ -1266,6 +1332,23 @@ export default {
         },
         hasHeader() {
             return !!this.content.showHeader && !!this.content.headerElement;
+        },
+        // Document vide connu comme tel (variable isEmpty) : en collaboration,
+        // le document est vide jusqu'à la synchro, il n'est pas dit vide avant.
+        // Dans l'éditeur WeWeb, la synchro peut ne jamais venir : pas d'attente
+        documentIsEmpty() {
+            if (!this.docEmpty) return false;
+            if (!this.shouldEnableCollaboration || this.isEditing) return true;
+            return !!this.collaborationStatus?.synced;
+        },
+        // État vide affiché : document vide, hors aperçu de version
+        // (forceEmptyLayoutDisplay le montre toujours, dans l'éditeur WeWeb)
+        showEmptyLayout() {
+            if (!this.content.useEmptyLayout || !this.content.emptyLayoutElement) return false;
+            /* wwEditor:start */
+            if (this.content.forceEmptyLayoutDisplay) return true;
+            /* wwEditor:end */
+            return this.documentIsEmpty && !this.isVersionPreview && !this.versionHistory.active;
         },
         menuStyles() {
             return {
@@ -1704,6 +1787,7 @@ export default {
                     },
                     extensions,
                     onCreate: ({ editor }) => {
+                        this.docEmpty = isDocEmpty(editor.state.doc);
                         this.setValue(this.getContent());
                         this.setMentions(mentionsEnabled ? mentionIds(editor.state.doc) : []);
                         this.syncFrontmatter();
@@ -1737,6 +1821,7 @@ export default {
                         if (this.isDestroying) return;
                         this.watchEditorUi(editor);
                         if (!transaction.docChanged) return;
+                        this.docEmpty = isDocEmpty(editor.state.doc);
                         if (mentionsEnabled) this.setMentions(mentionIds(editor.state.doc));
                         this.syncFrontmatter();
                         this.scheduleOutlineUpdate();
@@ -1788,12 +1873,29 @@ export default {
                     content: String(this.content.initialValue || ''),
                     editable: this.isEditable,
                     extensions: [StarterKit],
-                    onCreate: ({ editor }) => this.watchEditorUi(editor),
-                    onTransaction: ({ editor }) => this.watchEditorUi(editor),
+                    onCreate: ({ editor }) => {
+                        this.docEmpty = isDocEmpty(editor.state.doc);
+                        this.watchEditorUi(editor);
+                    },
+                    onTransaction: ({ editor, transaction }) => {
+                        if (transaction.docChanged) this.docEmpty = isDocEmpty(editor.state.doc);
+                        this.watchEditorUi(editor);
+                    },
                 });
             }
 
             this.loading = false;
+        },
+        // Un clic dans l'état vide place le curseur dans le texte, sauf sur un
+        // élément interactif qu'il contient (lien, bouton, champ). Dans
+        // l'éditeur WeWeb, le clic sélectionne ses éléments : laissé tel quel
+        onEmptyLayoutMouseDown(event) {
+            if (this.isEditing || !this.isEditable || !this.richEditor) return;
+            const interactive = 'a, button, input, textarea, select, label, [role="button"], [contenteditable="true"]';
+            const hit = event.target.closest?.(interactive);
+            if (hit && event.currentTarget.contains(hit)) return;
+            event.preventDefault();
+            this.richEditor.commands.focus('end');
         },
         // L'état du menu (editorUi) dépend du document, de la sélection et des
         // marques en attente : relu une fois par image, et seulement s'ils ont
@@ -4381,6 +4483,38 @@ export default {
            contenu (tableau large…) et déborderait au lieu de s'y adapter */
         min-width: 0;
     }
+}
+
+/* ===== État vide (useEmptyLayout) =====
+   Rendu dans la racine d'editor-content, par-dessus le texte : centré, il
+   laisse passer les clics vers le texte hors de ses éléments. Au-dessus du
+   voile de l'éditeur WeWeb (.editing, z-index 1) pour qu'on y sélectionne
+   ses éléments. Le placeholder natif s'efface tant qu'il est affiché. */
+.ww-rich-text__input.-empty-layout {
+    position: relative;
+
+    > .ProseMirror p.is-editor-empty:first-child::before {
+        content: none;
+    }
+}
+
+.ww-rich-text__empty {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--editor-padding-top, 12px) var(--editor-padding-right, 12px) var(--editor-padding-bottom, 12px)
+        var(--editor-padding-left, 12px);
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
+.ww-rich-text__empty-content {
+    max-width: 100%;
+    max-height: 100%;
+    pointer-events: auto;
 }
 
 /* ===== Mode historique =====

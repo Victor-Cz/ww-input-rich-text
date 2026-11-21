@@ -104,6 +104,7 @@ export default {
             'initialValue',
             'output',
             'placeholder',
+            ['useEmptyLayout', 'forceEmptyLayoutDisplay'],
             'debounce',
             'debounceDelay',
             'autofocus',
@@ -1011,6 +1012,36 @@ export default {
             type: 'Textarea',
             defaultValue: 'Type here...',
             bindable: true,
+        },
+        // --- État vide : des éléments WeWeb à la place du placeholder ---
+        useEmptyLayout: {
+            section: 'settings',
+            label: { en: 'Empty state layout', fr: "Mise en page de l'état vide" },
+            type: 'OnOff',
+            defaultValue: false,
+            bindable: true,
+            description: {
+                en: 'Show your own WeWeb elements (the "Empty state" container in the navigator) over the text area while the document is empty, instead of the placeholder. Hidden as soon as there is content. A click on it places the cursor in the text, except on a link, button or field inside it.',
+                fr: "Affiche vos propres éléments WeWeb (le conteneur « Empty state » du navigateur) sur la zone de texte tant que le document est vide, à la place du placeholder. Masqué dès qu'il y a du contenu. Un clic dessus place le curseur dans le texte, sauf sur un lien, un bouton ou un champ qu'il contient.",
+            },
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'boolean',
+                tooltip: 'true: shows the "Empty state" container while the document is empty (see the isEmpty variable)',
+            },
+            /* wwEditor:end */
+        },
+        forceEmptyLayoutDisplay: {
+            section: 'settings',
+            label: { en: 'Preview empty state', fr: "Aperçu de l'état vide" },
+            type: 'OnOff',
+            defaultValue: false,
+            editorOnly: true,
+            hidden: content => !content.useEmptyLayout,
+            description: {
+                en: 'WeWeb editor only: always show the empty state, even over text, to build it. No effect on the published app.',
+                fr: "Éditeur WeWeb seulement : affiche toujours l'état vide, même sur du texte, pour le construire. Sans effet sur l'app publiée.",
+            },
         },
         // --- Outline / navigation par titres (extension activable) ---
         enableOutline: {
@@ -2354,6 +2385,25 @@ export default {
             navigator: {
                 group: 'Link',
                 hidden: content => !content.useLinkLayoutPopover,
+            },
+        },
+        emptyLayoutElement: {
+            hidden: true,
+            defaultValue: {
+                isWwObject: true,
+                type: 'ww-flexbox',
+                state: {
+                    name: 'Empty state',
+                    style: {
+                        default: {
+                            width: 'auto',
+                        },
+                    },
+                },
+            },
+            navigator: {
+                group: 'Empty state',
+                hidden: content => !content.useEmptyLayout,
             },
         },
         table: {
