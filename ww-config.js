@@ -1036,7 +1036,6 @@ export default {
             label: { en: 'Preview empty state', fr: "Aperçu de l'état vide" },
             type: 'OnOff',
             defaultValue: false,
-            editorOnly: true,
             hidden: content => !content.useEmptyLayout,
             description: {
                 en: 'WeWeb editor only: always show the empty state, even over text, to build it. No effect on the published app.',

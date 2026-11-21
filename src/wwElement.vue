@@ -763,6 +763,9 @@ export default {
         // Corps du document réduit à un paragraphe vide (cf. utils/emptyDoc),
         // relu à chaque modification du document
         docEmpty: false,
+        // Document de collaboration synchronisé au moins une fois depuis la
+        // création de l'éditeur : une coupure réseau ne le rend pas inconnu
+        collabSyncedOnce: false,
         // Racine d'editor-content, où l'état vide est rendu
         emptyLayoutTarget: null,
     }),
@@ -1036,6 +1039,7 @@ export default {
         // Hors historique, la liste des versions est chargée dès la synchro
         // pour alimenter la variable versions
         'collaborationStatus.synced'(synced) {
+            if (synced) this.collabSyncedOnce = true;
             if (!synced || !this.versionsAvailable) return;
             const vh = this.versionHistory;
             if (this.content.showVersionHistory && !vh.active) {
@@ -1334,12 +1338,13 @@ export default {
             return !!this.content.showHeader && !!this.content.headerElement;
         },
         // Document vide connu comme tel (variable isEmpty) : en collaboration,
-        // le document est vide jusqu'à la synchro, il n'est pas dit vide avant.
-        // Dans l'éditeur WeWeb, la synchro peut ne jamais venir : pas d'attente
+        // le document est vide jusqu'à la synchro, il n'est pas dit vide avant
+        // (puis une coupure réseau n'y change rien). Dans l'éditeur WeWeb, la
+        // synchro peut ne jamais venir : pas d'attente
         documentIsEmpty() {
             if (!this.docEmpty) return false;
             if (!this.shouldEnableCollaboration || this.isEditing) return true;
-            return !!this.collaborationStatus?.synced;
+            return this.collabSyncedOnce;
         },
         // État vide affiché : document vide, hors aperçu de version
         // (forceEmptyLayoutDisplay le montre toujours, dans l'éditeur WeWeb)
@@ -1787,6 +1792,8 @@ export default {
                     },
                     extensions,
                     onCreate: ({ editor }) => {
+                        // Nouvel éditeur (autre document) : synchro à attendre à nouveau
+                        this.collabSyncedOnce = !!this.collaborationStatus?.synced;
                         this.docEmpty = isDocEmpty(editor.state.doc);
                         this.setValue(this.getContent());
                         this.setMentions(mentionsEnabled ? mentionIds(editor.state.doc) : []);
