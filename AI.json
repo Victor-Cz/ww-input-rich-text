@@ -1,0 +1,2013 @@
+{
+    "metadata": {
+        "name": "ww-rich-text-v2",
+        "description": "Rich text editor (Tiptap) for writing formatted content, with HTML or Markdown output, mentions, tables, images, an AI rewrite menu, live SEO analysis, headings outline, and real-time collaboration with version history. This is for editing rich text, not only rendering it.",
+        "keywords": [
+            "rich text",
+            "wysiwyg",
+            "editor",
+            "tiptap",
+            "html",
+            "markdown",
+            "form field",
+            "mention",
+            "table",
+            "ai menu",
+            "seo",
+            "outline",
+            "table of contents",
+            "collaboration",
+            "version history"
+        ],
+        "features": [
+            "HTML or Markdown output exposed in the `value` variable, usable as a form field",
+            "Default toolbar with per-button flags, a custom toolbar slot, or no toolbar",
+            "Optional header slot scrolling with the text above a sticky toolbar",
+            "Mentions from a bound list",
+            "Tables with row/column handles, drag and drop, resizing and a right-click menu",
+            "Images and link popovers renderable with custom templates (local context)",
+            "AI menu: the workflow receives the prompt and sends the answer back",
+            "Live SEO analysis with scores, checks and in-text highlighting",
+            "Headings outline with visible-section tracking and scroll actions",
+            "Real-time collaboration (Yjs/Hocuspocus) with cursors, saves and version history compare",
+            "Read-only mode to display rich text",
+            "Custom empty state (your own elements) while the document is empty, with an isEmpty variable"
+        ],
+        "inherit": []
+    },
+    "properties": [
+        {
+            "name": "readonly",
+            "description": "Read-only mode: content is displayed, the toolbar is hidden and editing is disabled. Adds the `readonly` element state.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "showHeader",
+            "description": "Show a header container (the `headerElement` slot) above the toolbar. Header, toolbar and text then scroll together inside the element, which needs a fixed height; the toolbar sticks to the top once the header has scrolled away.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "headerAlignText",
+            "description": "Give the header the width and horizontal position of the text column (editorPadding and editorMaxWidth). False = full-width header. Inactive when showHeader is false.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "customMenu",
+            "description": "Replace the default toolbar with the `customMenuElement` slot, to build a fully custom toolbar driven by the element actions and the `states` variable.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "menuPosition",
+            "description": "'top' (default): the toolbar sticks to the top of the text. 'bottom': it sticks to the bottom of the editor, within thumb reach; bind it to the breakpoint (bottom on mobile and tablet).",
+            "type": "string",
+            "enum": [
+                "top",
+                "bottom"
+            ],
+            "defaultValue": "top"
+        },
+        {
+            "name": "centerMenu",
+            "description": "Center the toolbar on the text column at its own width (it may be wider than the column, never wider than the element).",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "initialValue",
+            "description": "Initial content (HTML or Markdown string, not multilang). Feeds the `value` variable; changing it later emits `initValueChange`. Inactive when enableCollaboration is true (the content then comes from the collaboration server).",
+            "type": "string",
+            "defaultValue": ""
+        },
+        {
+            "name": "output",
+            "description": "Format of the `value` variable and of event payloads. Values: \"html\" | \"markdown\".",
+            "type": "string",
+            "defaultValue": "html"
+        },
+        {
+            "name": "debounce",
+            "description": "Debounce the `change` event (and the `value` update). Use it when the change workflow does expensive work (API calls, autosave).",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "debounceDelay",
+            "description": "Debounce delay as a CSS-like duration string between 1ms and 5000ms (e.g. \"500ms\"). Inactive when debounce is false.",
+            "type": "string",
+            "defaultValue": "500ms"
+        },
+        {
+            "name": "placeholder",
+            "description": "Placeholder shown when the editor is empty (plain string, not multilang).",
+            "type": "string",
+            "defaultValue": "Type here..."
+        },
+        {
+            "name": "useEmptyLayout",
+            "description": "Shows the emptyLayoutElement container (any elements: illustration, text, buttons) centred over the text while the document is empty (a single empty paragraph; the frontmatter is ignored). The native placeholder is hidden meanwhile. In collaboration it waits for the first sync, so it never flashes before the content arrives. Clicking outside a button, link or field inside it puts the cursor in the text. Hidden during a version preview.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "forceEmptyLayoutDisplay",
+            "description": "WeWeb editor only: always shows the empty state, even over text, to build it. No effect on the published app. Inactive when useEmptyLayout is false.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "enableOutline",
+            "description": "Track headings: fills the `outline` and `currentHeading` variables, emits `heading:change` and enables the scroll-to-heading actions. Read-only computation: nothing is written into the document.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "outlineLevels",
+            "description": "Heading levels kept in the outline: \"h2\", \"h2h3\", \"h1h2h3\" or \"all\". Inactive when enableOutline is false.",
+            "type": "string",
+            "defaultValue": "h2h3"
+        },
+        {
+            "name": "outlineOffset",
+            "description": "Offset in px of the detection line: a heading becomes the visible section once it passes above it, and scroll-to-heading lands it there. Increase it when a fixed header covers the top of the text. Inactive when enableOutline is false.",
+            "type": "number",
+            "defaultValue": 0
+        },
+        {
+            "name": "outlineIndicator",
+            "description": "Show a built-in breadcrumb (H2 › H3) of the visible section pinned above the text. Leave false to build your own UI from `currentHeading`. Inactive when enableOutline is false.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "outlineIndicatorColor",
+            "description": "Text color of the built-in outline breadcrumb. Inactive when enableOutline or outlineIndicator is false.",
+            "type": "string",
+            "defaultValue": "rgba(0, 0, 0, 0.6)"
+        },
+        {
+            "name": "outlineIndicatorBgColor",
+            "description": "Background color of the built-in outline breadcrumb. Inactive when enableOutline or outlineIndicator is false.",
+            "type": "string",
+            "defaultValue": "transparent"
+        },
+        {
+            "name": "enableSeoAnalysis",
+            "description": "Enable the live SEO analysis: fills the `seo` variable (global score, category scores, detailed checks), emits `seo:change` and enables the SEO highlight actions. No visual output by itself.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "seoKeyword",
+            "description": "Focus keyword the content should rank for (one per page). Inactive when enableSeoAnalysis is false.",
+            "type": "string",
+            "defaultValue": ""
+        },
+        {
+            "name": "seoKeywordSynonyms",
+            "description": "Close variants of the focus keyword, counted as equivalent in every check. Array of strings or comma-separated string. Inactive when enableSeoAnalysis is false.",
+            "type": "array",
+            "defaultValue": []
+        },
+        {
+            "name": "seoKeywordMatching",
+            "description": "How the focus keyword (and its synonyms) is found. How it is found in the text: \"exact\" (the phrase as written), \"stopWords\" (same order, small words like \"de\", \"la\" ignored) or \"anyOrder\" (all words in one sentence, any order). Case, accents and plurals are always tolerated.",
+            "type": "string",
+            "enum": [
+                "exact",
+                "stopWords",
+                "anyOrder"
+            ],
+            "defaultValue": "anyOrder"
+        },
+        {
+            "name": "seoSecondaryKeywords",
+            "description": "Related keywords scored separately from the focus keyword. Array of strings or comma-separated string. Inactive when enableSeoAnalysis is false.",
+            "type": "array",
+            "defaultValue": []
+        },
+        {
+            "name": "seoSecondaryKeywordsMatching",
+            "description": "How each secondary keyword is found. How it is found in the text: \"exact\" (the phrase as written), \"stopWords\" (same order, small words like \"de\", \"la\" ignored) or \"anyOrder\" (all words in one sentence, any order). Case, accents and plurals are always tolerated.",
+            "type": "string",
+            "enum": [
+                "exact",
+                "stopWords",
+                "anyOrder"
+            ],
+            "defaultValue": "exact"
+        },
+        {
+            "name": "seoMetaTitle",
+            "description": "Page meta title, scored only when provided. Inactive when enableSeoAnalysis is false.",
+            "type": "string",
+            "defaultValue": ""
+        },
+        {
+            "name": "seoMetaDescription",
+            "description": "Page meta description, scored only when provided. Inactive when enableSeoAnalysis is false.",
+            "type": "string",
+            "defaultValue": ""
+        },
+        {
+            "name": "seoSiteDomain",
+            "description": "Site domain or full URL (e.g. \"example.com\") used to tell internal links from external ones. Also used outside the SEO analysis: internal links render as plain links, external ones get target=\"_blank\" rel=\"noopener noreferrer nofollow\".",
+            "type": "string",
+            "defaultValue": ""
+        },
+        {
+            "name": "seoLang",
+            "description": "Language of the analyzed content (thresholds, readability formula, word lists). Inactive when enableSeoAnalysis is false. Values: \"en\" | \"fr\".",
+            "type": "string",
+            "defaultValue": "en"
+        },
+        {
+            "name": "seoUiLang",
+            "description": "Language of the check titles, descriptions and messages; \"auto\" follows seoLang. Inactive when enableSeoAnalysis is false. Values: \"auto\" | \"en\" | \"fr\".",
+            "type": "string",
+            "defaultValue": "auto"
+        },
+        {
+            "name": "seoHighlightColor",
+            "description": "Default CSS color of the highlightSeoCheck action (its Color argument overrides it). Inactive when enableSeoAnalysis is false.",
+            "type": "string",
+            "defaultValue": ""
+        },
+        {
+            "name": "seoExpectH1",
+            "description": "Set to true when the H1 is written inside the editor; false when the page provides it. Inactive when enableSeoAnalysis is false.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "seoWordLists",
+            "description": "Overrides the default fr/en word lists: { stopWords, genericAnchors, powerWords, sentimentWords, transitionWords, complexWords }, each an array of strings. Inactive when enableSeoAnalysis is false.",
+            "type": "object",
+            "defaultValue": null
+        },
+        {
+            "name": "enableGeoAnalysis",
+            "description": "Enables the GEO analysis (citability by AI engines): exposes the `geo` variable, same shape as `seo` plus `passages`, and the geo:change event. Shares keyword, language and word lists with the SEO analysis.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "geoQuestions",
+            "description": "Questions the content should answer (People Also Ask, tracked prompts), scored by the questionCoverage check. Array of strings or comma-separated string.",
+            "type": "array",
+            "defaultValue": []
+        },
+        {
+            "name": "geoEvergreen",
+            "description": "Evergreen content: the freshness check (recent years cited) does not apply.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "geoWordLists",
+            "description": "Overrides the default fr/en GEO word lists: { attributionWords, vagueWords, anaphoraOpeners, backReferences, genericHeadings, procedureWords, comparisonWords, definitionVerbs, questionWords, knownAcronyms, experienceMarkers, takeawayMarkers }, each an array of strings.",
+            "type": "object",
+            "defaultValue": null
+        },
+        {
+            "name": "showFrontmatter",
+            "description": "Shows the frontmatter fields (meta title, description, slug) at the top of the editor. Hidden, they stay readable through the `frontmatter` variable and editable with setFrontmatterField.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "frontmatterLabels",
+            "description": "Placeholder of each frontmatter field: [{ key: \"meta_title\", label: \"Meta title\" }]. Defaults: Meta title, Meta description, Slug.",
+            "type": "array",
+            "defaultValue": []
+        },
+        {
+            "name": "editorPadding",
+            "description": "Padding around the text: { paddingTop, paddingRight, paddingBottom, paddingLeft } as CSS lengths.",
+            "type": "object",
+            "defaultValue": {
+                "paddingTop": "12px",
+                "paddingRight": "12px",
+                "paddingBottom": "12px",
+                "paddingLeft": "12px"
+            }
+        },
+        {
+            "name": "editorMaxWidth",
+            "description": "Maximum width of the text column, centered inside the element (CSS length, \"none\" = full width).",
+            "type": "string",
+            "defaultValue": "none"
+        },
+        {
+            "name": "enableMention",
+            "description": "Enable mentions: typing mentionChar opens a suggestion list built from mentionList.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "mentionList",
+            "description": "Array of objects used as mention suggestions (typically bound to a collection). Inactive when enableMention is false.",
+            "type": "array",
+            "defaultValue": []
+        },
+        {
+            "name": "mentionIdPath",
+            "description": "Path, inside each mentionList item, to the unique id of the mention. Shown only when mentionList is bound and its items are objects. Inactive when enableMention is false.",
+            "type": "string",
+            "defaultValue": null
+        },
+        {
+            "name": "mentionLabelPath",
+            "description": "Path, inside each mentionList item, to the displayed label. Shown only when mentionList is bound and its items are objects. Inactive when enableMention is false.",
+            "type": "string",
+            "defaultValue": null
+        },
+        {
+            "name": "mentionAllowSpaces",
+            "description": "Allow spaces inside a mention query. Inactive when enableMention is false.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "mentionChar",
+            "description": "Character that triggers the mention suggestions. Inactive when enableMention is false.",
+            "type": "string",
+            "defaultValue": "@"
+        },
+        {
+            "name": "mentionListLength",
+            "description": "Maximum number of suggestions shown. Inactive when enableMention is false.",
+            "type": "number",
+            "defaultValue": 5
+        },
+        {
+            "name": "autofocus",
+            "description": "Focus the editor automatically on mount.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "useImageLayout",
+            "description": "Render every image of the content with the `imageLayoutElement` slot instead of the default <img>; the template reads the image data from the `image` local context.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "useLinkLayoutPopover",
+            "description": "Render the link popover (shown when the cursor is on a link) with the `linkPopoverLayoutElement` slot instead of the default popover; the template reads the link data and callbacks from the `link` local context.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "linkEditing",
+            "description": "How a link is edited: 'popover' (default, floating popover) or 'inline'.",
+            "type": "string",
+            "enum": [
+                "popover",
+                "inline"
+            ],
+            "defaultValue": "popover"
+        },
+        {
+            "name": "forceLinkPopoverDisplay",
+            "description": "Keep the link popover visible instead of hiding it when the cursor leaves the link. Useful to design the custom popover.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "editable",
+            "description": "Whether the content can be edited. Unlike readonly, keeps the regular editor look.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "enableSpellcheck",
+            "description": "Enable the browser spellcheck inside the editor.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "hideMenu",
+            "description": "Hide the default toolbar entirely. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "wrapMenu",
+            "description": "Let the default toolbar wrap onto several lines instead of scrolling horizontally. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "menuColor",
+            "description": "Color of the default toolbar icons. Inactive when customMenu is true.",
+            "type": "string",
+            "defaultValue": "#000000ad"
+        },
+        {
+            "name": "h1",
+            "description": "Styling of h1 headings inside the editor: fontSize, fontFamily, fontWeight, textAlign, color, lineHeight, marginTop, marginBottom. Values are CSS strings; an empty string keeps the inherited style.",
+            "type": "object",
+            "defaultValue": {
+                "fontSize": "32px",
+                "fontFamily": "",
+                "fontWeight": "",
+                "textAlign": "",
+                "color": "",
+                "lineHeight": "",
+                "marginTop": "",
+                "marginBottom": ""
+            }
+        },
+        {
+            "name": "h2",
+            "description": "Styling of h2 headings inside the editor: fontSize, fontFamily, fontWeight, textAlign, color, lineHeight, marginTop, marginBottom. Values are CSS strings; an empty string keeps the inherited style.",
+            "type": "object",
+            "defaultValue": {
+                "fontSize": "24px",
+                "fontFamily": "",
+                "fontWeight": "",
+                "textAlign": "",
+                "color": "",
+                "lineHeight": "",
+                "marginTop": "",
+                "marginBottom": ""
+            }
+        },
+        {
+            "name": "h3",
+            "description": "Styling of h3 headings inside the editor: fontSize, fontFamily, fontWeight, textAlign, color, lineHeight, marginTop, marginBottom. Values are CSS strings; an empty string keeps the inherited style.",
+            "type": "object",
+            "defaultValue": {
+                "fontSize": "19px",
+                "fontFamily": "",
+                "fontWeight": "",
+                "textAlign": "",
+                "color": "",
+                "lineHeight": "",
+                "marginTop": "",
+                "marginBottom": ""
+            }
+        },
+        {
+            "name": "h4",
+            "description": "Styling of h4 headings inside the editor: fontSize, fontFamily, fontWeight, textAlign, color, lineHeight, marginTop, marginBottom. Values are CSS strings; an empty string keeps the inherited style.",
+            "type": "object",
+            "defaultValue": {
+                "fontSize": "16px",
+                "fontFamily": "",
+                "fontWeight": "",
+                "textAlign": "",
+                "color": "",
+                "lineHeight": "",
+                "marginTop": "",
+                "marginBottom": ""
+            }
+        },
+        {
+            "name": "h5",
+            "description": "Styling of h5 headings inside the editor: fontSize, fontFamily, fontWeight, textAlign, color, lineHeight, marginTop, marginBottom. Values are CSS strings; an empty string keeps the inherited style.",
+            "type": "object",
+            "defaultValue": {
+                "fontSize": "16px",
+                "fontFamily": "",
+                "fontWeight": "",
+                "textAlign": "",
+                "color": "",
+                "lineHeight": "",
+                "marginTop": "",
+                "marginBottom": ""
+            }
+        },
+        {
+            "name": "h6",
+            "description": "Styling of h6 headings inside the editor: fontSize, fontFamily, fontWeight, textAlign, color, lineHeight, marginTop, marginBottom. Values are CSS strings; an empty string keeps the inherited style.",
+            "type": "object",
+            "defaultValue": {
+                "fontSize": "16px",
+                "fontFamily": "",
+                "fontWeight": "",
+                "textAlign": "",
+                "color": "",
+                "lineHeight": "",
+                "marginTop": "",
+                "marginBottom": ""
+            }
+        },
+        {
+            "name": "p",
+            "description": "Styling of paragraphs inside the editor: fontSize, fontFamily, fontWeight, textAlign, color, lineHeight, marginTop, marginBottom. Values are CSS strings; an empty string keeps the inherited style.",
+            "type": "object",
+            "defaultValue": {
+                "fontSize": "16px",
+                "fontFamily": "",
+                "fontWeight": "",
+                "textAlign": "",
+                "color": "",
+                "lineHeight": "",
+                "marginTop": "",
+                "marginBottom": ""
+            }
+        },
+        {
+            "name": "mention",
+            "description": "Styling of mentions inside the editor: fontSize, fontFamily, fontWeight, color, borderSize, borderRadius. Values are CSS strings; an empty string keeps the inherited style.",
+            "type": "object",
+            "defaultValue": {
+                "fontSize": "16px",
+                "fontFamily": "",
+                "fontWeight": "",
+                "color": "#099AF2",
+                "borderSize": "1px",
+                "borderRadius": "6px"
+            }
+        },
+        {
+            "name": "a",
+            "description": "Styling of links inside the editor: fontSize, fontFamily, color, isUnderline, plus enableSafeLinks and the tooltip shown on links (tooltipColor, tooltipBackgroundColor, tooltipFontSize, tooltipText with {keyboard} and {target} placeholders). Values are CSS strings; an empty string keeps the inherited style.",
+            "type": "object",
+            "defaultValue": {
+                "fontSize": "16px",
+                "fontFamily": "",
+                "color": "",
+                "isUnderline": true,
+                "enableSafeLinks": false,
+                "tooltipColor": "#393d45",
+                "tooltipBackgroundColor": "#393d45",
+                "tooltipFontSize": "12px",
+                "tooltipText": "{keyboard} > {target}"
+            }
+        },
+        {
+            "name": "blockquote",
+            "description": "Styling of blockquotes inside the editor: color, borderColor, marginTop, marginBottom. Values are CSS strings; an empty string keeps the inherited style.",
+            "type": "object",
+            "defaultValue": {
+                "color": "rgb(153, 153, 153)",
+                "borderColor": "rgb(223, 226, 229)",
+                "marginTop": "6px",
+                "marginBottom": "6px"
+            }
+        },
+        {
+            "name": "code",
+            "description": "Styling of code blocks inside the editor: color, bgColor, borderRadius, paddingX, paddingY, fontSize. Values are CSS strings; an empty string keeps the inherited style.",
+            "type": "object",
+            "defaultValue": {
+                "color": "#FFF",
+                "bgColor": "#0D0D0D",
+                "borderRadius": "8px",
+                "paddingX": "16px",
+                "paddingY": "12px",
+                "fontSize": "13px"
+            }
+        },
+        {
+            "name": "img",
+            "description": "Styling of images inside the editor: maxWidth, maxHeight (CSS strings) and inline (boolean, images flow inline with text).",
+            "type": "object",
+            "defaultValue": {
+                "maxWidth": "auto",
+                "maxHeight": "auto",
+                "inline": false
+            }
+        },
+        {
+            "name": "checkbox",
+            "description": "Styling of task-list checkboxes inside the editor: color (accent color).",
+            "type": "object",
+            "defaultValue": {
+                "color": "#000"
+            }
+        },
+        {
+            "name": "table",
+            "description": "Styling of tables inside the editor: borderColor, borderWidth, headerBgColor, headerColor, pairCellBgColor, oddCellBgColor, cellColor, cellPaddingX, cellPaddingY, handleColor (row/column handles and resize handle).",
+            "type": "object",
+            "defaultValue": {
+                "borderColor": "#C7C7C7",
+                "borderWidth": "1px",
+                "headerBgColor": "#f5f5f5",
+                "headerColor": "#000",
+                "pairCellBgColor": "#fff",
+                "oddCellBgColor": "#FDFDFD",
+                "cellColor": "#000",
+                "cellPaddingY": "6px",
+                "cellPaddingX": "8px",
+                "handleColor": "#099af2"
+            }
+        },
+        {
+            "name": "parameterTextType",
+            "description": "Show (true) or hide (false) the paragraph/heading type selector button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "parameterBold",
+            "description": "Show (true) or hide (false) the bold button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "parameterItalic",
+            "description": "Show (true) or hide (false) the italic button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "parameterUnderline",
+            "description": "Show (true) or hide (false) the underline button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "parameterStrike",
+            "description": "Show (true) or hide (false) the strikethrough button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "parameterAlignLeft",
+            "description": "Show (true) or hide (false) the align-left button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "parameterAlignCenter",
+            "description": "Show (true) or hide (false) the align-center button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "parameterAlignRight",
+            "description": "Show (true) or hide (false) the align-right button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "parameterAlignJustify",
+            "description": "Show (true) or hide (false) the justify button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "parameterTextColor",
+            "description": "Show (true) or hide (false) the text color button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "parameterBulletList",
+            "description": "Show (true) or hide (false) the bullet list button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "parameterOrderedList",
+            "description": "Show (true) or hide (false) the ordered list button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "parameterTaskList",
+            "description": "Show (true) or hide (false) the task list (checkboxes) button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "parameterTable",
+            "description": "Show (true) or hide (false) the insert table button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "parameterTableTools",
+            "description": "Table hover handles (select and drag rows/columns), column resizing and right-click menu (insert, delete, header row/column). Edition only: ignored when readonly.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "parameterLink",
+            "description": "Show (true) or hide (false) the link button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "parameterImage",
+            "description": "Show (true) or hide (false) the image button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "parameterCodeBlock",
+            "description": "Show (true) or hide (false) the code block button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "parameterQuote",
+            "description": "Show (true) or hide (false) the blockquote button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "parameterUndo",
+            "description": "Show (true) or hide (false) the undo button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "parameterRedo",
+            "description": "Show (true) or hide (false) the redo button in the default toolbar. Inactive when customMenu is true.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "parameterAiMenu",
+            "description": "Show (true) or hide (false) the AI menu button in the toolbar. Inactive when enableAiMenu is false.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "enableAiMenu",
+            "description": "Enable the AI menu: the user picks a modification type, writes instructions, the element emits `ai-prompt`, and the workflow sends the AI answer back with the setResponse action. No AI call is made by the element itself.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "parameterAiMenuVariant",
+            "description": "AI menu style: \"classic\" (dropdown menu) or \"magic\" (inline prompt bar). Inactive when enableAiMenu is false.",
+            "type": "string",
+            "defaultValue": "classic"
+        },
+        {
+            "name": "parameterAiMenuReadOnly",
+            "description": "Switch the text to read-only while the AI request is processing. Inactive when enableAiMenu is false.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "parameterAiMenuForceDisplay",
+            "description": "Keep the classic AI menu open inside the WeWeb editor (design helper). Inactive when enableAiMenu is false or the variant is \"magic\".",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "parameterAiMenuPrimaryColor",
+            "description": "Primary color of the AI menu. Inactive when enableAiMenu is false.",
+            "type": "string",
+            "defaultValue": "#007bff"
+        },
+        {
+            "name": "parameterMagicMenuButtonColor",
+            "description": "Color of the magic menu submit button (empty = primary color). Only used when enableAiMenu is true and parameterAiMenuVariant is \"magic\".",
+            "type": "string",
+            "defaultValue": ""
+        },
+        {
+            "name": "parameterMagicMenuShowTypeLabel",
+            "description": "Display the modification type label in the magic menu badge. Only used when enableAiMenu is true and parameterAiMenuVariant is \"magic\".",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "parameterMagicMenuDefaultTypeIndex",
+            "description": "Index, in parameterAiMenuCustomTypes, of the type selected by default. Only used when enableAiMenu is true and parameterAiMenuVariant is \"magic\".",
+            "type": "number",
+            "defaultValue": 0
+        },
+        {
+            "name": "parameterMagicMenuShowTypesOnFocus",
+            "description": "When the type list opens on focus: \"yes\", \"no-type-selected\" (only when no type is selected) or \"no\". Only used when enableAiMenu is true and parameterAiMenuVariant is \"magic\".",
+            "type": "string",
+            "defaultValue": "no"
+        },
+        {
+            "name": "parameterAiMenuCustomTypes",
+            "description": "Modification types offered in the AI menu (none by default besides the sample). Each item: { key (unique id, sent as modificationType), label, icon (ww-icon object), promptPlaceholder, defaultPrompt, action (\"replace\" | \"replace-all\" | \"insert-before\" | \"insert-after\" | \"append\" | \"prepend\"), requireInput (boolean) }. Inactive when enableAiMenu is false.",
+            "type": "array",
+            "defaultValue": [
+                {
+                    "key": "rephrase",
+                    "label": "Rephrase",
+                    "icon": {
+                        "isWwObject": true,
+                        "type": "ww-icon",
+                        "state": {
+                            "name": "Magic icon",
+                            "icon": "magic"
+                        }
+                    },
+                    "defaultPrompt": "Reformule ce texte avec un style différent tout en gardant le même sens",
+                    "action": "replace",
+                    "requireInput": true
+                }
+            ]
+        },
+        {
+            "name": "parameterAiMenuPlaceholders",
+            "description": "Texts of the AI menu UI: { promptInput, processing, submitButton, cancelButton, promptInputTooltip, submitButtonTooltip, cancelButtonTooltip, chooseTypePlaceholder }. Each value is a plain string or a formula (for multilang). Inactive when enableAiMenu is false.",
+            "type": "object",
+            "defaultValue": {
+                "promptInput": "Enter your prompt...",
+                "processing": "Processing...",
+                "submitButton": "Apply",
+                "cancelButton": "Cancel",
+                "promptInputTooltip": "Enter your instructions for the AI",
+                "submitButtonTooltip": "Apply the AI modification",
+                "cancelButtonTooltip": "Cancel the current operation",
+                "chooseTypePlaceholder": "Select a type"
+            }
+        },
+        {
+            "name": "fieldName",
+            "description": "Field name in the submitted payload when the element is inside a ww-form-container. Inactive outside a form container.",
+            "type": "string",
+            "defaultValue": ""
+        },
+        {
+            "name": "customValidation",
+            "description": "Enable the custom validation formula. Inactive outside a form container.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "validation",
+            "description": "Custom validation formula: the field is valid when it evaluates to a truthy value. Inactive outside a form container or when customValidation is false.",
+            "type": "formula",
+            "defaultValue": ""
+        },
+        {
+            "name": "enableCollaboration",
+            "description": "Enable real-time collaboration (Yjs over a Hocuspocus WebSocket server): shared document, remote cursors, save signals and version history. The content then comes from the server, not from initialValue.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "websocketUrl",
+            "description": "WebSocket URL of the Hocuspocus collaboration server. Inactive when enableCollaboration is false.",
+            "type": "string",
+            "defaultValue": ""
+        },
+        {
+            "name": "documentId",
+            "description": "Identifier of the shared document on the server. Changing it switches document. Inactive when enableCollaboration is false.",
+            "type": "string",
+            "defaultValue": ""
+        },
+        {
+            "name": "authToken",
+            "description": "Token sent to the collaboration server for authentication. Inactive when enableCollaboration is false.",
+            "type": "string",
+            "defaultValue": ""
+        },
+        {
+            "name": "userName",
+            "description": "Name shown to the other users next to this user's cursor. Inactive when enableCollaboration is false.",
+            "type": "string",
+            "defaultValue": "Anonymous"
+        },
+        {
+            "name": "userId",
+            "description": "Stable identifier used to attribute each written character in version history (falls back to userName when empty). Inactive when enableCollaboration is false.",
+            "type": "string",
+            "defaultValue": ""
+        },
+        {
+            "name": "userColor",
+            "description": "Color (#rrggbb) of this user's cursor and selection, seen by everyone: give the color of their avatar. Empty: derived from their id.",
+            "type": "string",
+            "defaultValue": ""
+        },
+        {
+            "name": "showMousePresence",
+            "description": "Shows each collaborator's mouse pointer over the text with their name and color, and shares yours.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "collabProtocol",
+            "description": "Collaboration server protocol: 'brispr' (default, versions) or 'template' (saving and server states through channels: collaborationStatus.channels and collab:channels-update; server writes shown live; no versions; saveDocument asks the server to save now).",
+            "type": "string",
+            "enum": [
+                "brispr",
+                "template"
+            ],
+            "defaultValue": "brispr"
+        },
+        {
+            "name": "showVersionHistory",
+            "description": "Bind to a variable: true opens the version timeline (it replaces the toolbar), false returns to normal editing. Inactive when enableCollaboration is false.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "showVersionTimeline",
+            "description": "Shows the version timeline while the history is open.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "versionDiffColorMode",
+            "description": "Highlight of added/removed content in version compare: \"default\" (green added / red removed) or \"author\" (each author's color). Hovering shows the author in both modes. Inactive when enableCollaboration is false.",
+            "type": "string",
+            "defaultValue": "default"
+        },
+        {
+            "name": "versionDiffRail",
+            "description": "Show a thin rail along the right edge of the text during a version compare, one marker per change; clicking a marker scrolls to it. Inactive when enableCollaboration is false.",
+            "type": "boolean",
+            "defaultValue": false
+        },
+        {
+            "name": "timelineContainerSelector",
+            "description": "CSS selector of a container of the page where the version timeline is rendered instead of the internal slot. Combine with the `isVersionPreview` variable to hide your own toolbar items during history. Inactive when enableCollaboration is false.",
+            "type": "string",
+            "defaultValue": ""
+        },
+        {
+            "name": "timelineSelectedColor",
+            "description": "Color of the selected bar in the version timeline. Inactive when enableCollaboration is false.",
+            "type": "string",
+            "defaultValue": "#111827"
+        },
+        {
+            "name": "epochLoadButtonText",
+            "description": "Label of the button that loads an archived epoch in the version timeline. Inactive when enableCollaboration is false.",
+            "type": "string",
+            "defaultValue": "Charger l'époque"
+        },
+        {
+            "name": "versionDiffAuthors",
+            "description": "Object mapping user ids to display names ({ userId: name }), used in the version compare tooltip and in the versions/contributors variables (falls back to the raw id). Inactive when enableCollaboration is false.",
+            "type": "object",
+            "defaultValue": {}
+        },
+        {
+            "name": "autoConnect",
+            "description": "Connect to the collaboration server automatically on mount. When false, call the connectCollaboration action. Inactive when enableCollaboration is false.",
+            "type": "boolean",
+            "defaultValue": true
+        },
+        {
+            "name": "saveMode",
+            "description": "When the server persists the document: \"on-change\", \"on-unload\", \"auto-unload\" (both) or \"manual\" (only through the saveDocument action). Inactive when enableCollaboration is false.",
+            "type": "string",
+            "defaultValue": "manual"
+        },
+        {
+            "name": "saveDebounce",
+            "description": "Debounce in ms of the save signal sent to the server. Inactive when enableCollaboration is false.",
+            "type": "number",
+            "defaultValue": 2000
+        },
+        {
+            "name": "agentColor",
+            "description": "Color of Brispr, the AI agent that writes into the document through the collaboration server: caret, freshly written text, users list and version diffs. Inactive when enableCollaboration is false.",
+            "type": "string",
+            "defaultValue": "#7611FA"
+        },
+        {
+            "name": "agentIcon",
+            "description": "Design-system icon shown next to Brispr's name above its caret (empty = no icon). Inactive when enableCollaboration is false.",
+            "type": "string",
+            "defaultValue": ""
+        },
+        {
+            "name": "agentWritingSpeed",
+            "description": "Speed, in words per second, at which Brispr's text is revealed. Speeds up when more than 10 s behind and once Brispr is done. Inactive when enableCollaboration is false.",
+            "type": "number",
+            "defaultValue": 40
+        },
+        {
+            "name": "agentFollow",
+            "description": "Scroll to keep Brispr's caret around the middle of the screen while it writes: \"always\", \"readonly\" (only when the editor is read-only) or \"never\". Paused while the user scrolls. Inactive when enableCollaboration is false.",
+            "type": "string",
+            "defaultValue": "always"
+        },
+        {
+            "name": "agentLingerDelay",
+            "description": "Seconds Brispr stays in the users list (collaborationStatus.users, collab:awareness-update) after its text has finished revealing. Inactive when enableCollaboration is false.",
+            "type": "number",
+            "defaultValue": 10
+        },
+        {
+            "name": "agentRevealMode",
+            "description": "How the text the agent writes appears: 'auto' (a big change at once, tinted with the agent color; a small one word by word), 'block' or 'words'. Waits for a follow scroll to end.",
+            "type": "string",
+            "enum": [
+                "auto",
+                "block",
+                "words"
+            ],
+            "defaultValue": "auto"
+        },
+        {
+            "name": "maxConnectionAttempts",
+            "description": "Maximum number of connection attempts before giving up (collab:error). Inactive when enableCollaboration is false.",
+            "type": "number",
+            "defaultValue": 5
+        }
+    ],
+    "states": [
+        {
+            "name": "readonly",
+            "description": "Applied while the editor is read-only (readonly property)."
+        }
+    ],
+    "events": [
+        {
+            "name": "change",
+            "description": "Content changed (debounced when debounce is true).",
+            "payload": {
+                "value": "string (HTML or Markdown depending on output)"
+            }
+        },
+        {
+            "name": "initValueChange",
+            "description": "The bound initialValue changed.",
+            "payload": {
+                "value": "string"
+            }
+        },
+        {
+            "name": "mention:click",
+            "description": "A rendered mention was clicked.",
+            "payload": {
+                "mention": {
+                    "id": "string",
+                    "label": "string"
+                }
+            }
+        },
+        {
+            "name": "focus",
+            "description": "The editor received focus.",
+            "payload": {
+                "value": "string"
+            }
+        },
+        {
+            "name": "blur",
+            "description": "The editor lost focus.",
+            "payload": {
+                "value": "string"
+            }
+        },
+        {
+            "name": "seo:change",
+            "description": "SEO score or grade changed (also emitted on the first analysis). Requires enableSeoAnalysis.",
+            "payload": {
+                "score": "number 0-100",
+                "grade": "\"green\" | \"orange\" | \"red\"",
+                "scores": "object: score 0-100 (or null) per category: structure, headings, readability, links, images, keyword, meta"
+            }
+        },
+        {
+            "name": "heading:change",
+            "description": "The visible section changed while scrolling (or the current heading was renamed). Empty values when no section is visible. Requires enableOutline.",
+            "payload": {
+                "id": "string",
+                "index": "number",
+                "level": "number",
+                "text": "string",
+                "path": "array of { id, level, text }: ancestors then the heading itself"
+            }
+        },
+        {
+            "name": "ai-prompt",
+            "description": "The user submitted a prompt in the AI menu. Call the AI in the workflow, then send the answer back with the setResponse action.",
+            "payload": {
+                "prompt": "string: final prompt",
+                "modificationType": "string: key of the selected custom type",
+                "action": "string: how the answer will be applied",
+                "selectedText": "string",
+                "htmlValue": "string: whole document at submit time",
+                "timestamp": "ISO date string"
+            }
+        },
+        {
+            "name": "ai-suggestion-applied",
+            "description": "The user accepted the AI suggestion and it was applied to the document.",
+            "payload": {
+                "response": "string: raw AI answer",
+                "formattedResponse": "string",
+                "modificationType": "string",
+                "action": "string",
+                "selectedText": "string",
+                "selectionRange": {
+                    "from": "number",
+                    "to": "number"
+                },
+                "htmlValue": "string: whole document after applying",
+                "timestamp": "ISO date string",
+                "position": "number: final insert position"
+            }
+        },
+        {
+            "name": "collab:connected",
+            "description": "Connected to the collaboration server.",
+            "payload": {
+                "documentId": "string",
+                "timestamp": "ISO date string",
+                "connectionId": "string"
+            }
+        },
+        {
+            "name": "collab:disconnected",
+            "description": "Disconnected from the collaboration server.",
+            "payload": {
+                "documentId": "string",
+                "timestamp": "ISO date string",
+                "reason": "string"
+            }
+        },
+        {
+            "name": "collab:synced",
+            "description": "The local document is in sync with the server.",
+            "payload": {
+                "documentId": "string",
+                "timestamp": "ISO date string",
+                "state": "\"synced\""
+            }
+        },
+        {
+            "name": "collab:syncing",
+            "description": "The document is syncing with the server.",
+            "payload": {
+                "documentId": "string",
+                "timestamp": "ISO date string",
+                "state": "\"syncing\""
+            }
+        },
+        {
+            "name": "collab:error",
+            "description": "A collaboration error occurred (connection, auth, max attempts reached).",
+            "payload": {
+                "error": "string",
+                "message": "string",
+                "timestamp": "ISO date string"
+            }
+        },
+        {
+            "name": "collab:awareness-update",
+            "description": "The list of connected users changed.",
+            "payload": {
+                "users": "array of { name, color, id }",
+                "count": "number",
+                "timestamp": "ISO date string"
+            }
+        },
+        {
+            "name": "collab:saving",
+            "description": "The server started saving the document.",
+            "payload": {
+                "timestamp": "ISO date string",
+                "saveId": "string"
+            }
+        },
+        {
+            "name": "collab:saved",
+            "description": "The server saved the document.",
+            "payload": {
+                "timestamp": "ISO date string",
+                "saveId": "string"
+            }
+        },
+        {
+            "name": "collab:version-created",
+            "description": "Answer of the server to the createVersion action.",
+            "payload": {
+                "created": "boolean",
+                "versionNumber": "number",
+                "label": "string",
+                "error": "string",
+                "timestamp": "ISO date string"
+            }
+        },
+        {
+            "name": "collab:content-replaced",
+            "description": "The server replaced the whole document content (e.g. restore).",
+            "payload": {
+                "documentName": "string",
+                "timestamp": "ISO date string"
+            }
+        },
+        {
+            "name": "collab:stale-epoch",
+            "description": "The local state belonged to an older epoch of the document and was reset from the server.",
+            "payload": {
+                "documentId": "string",
+                "epoch": "number",
+                "timestamp": "ISO date string"
+            }
+        },
+        {
+            "name": "collab:agent-writing",
+            "description": "Brispr (the AI agent) started writing into the document.",
+            "payload": {
+                "agent": "string",
+                "timestamp": "ISO date string"
+            }
+        },
+        {
+            "name": "collab:agent-done",
+            "description": "Brispr finished writing and its text has finished revealing.",
+            "payload": {
+                "agent": "string",
+                "timestamp": "ISO date string"
+            }
+        },
+        {
+            "name": "version-history:select",
+            "description": "A version was selected in the version timeline.",
+            "payload": {
+                "id": "string",
+                "versionNumber": "number",
+                "epoch": "number",
+                "timestamp": "ISO date string"
+            }
+        },
+        {
+            "name": "image:added",
+            "description": "An image was added to the content.",
+            "payload": {
+                "imageId": "string",
+                "url": "string",
+                "alt": "string",
+                "title": "string"
+            }
+        },
+        {
+            "name": "image:updated",
+            "description": "An image of the content was updated.",
+            "payload": {
+                "imageId": "string",
+                "url": "string",
+                "alt": "string",
+                "title": "string"
+            }
+        },
+        {
+            "name": "image:removed",
+            "description": "An image was removed from the content.",
+            "payload": {
+                "imageId": "string"
+            }
+        },
+        {
+            "name": "link:opened",
+            "description": "A link was opened from the link popover.",
+            "payload": {
+                "url": "string"
+            }
+        },
+        {
+            "name": "link:edited",
+            "description": "A link URL was edited.",
+            "payload": {
+                "oldUrl": "string",
+                "newUrl": "string"
+            }
+        },
+        {
+            "name": "link:removed",
+            "description": "A link was removed.",
+            "payload": {
+                "url": "string"
+            }
+        },
+        {
+            "name": "geo:change",
+            "description": "GEO score changed.",
+            "payload": {
+                "score": "number",
+                "grade": "string",
+                "scores": "object"
+            }
+        },
+        {
+            "name": "collab:channels-update",
+            "description": "Template server: a channel changed (save state, lock…).",
+            "payload": {
+                "channels": "object",
+                "channel": "string",
+                "message": "any",
+                "timestamp": "string"
+            }
+        },
+        {
+            "name": "collab:follow-change",
+            "description": "The followed user changed (empty when following stops).",
+            "payload": {
+                "following": "string"
+            }
+        }
+    ],
+    "localContext": [
+        {
+            "name": "image",
+            "description": "Available inside the imageLayoutElement slot (useImageLayout true), once per image: { imageId, url, alt, title, position, refresh, caption }.",
+            "type": "object"
+        },
+        {
+            "name": "link",
+            "description": "Available inside the linkPopoverLayoutElement slot (useLinkLayoutPopover true): { url, truncatedUrl, modifierKey, openLink(), editLink(newUrl), removeLink(), closePopover() }.",
+            "type": "object"
+        }
+    ],
+    "actions": [
+        {
+            "label": "Focus Rich text",
+            "actionName": "focusEditor",
+            "description": "Focus the editor."
+        },
+        {
+            "label": "Set Link",
+            "actionName": "setLink",
+            "description": "Wrap the current selection in a link.",
+            "args": [
+                {
+                    "name": "URL",
+                    "type": "string",
+                    "description": "Target URL."
+                }
+            ]
+        },
+        {
+            "label": "Set Image",
+            "actionName": "setImage",
+            "description": "Insert an image at the cursor.",
+            "args": [
+                {
+                    "name": "Source",
+                    "type": "string",
+                    "description": "Image source URL."
+                },
+                {
+                    "name": "Alt",
+                    "type": "string",
+                    "description": "Alt text."
+                },
+                {
+                    "name": "Title",
+                    "type": "string",
+                    "description": "Image title."
+                }
+            ]
+        },
+        {
+            "label": "Set Tag",
+            "actionName": "setTag",
+            "description": "Set the block type of the current selection. Setting the heading level the block already has toggles it back to a paragraph.",
+            "args": [
+                {
+                    "name": "Tag",
+                    "type": "string",
+                    "description": "\"p\", \"h1\", \"h2\", \"h3\", \"h4\", \"h5\" or \"h6\" (the editor select sends 0-6, 0 = p)."
+                }
+            ]
+        },
+        {
+            "label": "Toggle Bold",
+            "actionName": "toggleBold",
+            "description": "Toggle bold on the selection."
+        },
+        {
+            "label": "Toggle Italic",
+            "actionName": "toggleItalic",
+            "description": "Toggle italic on the selection."
+        },
+        {
+            "label": "Toggle Underline",
+            "actionName": "toggleUnderline",
+            "description": "Toggle underline on the selection."
+        },
+        {
+            "label": "Toggle Strike",
+            "actionName": "toggleStrike",
+            "description": "Toggle strikethrough on the selection."
+        },
+        {
+            "label": "Set Text Align",
+            "actionName": "setTextAlign",
+            "description": "Set the alignment of the current block.",
+            "args": [
+                {
+                    "name": "Alignment",
+                    "type": "string",
+                    "description": "\"left\" | \"center\" | \"right\" | \"justify\"."
+                }
+            ]
+        },
+        {
+            "label": "Set Color",
+            "actionName": "setColor",
+            "description": "Set the text color of the selection.",
+            "args": [
+                {
+                    "name": "Color",
+                    "type": "string",
+                    "description": "CSS color."
+                }
+            ]
+        },
+        {
+            "label": "Toggle Bullet List",
+            "actionName": "toggleBulletList",
+            "description": "Toggle a bullet list."
+        },
+        {
+            "label": "Toggle Ordered List",
+            "actionName": "toggleOrderedList",
+            "description": "Toggle an ordered list."
+        },
+        {
+            "label": "Toggle Check List",
+            "actionName": "toggleTaskList",
+            "description": "Toggle a task (checkbox) list."
+        },
+        {
+            "label": "Toggle Code Block",
+            "actionName": "toggleCodeBlock",
+            "description": "Toggle a code block."
+        },
+        {
+            "label": "Toggle Blockquote",
+            "actionName": "toggleBlockquote",
+            "description": "Toggle a blockquote."
+        },
+        {
+            "label": "Undo",
+            "actionName": "undo",
+            "description": "Undo the last change (see the `history` variable)."
+        },
+        {
+            "label": "Redo",
+            "actionName": "redo",
+            "description": "Redo the last undone change."
+        },
+        {
+            "label": "Insert Table",
+            "actionName": "insertTable",
+            "description": "Insert a table at the cursor."
+        },
+        {
+            "label": "Insert Row",
+            "actionName": "insertRow",
+            "description": "Insert a row next to the current cell.",
+            "args": [
+                {
+                    "name": "Position",
+                    "type": "string",
+                    "description": "\"before\" | \"after\"."
+                }
+            ]
+        },
+        {
+            "label": "Insert Column",
+            "actionName": "insertColumn",
+            "description": "Insert a column next to the current cell.",
+            "args": [
+                {
+                    "name": "Position",
+                    "type": "string",
+                    "description": "\"before\" | \"after\"."
+                }
+            ]
+        },
+        {
+            "label": "Delete Row",
+            "actionName": "deleteRow",
+            "description": "Delete the current row."
+        },
+        {
+            "label": "Delete Column",
+            "actionName": "deleteColumn",
+            "description": "Delete the current column."
+        },
+        {
+            "label": "Delete Table",
+            "actionName": "deleteTable",
+            "description": "Delete the current table."
+        },
+        {
+            "label": "Open AI Menu",
+            "actionName": "openAiMenu",
+            "description": "Open the AI menu (requires enableAiMenu).",
+            "args": [
+                {
+                    "name": "Default type key (optional)",
+                    "type": "string",
+                    "description": "Optional key of the modification type to preselect."
+                }
+            ]
+        },
+        {
+            "label": "Set AI Response",
+            "actionName": "setResponse",
+            "description": "Send the AI answer to the AI menu after an `ai-prompt` event; the user then accepts or rejects the suggestion.",
+            "args": [
+                {
+                    "name": "Response",
+                    "type": "string",
+                    "description": "AI answer text."
+                }
+            ]
+        },
+        {
+            "label": "Get and Clear Changes",
+            "actionName": "getAndClearChanges",
+            "description": "Return the ProseMirror steps accumulated since the last call (array of step JSON) and reset the counter (`pendingChangesCount`)."
+        },
+        {
+            "label": "Clear Changes",
+            "actionName": "clearChanges",
+            "description": "Reset the accumulated ProseMirror steps without returning them."
+        },
+        {
+            "label": "Collab: Connect to collaboration",
+            "actionName": "connectCollaboration",
+            "description": "Connect to the collaboration server (when autoConnect is false)."
+        },
+        {
+            "label": "Collab: Attempt connection",
+            "actionName": "attemptConnection",
+            "description": "Retry the connection to the collaboration server."
+        },
+        {
+            "label": "Collab: Disconnect from collaboration",
+            "actionName": "disconnectCollaboration",
+            "description": "Disconnect from the collaboration server."
+        },
+        {
+            "label": "Collab: Force sync",
+            "actionName": "forceSync",
+            "description": "Force a sync of the document with the server."
+        },
+        {
+            "label": "Collab: Get connection status",
+            "actionName": "getConnectionStatus",
+            "description": "Return { connected, synced, documentId, users, userCount }."
+        },
+        {
+            "label": "Collab: Save document",
+            "actionName": "saveDocument",
+            "description": "Ask the server to save the document (the way to save when saveMode is \"manual\"). Emits collab:saving then collab:saved.",
+            "args": [
+                {
+                    "name": "Save ID",
+                    "type": "string",
+                    "description": "Optional id echoed in the collab:saving / collab:saved payloads."
+                }
+            ]
+        },
+        {
+            "label": "Collab: Create version",
+            "actionName": "createVersion",
+            "description": "Ask the server to create a named version of the document. The answer arrives in collab:version-created.",
+            "args": [
+                {
+                    "name": "Label",
+                    "type": "string",
+                    "description": "Optional version label."
+                }
+            ]
+        },
+        {
+            "label": "Collab: Show version compare",
+            "actionName": "showVersionCompare",
+            "description": "Show a read-only compare between two versions (version ids or Yjs snapshots). Sets `isVersionPreview` and `currentVersion`.",
+            "args": [
+                {
+                    "name": "Version id or snapshot (newer state, empty = current)",
+                    "type": "string",
+                    "description": "Newer state; empty = current document."
+                },
+                {
+                    "name": "Previous version id or snapshot (empty = previous version)",
+                    "type": "string",
+                    "description": "Reference state; empty = the version before."
+                }
+            ]
+        },
+        {
+            "label": "Collab: Show archive version compare",
+            "actionName": "showArchiveVersionCompare",
+            "description": "Show a compare inside an archived epoch of the document. Returns true on success.",
+            "args": [
+                {
+                    "name": "Epoch binary (ydoc_epochs.binary_data)",
+                    "type": "string",
+                    "description": "Epoch binary (ydoc_epochs.binary_data)."
+                },
+                {
+                    "name": "Snapshot (newer state, empty = end of epoch)",
+                    "type": "string",
+                    "description": "Newer snapshot; empty = end of the epoch."
+                },
+                {
+                    "name": "Previous snapshot (reference state)",
+                    "type": "string",
+                    "description": "Reference snapshot."
+                }
+            ]
+        },
+        {
+            "label": "Collab: Hide version preview",
+            "actionName": "hideVersionPreview",
+            "description": "Leave the version preview/compare and return to the live document."
+        },
+        {
+            "label": "Insert Empty Image",
+            "actionName": "insertEmptyImage",
+            "description": "Insert an image placeholder (to fill later with updateImageById) and return its generated image id.",
+            "args": [
+                {
+                    "name": "Caption",
+                    "type": "string",
+                    "description": "Caption."
+                },
+                {
+                    "name": "Position",
+                    "type": "string",
+                    "description": "Position (free string stored on the image)."
+                },
+                {
+                    "name": "Refresh",
+                    "type": "boolean",
+                    "description": "Refresh flag stored on the image."
+                }
+            ]
+        },
+        {
+            "label": "Update Image by ID",
+            "actionName": "updateImageById",
+            "description": "Update an image of the content by its id.",
+            "args": [
+                {
+                    "name": "Image ID",
+                    "type": "string",
+                    "description": "Image id."
+                },
+                {
+                    "name": "New URL",
+                    "type": "string",
+                    "description": "New URL."
+                },
+                {
+                    "name": "Alt text",
+                    "type": "string",
+                    "description": "Alt text."
+                },
+                {
+                    "name": "Title",
+                    "type": "string",
+                    "description": "Title."
+                },
+                {
+                    "name": "Caption",
+                    "type": "string",
+                    "description": "Caption."
+                },
+                {
+                    "name": "Position",
+                    "type": "string",
+                    "description": "Position."
+                },
+                {
+                    "name": "Refresh",
+                    "type": "boolean",
+                    "description": "Refresh flag."
+                }
+            ]
+        },
+        {
+            "label": "Get Image Data by ID",
+            "actionName": "getImageById",
+            "description": "Return { imageId, url, alt, title, caption, position, refresh } for an image, or null.",
+            "args": [
+                {
+                    "name": "Image ID",
+                    "type": "string",
+                    "description": "Image id."
+                }
+            ]
+        },
+        {
+            "label": "Remove Image by ID",
+            "actionName": "removeImageById",
+            "description": "Remove an image from the content by its id.",
+            "args": [
+                {
+                    "name": "Image ID",
+                    "type": "string",
+                    "description": "Image id."
+                }
+            ]
+        },
+        {
+            "label": "Get All Images Mapping",
+            "actionName": "getAllImagesMapping",
+            "description": "Return an object mapping each image id to its data ({ imageId, url, alt, title, caption, position, refresh })."
+        },
+        {
+            "label": "Open Current Link",
+            "actionName": "openCurrentLink",
+            "description": "Open the link under the cursor."
+        },
+        {
+            "label": "Edit Current Link",
+            "actionName": "editCurrentLink",
+            "description": "Change the URL of the link under the cursor.",
+            "args": [
+                {
+                    "name": "New URL",
+                    "type": "string",
+                    "description": "New URL."
+                }
+            ]
+        },
+        {
+            "label": "Remove Current Link",
+            "actionName": "removeCurrentLink",
+            "description": "Remove the link under the cursor (keeps the text)."
+        },
+        {
+            "label": "Get Current Link URL",
+            "actionName": "getCurrentLinkUrl",
+            "description": "Return the URL of the link under the cursor, or null."
+        },
+        {
+            "label": "Close Current Link Popover",
+            "actionName": "closeCurrentLinkPopover",
+            "description": "Close the link popover."
+        },
+        {
+            "label": "Scroll to heading",
+            "actionName": "scrollToHeading",
+            "description": "Smooth-scroll to a heading and return true when found (requires enableOutline).",
+            "args": [
+                {
+                    "name": "Heading (id, index or text)",
+                    "type": "string",
+                    "description": "Heading id (from `outline`), index, or exact text."
+                },
+                {
+                    "name": "Place cursor in the heading",
+                    "type": "boolean",
+                    "description": "Place the cursor in the heading."
+                }
+            ]
+        },
+        {
+            "label": "Scroll to next heading",
+            "actionName": "scrollToNextHeading",
+            "description": "Scroll to the next heading; returns true when found (requires enableOutline)."
+        },
+        {
+            "label": "Scroll to previous heading",
+            "actionName": "scrollToPreviousHeading",
+            "description": "Scroll to the previous heading; returns true when found (requires enableOutline)."
+        },
+        {
+            "label": "Get outline",
+            "actionName": "getOutline",
+            "description": "Return the outline (same shape as the `outline` variable)."
+        },
+        {
+            "label": "Highlight SEO check",
+            "actionName": "highlightSeoCheck",
+            "description": "Highlight in the editor every occurrence related to a SEO check and scroll to the first one. Persistent until clearSeoHighlight or another check is highlighted. Returns false when the check has nothing to show (see `clickable` on the check).",
+            "args": [
+                {
+                    "name": "Check ID",
+                    "type": "string",
+                    "description": "Check id (from seo.checks[].id)."
+                },
+                {
+                    "name": "Color",
+                    "type": "string",
+                    "description": "Optional CSS color, overrides seoHighlightColor."
+                }
+            ]
+        },
+        {
+            "label": "Clear SEO highlight",
+            "actionName": "clearSeoHighlight",
+            "description": "Remove the SEO highlight."
+        },
+        {
+            "label": "Collab: Reload document",
+            "actionName": "reloadCollaboration",
+            "description": "Reconnects and reloads the collaborative document."
+        },
+        {
+            "label": "Collab: Follow a user (toggle)",
+            "actionName": "followUser",
+            "description": "Follows a collaborator's screen (or 'agent'); calling it again on the same user stops.",
+            "args": [
+                {
+                    "name": "User id",
+                    "type": "string",
+                    "description": "collaborationStatus.users[].id, or 'agent'."
+                }
+            ]
+        },
+        {
+            "label": "Collab: Stop following",
+            "actionName": "stopFollowing",
+            "description": "Stops following."
+        },
+        {
+            "label": "Delete Image by ID",
+            "actionName": "deleteImageById",
+            "description": "Removes an image (useImageLayout) by its id.",
+            "args": [
+                {
+                    "name": "Image ID",
+                    "type": "string",
+                    "description": "Id of the image."
+                }
+            ]
+        },
+        {
+            "label": "Set frontmatter field",
+            "actionName": "setFrontmatterField",
+            "description": "Sets one frontmatter field of the document.",
+            "args": [
+                {
+                    "name": "Key",
+                    "type": "string",
+                    "description": "meta_title, meta_description, slug…"
+                },
+                {
+                    "name": "Value",
+                    "type": "string",
+                    "description": "New value."
+                }
+            ]
+        }
+    ],
+    "slots": [
+        {
+            "name": "customMenuElement",
+            "description": "Toolbar container rendered instead of the default toolbar when customMenu is true. Build buttons that call the element actions and read the `states` and `history` variables.",
+            "type": "element"
+        },
+        {
+            "name": "headerElement",
+            "description": "Header container above the toolbar, shown when showHeader is true; scrolls with the text.",
+            "type": "element"
+        },
+        {
+            "name": "imageLayoutElement",
+            "description": "Template rendered for each image when useImageLayout is true; reads the `image` local context.",
+            "type": "element"
+        },
+        {
+            "name": "linkPopoverLayoutElement",
+            "description": "Template of the link popover when useLinkLayoutPopover is true; reads the `link` local context.",
+            "type": "element"
+        },
+        {
+            "name": "emptyLayoutElement",
+            "description": "Empty state container shown centred over the text while the document is empty, when useEmptyLayout is true. Drop any elements in it (an illustration, a title, buttons).",
+            "type": "element"
+        }
+    ],
+    "variables": [
+        {
+            "name": "value",
+            "description": "Current content (HTML or Markdown depending on output). Bind to it directly instead of mirroring it in a variable.",
+            "type": "string",
+            "readonly": false
+        },
+        {
+            "name": "isEmpty",
+            "description": "true while the document body is empty (a single empty paragraph, frontmatter ignored). In collaboration, false until the first sync.",
+            "type": "boolean",
+            "readonly": true
+        },
+        {
+            "name": "mentions",
+            "description": "Mentions present in the content: array of { id, label }.",
+            "type": "array",
+            "readonly": true
+        },
+        {
+            "name": "states",
+            "description": "Selection state, to drive a custom toolbar: { selected: { text, wordCount, charCount }, textType (\"p\", \"h1\"…\"h6\"), textColor, bold, italic, underline, strike, bulletList, orderedList, checkList, link, codeBlock, blockquote, textAlign (\"left\" | \"center\" | \"right\" | \"justify\" | false), table }. selected values are empty/0 when the selection is collapsed.",
+            "type": "object",
+            "readonly": true
+        },
+        {
+            "name": "history",
+            "description": "{ canUndo, canRedo } booleans, to enable custom undo/redo buttons.",
+            "type": "object",
+            "readonly": true
+        },
+        {
+            "name": "pendingChangesCount",
+            "description": "Number of ProseMirror steps accumulated since the last getAndClearChanges or clearChanges call.",
+            "type": "number",
+            "readonly": true
+        },
+        {
+            "name": "outline",
+            "description": "Table of contents (requires enableOutline): array of { id (slug, suffixed -2, -3 on duplicates, changes when renamed), index, level, text, parentId (closest higher-level heading), active (true on the visible section) }. Empty headings are ignored.",
+            "type": "array",
+            "readonly": true
+        },
+        {
+            "name": "currentHeading",
+            "description": "Visible section (requires enableOutline): { id, index, level, text, path: [{ id, level, text }] } where path is the breadcrumb (ancestors then the heading). null above the first heading.",
+            "type": "object",
+            "readonly": true
+        },
+        {
+            "name": "seo",
+            "description": "SEO analysis (requires enableSeoAnalysis, null otherwise): { score (0-100), grade (\"green\" | \"orange\" | \"red\", capped to orange by a failed critical check), criticalIssues (check ids), highlighting (boolean), scores: { structure, headings, readability, links, images, keyword, meta }, categories: [{ id, name, description, score, grade }], checks: [{ id, title, description, objective, category, status (\"good\" | \"warning\" | \"bad\" | \"na\"), score, weight, value, target, matchCount, clickable, message }], stats: { wordCount, charCount, sentenceCount, paragraphCount, headings, lists, tables, images, imagesWithoutAlt, internalLinks, externalLinks, keywordOccurrences, keywordDensity, fleschScore, readingTimeMinutes } }.",
+            "type": "object",
+            "readonly": true
+        },
+        {
+            "name": "geo",
+            "description": "GEO analysis (citability by AI engines), same shape as `seo` plus `passages`; null while enableGeoAnalysis is false.",
+            "type": "object",
+            "readonly": true
+        },
+        {
+            "name": "frontmatter",
+            "description": "Frontmatter fields of the document (meta_title, meta_description, slug…), as an object.",
+            "type": "object",
+            "readonly": true
+        },
+        {
+            "name": "collaborationStatus",
+            "description": "Collaboration state: { connected, synced, syncing, saving, saved, error, connectionId, users: [{ name, color, id }], userCount, agentWriting }.",
+            "type": "object",
+            "readonly": true
+        },
+        {
+            "name": "isVersionPreview",
+            "description": "True while a version preview or compare is shown (the editor is then read-only on a past state), false during normal editing.",
+            "type": "boolean",
+            "readonly": true
+        },
+        {
+            "name": "currentVersion",
+            "description": "Version selected in the timeline or compared, null outside history: { id, versionNumber, epoch, source, label, createdAt, createdBy, createdByName, status, publication: { status, error, contentVerified, updatedAt } | null, inserted, deleted, authors: [{ user, name, inserted, deleted }] }.",
+            "type": "object",
+            "readonly": true
+        },
+        {
+            "name": "versions",
+            "description": "Versions of the document, newest first, same shape as currentVersion. Loaded once synced and refreshed when a version is created or published.",
+            "type": "array",
+            "readonly": true
+        },
+        {
+            "name": "contributors",
+            "description": "Everyone who modified the document across versions: [{ user, name, inserted, deleted, versions, lastModifiedAt }]. Names resolved through versionDiffAuthors.",
+            "type": "array",
+            "readonly": true
+        }
+    ],
+    "specifications": [
+        "Bind to the `value` variable to read the content; never mirror it in a separate variable with a change workflow. Inside a repeat, store the value from the change event instead.",
+        "Default output is HTML; set output to \"markdown\" to get Markdown. Markdown does not keep table column widths.",
+        "When showHeader is true, give the element a fixed height: header, toolbar and text scroll inside it.",
+        "Toolbar buttons are controlled one by one with the parameter* flags; hideMenu hides the toolbar; customMenu replaces it with the customMenuElement slot.",
+        "Table handles, the right-click menu and resizing only work while editing (not readonly, not inside the WeWeb editor).",
+        "The AI menu does not call any AI service: handle the ai-prompt event in a workflow, call the AI, then call setResponse with the answer.",
+        "With enableCollaboration, the content comes from the collaboration server: initialValue is ignored and websocketUrl plus documentId are required.",
+        "SEO analysis, outline and collaboration are opt-in (enableSeoAnalysis, enableOutline, enableCollaboration); their variables stay empty/null while disabled.",
+        "Outline and SEO only read the content: they never write ids or attributes into the document.",
+        "Inside a ww-form-container, set a unique fieldName so the submitted payload includes this field.",
+        "useEmptyLayout replaces the plain placeholder with your own elements (emptyLayoutElement); bind other elements to the `isEmpty` variable rather than computing emptiness from `value`."
+    ],
+    "examples": [
+        {
+            "description": "Simple editor with Markdown output and debounced change",
+            "example": "{\"output\":\"markdown\",\"placeholder\":\"Write here...\",\"debounce\":true,\"debounceDelay\":\"500ms\"}"
+        },
+        {
+            "description": "Read-only display of HTML content",
+            "example": "{\"readonly\":true,\"initialValue\":\"<h2>Title</h2><p>Some <strong>rich</strong> text.</p>\"}"
+        },
+        {
+            "description": "Minimal toolbar: text type, bold, italic, link and lists only",
+            "example": "{\"parameterUnderline\":false,\"parameterStrike\":false,\"parameterTextColor\":false,\"parameterTable\":false,\"parameterCodeBlock\":false,\"parameterQuote\":false}"
+        },
+        {
+            "description": "Article editor with outline and SEO analysis",
+            "example": "{\"enableOutline\":true,\"outlineLevels\":\"h2h3\",\"enableSeoAnalysis\":true,\"seoKeyword\":\"rich text editor\",\"seoLang\":\"en\"}"
+        }
+    ],
+    "dependencies": []
+}
