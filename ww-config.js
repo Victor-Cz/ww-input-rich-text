@@ -3334,14 +3334,9 @@ export default {
                 {
                     key: 'rephrase',
                     label: 'Rephrase',
-                    icon: {
-                        isWwObject: true,
-                        type: 'ww-icon',
-                        state: {
-                            name: 'Magic icon',
-                            icon: 'magic',
-                        },
-                    },
+                    // Nom d'icône, comme le type Icon de l'item : un élément ww-icon serait
+                    // créé dans chaque instance, menu IA éteint compris
+                    icon: 'magic',
                     defaultPrompt: 'Reformule ce texte avec un style différent tout en gardant le même sens',
                     action: 'replace',
                     requireInput: true,
