@@ -43,6 +43,8 @@ export const CHECK_WEIGHTS = {
     questionHeadings: { seo: 1, geo: 2 },
     descriptiveHeadings: { seo: 1, geo: 2 },
     vagueLanguage: { seo: 1, geo: 2 },
+    aiTells: { seo: 1, geo: 1 },
+    sentenceVariety: { seo: 1, geo: 1 },
     definition: { seo: 1, geo: 2 },
     sourcedFacts: { seo: 2, geo: 4 },
 

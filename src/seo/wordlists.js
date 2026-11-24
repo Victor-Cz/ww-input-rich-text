@@ -114,6 +114,18 @@ const GEO_FR = {
         'statistiques', 'recensement', 'cité par', 'explique', 'affirme', 'souligne',
         'précise', 'déclare', 'indique', 'rappelle', 'estime',
     ],
+    // Tics d'un texte écrit par une IA : ouvertures et bilans creux, formules
+    // de vente, métaphores convenues (cf. guide revision de Search)
+    aiTells: [
+        'dans un monde où', 'à l\'ère du', 'à l\'heure où', 'il est important de noter',
+        'il est essentiel de', 'il convient de noter', 'force est de constater',
+        'en somme', 'en conclusion', 'en définitive', 'pour conclure', 'voyons maintenant',
+        'dans cet article', 'nous allons voir', 'cette section explore', 'plongeons',
+        'que vous soyez', 'n\'hésitez pas', 'il est temps de', 'découvrez',
+        'véritable', 'incontournable', 'un atout majeur', 'joue un rôle clé',
+        'joue un rôle crucial', 'joue un rôle essentiel', 'en constante évolution',
+        'sans faille', 'révolutionne', 'révolutionner', 'tirer parti de',
+    ],
     // Formules floues : affirmation sans sujet identifiable
     vagueWords: [
         'certains experts', 'certains spécialistes', 'de nombreux experts', 'les experts',
@@ -177,6 +189,15 @@ const GEO_EN = {
         'according to', 'source', 'sources', 'study', 'studies', 'report', 'survey', 'poll',
         'data from', 'figures from', 'published by', 'statistics', 'census', 'cited by',
         'says', 'said', 'explains', 'notes', 'states', 'reports', 'found that',
+    ],
+    aiTells: [
+        'in today\'s', 'in the ever-evolving', 'in an ever-changing', 'it is important to note',
+        'it\'s important to note', 'it is worth noting', 'it\'s worth noting', 'in conclusion',
+        'to sum up', 'in this article', 'let\'s dive', 'dive into', 'delve into', 'delves into',
+        'whether you\'re', 'look no further', 'unlock the', 'game-changer', 'game changer',
+        'plays a crucial role', 'plays a key role', 'plays a vital role', 'a testament to',
+        'navigate the', 'the landscape of', 'seamless', 'seamlessly', 'cutting-edge',
+        'elevate your', 'harness the power',
     ],
     vagueWords: [
         'some experts', 'many experts', 'experts say', 'many studies', 'studies show',

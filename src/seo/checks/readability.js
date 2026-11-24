@@ -20,6 +20,8 @@ export function readabilityChecks(context) {
         passiveVoice(model, lang),
         complexWords(model, lang, wordLists),
         vagueLanguage(model, wordLists),
+        aiTells(model, wordLists),
+        sentenceVariety(model),
         acronymsDefined(model, wordLists),
     ];
 }
@@ -44,6 +46,51 @@ function vagueLanguage(model, wordLists) {
     }
     const percent = Math.round((vague / model.sentences.length) * 100);
     return makeCheck('vagueLanguage', 'readability', decreasingScore(percent, 5, 20), percent, ranges);
+}
+
+// Tics d'un texte écrit par une IA (« dans un monde où », « il est important
+// de noter », « plongeons ») : 100 jusqu'à 2 % des phrases, 0 à partir de 10 %.
+// na si < 5 phrases. value : % de phrases (tics surlignés).
+function aiTells(model, wordLists) {
+    if (model.sentences.length < MIN_SENTENCES) return notApplicable('aiTells', 'readability', 0);
+    const ranges = [];
+    let marked = 0;
+    for (const sentence of model.sentences) {
+        const matches = findListMatches(sentence.text, wordLists.aiTells);
+        if (!matches.length) continue;
+        marked++;
+        for (const match of matches) {
+            ranges.push({
+                from: mapOffsetToPos(sentence.block, sentence.startInBlock + match.start),
+                to: mapOffsetToPos(sentence.block, sentence.startInBlock + match.end),
+            });
+        }
+    }
+    const percent = Math.round((marked / model.sentences.length) * 100);
+    return makeCheck('aiTells', 'readability', decreasingScore(percent, 2, 10), percent, ranges);
+}
+
+// Variété des phrases : un texte écrit par une IA aligne des phrases de même
+// longueur. Coefficient de variation des longueurs (écart-type / moyenne, en %) :
+// 100 à partir de 45, proportionnel en dessous. Surligne les suites de 4 phrases
+// au moins dont les longueurs tiennent dans 4 mots. na si < 10 phrases.
+// value : le coefficient de variation, en %.
+function sentenceVariety(model) {
+    const sentences = model.sentences;
+    if (sentences.length < 10) return notApplicable('sentenceVariety', 'readability', 0);
+    const lengths = sentences.map(sentence => sentence.words);
+    const mean = lengths.reduce((sum, length) => sum + length, 0) / lengths.length;
+    const deviation = Math.sqrt(lengths.reduce((sum, length) => sum + (length - mean) ** 2, 0) / lengths.length);
+    const variation = mean ? Math.round((deviation / mean) * 100) : 0;
+    const marked = new Set();
+    for (let start = 0; start + 4 <= lengths.length; start++) {
+        const window = lengths.slice(start, start + 4);
+        if (Math.max(...window) - Math.min(...window) <= 4) {
+            for (let index = start; index < start + 4; index++) marked.add(index);
+        }
+    }
+    const ranges = [...marked].sort((a, b) => a - b).map(index => toRange(sentences[index]));
+    return makeCheck('sentenceVariety', 'readability', ratioScore(variation, 45), variation, ranges);
 }
 
 // Sigle : 2-6 caractères majuscules/chiffres dont ≥ 2 lettres (« RGPD », « B2B »).
@@ -130,8 +177,17 @@ function transitionWords(model, wordLists) {
         }
     }
     const percent = Math.round((withTransition / model.sentences.length) * 100);
-    // Cible : 30 % de phrases avec mot de transition
-    return makeCheck('transitionWords', 'readability', ratioScore(percent, 30), percent, ranges);
+    // Une fourchette : 15 à 35 % des phrases. En dessous le texte se lit mal ;
+    // au-dessus, les transitions sont plaquées (tic d'un texte écrit par une IA)
+    const check = makeCheck(
+        'transitionWords',
+        'readability',
+        percent > 35 ? decreasingScore(percent, 35, 60) : ratioScore(percent, 15),
+        percent,
+        ranges
+    );
+    if (check.status !== 'good') check.messageKey = percent > 35 ? 'tooMany' : 'tooFew';
+    return check;
 }
 
 // ≥ 3 phrases d'affilée commençant par le même mot
