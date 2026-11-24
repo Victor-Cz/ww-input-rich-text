@@ -100,7 +100,7 @@ function subheadingDistribution(context) {
 }
 
 // Réponse d'abord : le 1er bloc de chaque section titrée répond directement —
-// paragraphe de 30-80 mots (proportionnel en dessous, décroît jusqu'à 0 à 160),
+// paragraphe de 30-60 mots (proportionnel en dessous, décroît jusqu'à 0 à 120),
 // ou liste / tableau, éventuellement introduit par une phrase courte.
 // Sections sans contenu propre ignorées. na si < 2 sections titrées.
 // value : nb de sections dont l'ouverture n'est pas une réponse directe.
@@ -115,8 +115,8 @@ function answerFirst(context) {
         let score;
         if (isStructured(first)) score = 100;
         else if (first.words < 30) score = second && isStructured(second) ? 100 : ratioScore(first.words, 30);
-        else if (first.words <= 80) score = 100;
-        else score = decreasingScore(first.words, 80, 160);
+        else if (first.words <= 60) score = 100;
+        else score = decreasingScore(first.words, 60, 120);
         notePassage(context, section, 'answerFirst', score);
         total += score;
         if (score < 80) offenders.push({ from: first.from, to: first.to });
@@ -203,15 +203,15 @@ function blockRange(block, match) {
     return { from: mapOffsetToPos(block, match.start), to: mapOffsetToPos(block, match.end) };
 }
 
-// Basé sur le pire paragraphe : 100 jusqu'à 150 mots, 0 à partir de 300
+// Basé sur le pire paragraphe : 100 jusqu'à 60 mots, 0 à partir de 120
 function paragraphLength(model) {
     if (!model.paragraphs.length) return notApplicable('paragraphLength', 'structure', 0);
     const worst = Math.max(...model.paragraphs.map(paragraph => paragraph.words));
-    const offenders = model.paragraphs.filter(paragraph => paragraph.words > 150);
+    const offenders = model.paragraphs.filter(paragraph => paragraph.words > 60);
     return makeCheck(
         'paragraphLength',
         'structure',
-        decreasingScore(worst, 150, 300),
+        decreasingScore(worst, 60, 120),
         offenders.length,
         offenders.map(block => ({ from: block.from, to: block.to }))
     );
