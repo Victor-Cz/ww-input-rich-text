@@ -384,6 +384,7 @@ import { LinkReveal } from './extensions/LinkReveal.js';
 import { LinkOpenCursor } from './extensions/LinkOpenCursor.js';
 import { frontmatterExtensions, readFrontmatter } from './extensions/Frontmatter.js';
 import { sectionExtensions } from './extensions/Sections.js';
+import { BlocBadges } from './extensions/BlocBadges.js';
 import { exportedContent } from './utils/sectionNotes.js';
 import { sanitizeLinkUrl, sanitizeImageSrc, safeOpenUrl, isDangerousUrl } from './utils/sanitizeUrl.js';
 import { buildOutline, resolveOutlineLevels, toPublicOutline, toPublicHeading } from './utils/outline.js';
@@ -1643,6 +1644,8 @@ export default {
                     }),
                     // Plan de l'article : identifiants des H2 / H3, notes de section, déplacement des sections
                     ...sectionExtensions(),
+                    // Les blocs prévus des notes en badges ([checklist] → « Checklist »)
+                    BlocBadges,
                     SeoLink.configure({
                         // target/rel sont calculés par lien (interne = lien normal,
                         // externe = _blank + noopener noreferrer nofollow). Le domaine
@@ -3817,6 +3820,27 @@ export default {
                 text-transform: uppercase;
                 color: #a1a1aa;
                 pointer-events: none;
+                user-select: none;
+            }
+
+            /* Bloc prévu (cf. extensions/BlocBadges) : son préfixe [format]
+               masqué, un badge à la place */
+            .ww-bloc-badge__raw {
+                display: none;
+            }
+
+            .ww-bloc-badge {
+                display: inline-block;
+                margin-right: 6px;
+                padding: 0 6px;
+                border-radius: 4px;
+                background-color: #e4e4e7;
+                color: #3f3f46;
+                font-size: 11px;
+                font-weight: 600;
+                line-height: 18px;
+                vertical-align: 1px;
+                white-space: nowrap;
                 user-select: none;
             }
 
