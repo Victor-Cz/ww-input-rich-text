@@ -36,13 +36,20 @@ function headingHierarchy(model, options) {
     const headings = model.headings;
     const h1Blocks = headings.filter(heading => heading.level === 1);
 
+    // Le titre hors du texte (option title) tient lieu de H1 : un H1 dans le texte le double
+    if (options.title && h1Blocks.length) {
+        const check = makeCheck('headingHierarchy', 'structure', 0, h1Blocks.length + 1,
+            h1Blocks.map(block => ({ from: block.from, to: block.to })));
+        check.messageKey = 'h1WithTitle';
+        return check;
+    }
     if (h1Blocks.length >= 2) {
         const check = makeCheck('headingHierarchy', 'structure', 0, h1Blocks.length,
             h1Blocks.map(block => ({ from: block.from, to: block.to })));
         check.messageKey = 'multipleH1';
         return check;
     }
-    if (options.expectH1 && h1Blocks.length === 0) {
+    if (options.expectH1 && !options.title && h1Blocks.length === 0) {
         const check = makeCheck('headingHierarchy', 'structure', 0, 0);
         check.messageKey = 'missingH1';
         return check;
