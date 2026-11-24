@@ -175,7 +175,9 @@ Les checks marqués † sont partagés avec le GEO (voir [GEO.md](GEO.md)).
 - **links** : `outboundLinks`, `internalLinks`, `genericAnchors`, `emptyLinks`,
   `competingAnchor` (ancre = mot-clé ; na sans mot-clé)
 - **images** : `imagePresence` (présence + quantité vs longueur du texte),
-  `imageAlt`, `keywordInImageAlt` (na sans mot-clé)
+  `imageAlt`, `keywordInImageAlt` (na sans mot-clé). L'image à la une du
+  frontmatter (`featured_image`, son alt `featured_image_alt`) compte comme
+  une image de plus, sans surlignage : elle n'est pas dans le texte
 - **keyword** : `keyphraseLength`, `keywordInIntroduction`, `keywordDensity`,
   `keywordDistribution`, `secondaryKeywords` (présence des mots-clés secondaires ;
   na sans secondaires), `definition`†
