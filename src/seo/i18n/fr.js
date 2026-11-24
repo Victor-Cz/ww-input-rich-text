@@ -77,12 +77,12 @@ export default {
     },
     paragraphLength: {
         title: 'Longueur des paragraphes',
-        description: 'Vérifie qu’aucun paragraphe ne dépasse 150 mots, pour rester lisible.',
-        objective: '≤ 150 mots par paragraphe',
+        description: 'Vérifie qu’aucun paragraphe ne dépasse 60 mots, pour rester lisible.',
+        objective: '≤ 60 mots par paragraphe',
         messages: {
             good: 'Aucun paragraphe n’est trop long.',
-            warning: '{value} paragraphe(s) dépassent 150 mots.',
-            bad: '{value} paragraphe(s) dépassent 150 mots : raccourcissez-les.',
+            warning: '{value} paragraphe(s) dépassent 60 mots.',
+            bad: '{value} paragraphe(s) dépassent 60 mots : raccourcissez-les.',
         },
     },
     structuredContent: {
@@ -398,11 +398,11 @@ export default {
     // GEO — structure
     answerFirst: {
         title: 'Réponse d’abord',
-        description: 'Vérifie que chaque section commence par une réponse directe : un paragraphe de 30 à 80 mots, ou une liste / un tableau.',
-        objective: '1er paragraphe de 30-80 mots après chaque sous-titre',
+        description: 'Vérifie que chaque section commence par une réponse directe : un paragraphe de 30 à 60 mots, ou une liste / un tableau.',
+        objective: '1er paragraphe de 30-60 mots après chaque sous-titre',
         messages: {
             good: 'Les sections commencent par une réponse directe.',
-            warning: '{value} section(s) ne commencent pas par une réponse directe de 30 à 80 mots.',
+            warning: '{value} section(s) ne commencent pas par une réponse directe de 30 à 60 mots.',
             bad: '{value} section(s) ne commencent pas par une réponse directe : ouvrez chaque section par la réponse, puis détaillez.',
             na: 'Pas assez de sections pour évaluer.',
         },

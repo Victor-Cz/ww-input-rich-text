@@ -77,12 +77,12 @@ export default {
     },
     paragraphLength: {
         title: 'Paragraph length',
-        description: 'Checks that no paragraph exceeds 150 words, to stay readable.',
-        objective: '≤ 150 words per paragraph',
+        description: 'Checks that no paragraph exceeds 60 words, to stay readable.',
+        objective: '≤ 60 words per paragraph',
         messages: {
             good: 'No paragraph is too long.',
-            warning: '{value} paragraph(s) exceed 150 words.',
-            bad: '{value} paragraph(s) exceed 150 words: shorten them.',
+            warning: '{value} paragraph(s) exceed 60 words.',
+            bad: '{value} paragraph(s) exceed 60 words: shorten them.',
         },
     },
     structuredContent: {
@@ -398,11 +398,11 @@ export default {
     // GEO — structure
     answerFirst: {
         title: 'Answer first',
-        description: 'Checks that each section opens with a direct answer: a 30 to 80 word paragraph, or a list / table.',
-        objective: '30-80 word first paragraph after each subheading',
+        description: 'Checks that each section opens with a direct answer: a 30 to 60 word paragraph, or a list / table.',
+        objective: '30-60 word first paragraph after each subheading',
         messages: {
             good: 'Sections open with a direct answer.',
-            warning: '{value} section(s) do not open with a direct 30-80 word answer.',
+            warning: '{value} section(s) do not open with a direct 30-60 word answer.',
             bad: '{value} section(s) do not open with a direct answer: lead with the answer, then elaborate.',
             na: 'Not enough sections to evaluate.',
         },
