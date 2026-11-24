@@ -1566,6 +1566,10 @@ export default {
                 metaDescription: this.frontmatter
                     ? this.frontmatter.meta_description ?? ''
                     : this.content.seoMetaDescription,
+                // Image à la une du frontmatter : comptée avec les images du texte
+                featuredImage: this.frontmatter
+                    ? { src: this.frontmatter.featured_image ?? '', alt: this.frontmatter.featured_image_alt ?? '' }
+                    : null,
                 siteDomain: this.content.seoSiteDomain,
                 lang: this.content.seoLang,
                 uiLang: this.content.seoUiLang,

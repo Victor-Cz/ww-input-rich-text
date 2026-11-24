@@ -38,15 +38,17 @@ export function analyzeSeo(doc, rawOptions = {}) {
  *
  * @param {Object} model - modèle d'analyse (extractors.extractModel)
  * @param {Object} rawOptions - { keyword, synonyms, secondaryKeywords, metaTitle,
- *   metaDescription, siteDomain, lang, uiLang, wordLists, geoWordLists, expectH1,
- *   keywordMatching, secondaryMatching, questions, evergreen, referenceYear }
+ *   metaDescription, featuredImage, siteDomain, lang, uiLang, wordLists,
+ *   geoWordLists, expectH1, keywordMatching, secondaryMatching, questions,
+ *   evergreen, referenceYear }
  * @returns {{ seo: Object, geo: Object, rangesMap: Object }} - `seo` / `geo` sont
  *   les valeurs exposées ; `rangesMap` associe chaque check id (et chaque id de
  *   mot-clé secondaire `secondaryKeyword:<terme>` ou de passage `passage:<n>`)
  *   à ses plages doc pour le surlignage (non exposé : positions volatiles).
  */
-export function analyzeModel(model, rawOptions = {}) {
+export function analyzeModel(contentModel, rawOptions = {}) {
     const options = normalizeOptions(rawOptions);
+    const model = withFeaturedImage(contentModel, options.featuredImage);
     // Listes SEO + GEO réunies (les tableaux gardent leur identité : les caches
     // de regex en aval, indexés par tableau, survivent d'une analyse à l'autre).
     const wordLists = {
@@ -185,6 +187,10 @@ function normalizeOptions(raw) {
         secondaryKeywords: cleanStringArray(raw.secondaryKeywords),
         metaTitle: cleanString(raw.metaTitle),
         metaDescription: cleanString(raw.metaDescription),
+        // Image à la une (frontmatter) : { src, alt }, null sans adresse
+        featuredImage: cleanString(raw.featuredImage?.src)
+            ? { src: cleanString(raw.featuredImage.src), alt: cleanString(raw.featuredImage.alt) }
+            : null,
         siteDomain: cleanString(raw.siteDomain),
         lang,
         // Langue des textes exposés (title / description / message) —
@@ -202,6 +208,13 @@ function normalizeOptions(raw) {
         // Année de référence de `freshness` (paramétrable pour des résultats reproductibles)
         referenceYear: Number.isInteger(raw.referenceYear) ? raw.referenceYear : new Date().getFullYear(),
     };
+}
+
+// L'image à la une compte parmi les images de la page (checks images, stats),
+// en tête, sans plage à surligner : elle n'est pas dans le texte
+function withFeaturedImage(model, featuredImage) {
+    if (!featuredImage) return model;
+    return { ...model, images: [{ ...featuredImage, featured: true }, ...model.images] };
 }
 
 function cleanString(value) {

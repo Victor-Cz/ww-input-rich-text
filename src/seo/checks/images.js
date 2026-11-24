@@ -2,6 +2,8 @@ import { makeCheck, notApplicable, ratioScore } from '../result.js';
 import { contentWords, findPhraseMatches, hasKeyword } from '../textUtils.js';
 
 // Catégorie "images" — mot-clé requis uniquement pour keywordInImageAlt.
+// L'image à la une (featured) compte comme les autres, sans plage : elle
+// n'est pas dans le texte.
 
 export function imagesChecks(context) {
     const { model, phrases, wordLists, matchOptions } = context;
@@ -51,7 +53,7 @@ function keywordInImageAlt(model, phrases, stopWords, matchOptions) {
         'images',
         score,
         matched.length,
-        matched.map(image => ({ from: image.from, to: image.to, node: true }))
+        rangesOf(matched)
     );
 }
 
@@ -65,6 +67,11 @@ function imageAlt(model) {
         'images',
         score,
         missing.length,
-        missing.map(image => ({ from: image.from, to: image.to, node: true }))
+        rangesOf(missing)
     );
+}
+
+// Les plages des images du texte (l'image à la une n'en a pas)
+function rangesOf(images) {
+    return images.filter(image => !image.featured).map(image => ({ from: image.from, to: image.to, node: true }));
 }
