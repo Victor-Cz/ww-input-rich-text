@@ -38,7 +38,7 @@ export function analyzeSeo(doc, rawOptions = {}) {
  *
  * @param {Object} model - modèle d'analyse (extractors.extractModel)
  * @param {Object} rawOptions - { keyword, synonyms, secondaryKeywords, metaTitle,
- *   metaDescription, featuredImage, siteDomain, lang, uiLang, wordLists,
+ *   metaDescription, title, featuredImage, siteDomain, lang, uiLang, wordLists,
  *   geoWordLists, expectH1, keywordMatching, secondaryMatching, questions,
  *   evergreen, referenceYear }
  * @returns {{ seo: Object, geo: Object, rangesMap: Object }} - `seo` / `geo` sont
@@ -187,6 +187,8 @@ function normalizeOptions(raw) {
         secondaryKeywords: cleanStringArray(raw.secondaryKeywords),
         metaTitle: cleanString(raw.metaTitle),
         metaDescription: cleanString(raw.metaDescription),
+        // Le titre de l'article quand il vit hors du texte (en-tête) : il tient lieu de H1
+        title: cleanString(raw.title),
         // Image à la une (frontmatter) : { src, alt }, null sans adresse
         featuredImage: cleanString(raw.featuredImage?.src)
             ? { src: cleanString(raw.featuredImage.src), alt: cleanString(raw.featuredImage.alt) }

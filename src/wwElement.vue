@@ -1566,6 +1566,8 @@ export default {
                 metaDescription: this.frontmatter
                     ? this.frontmatter.meta_description ?? ''
                     : this.content.seoMetaDescription,
+                // Le titre de l'en-tête (frontmatter) : le H1 de l'article, hors du texte
+                title: this.frontmatter?.title ?? '',
                 // Image à la une du frontmatter : comptée avec les images du texte
                 featuredImage: this.frontmatter
                     ? { src: this.frontmatter.featured_image ?? '', alt: this.frontmatter.featured_image_alt ?? '' }

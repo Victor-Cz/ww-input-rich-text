@@ -1,5 +1,6 @@
 // Blocs prévus du plan : dans une note de section, une puce `[format] ce
-// qu'il porte` annonce un bloc de l'article (checklist, tableau comparatif…).
+// qu'il porte` annonce un bloc de l'article (checklist, tableau comparatif…),
+// et `[image] ce qu'elle montre — capture` une image prévue.
 // Le back de Search les écrit et les relit telles quelles (Search-Back,
 // _shared/content/article_plan.ts) ; ici, on les reconnaît pour les montrer
 // en badge (cf. extensions/BlocBadges). Le texte du document ne change pas.
@@ -30,6 +31,8 @@ export const BLOC_LABELS = {
     process_flow: { fr: 'Arbre de décision', en: 'Decision tree' },
     pitfall_list: { fr: 'Pièges à éviter', en: 'Pitfalls' },
     verdict_criteria: { fr: 'Critères de choix', en: 'Decision criteria' },
+    // Pas un bloc : une image prévue, « [image] ce qu'elle montre — capture »
+    image: { fr: 'Image', en: 'Image' },
 };
 
 // `[format]` en tête de la puce, et les espaces qui le suivent

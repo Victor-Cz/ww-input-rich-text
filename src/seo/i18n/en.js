@@ -61,6 +61,7 @@ export default {
             warning: '{value} heading(s) skip a level (e.g. H2 → H4).',
             multipleH1: 'The content contains {value} H1 headings: there must be only one.',
             missingH1: 'The content has no H1 while one is expected: add an H1 heading.',
+            h1WithTitle: 'The title of the article is in the header: remove the H1 from the text.',
         },
     },
     subheadingDistribution: {
