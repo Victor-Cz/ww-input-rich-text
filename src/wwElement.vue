@@ -1566,6 +1566,8 @@ export default {
                 metaDescription: this.frontmatter
                     ? this.frontmatter.meta_description ?? ''
                     : this.content.seoMetaDescription,
+                // Le titre de l'en-tête (frontmatter) : le H1 de l'article, hors du texte
+                title: this.frontmatter?.title ?? '',
                 siteDomain: this.content.seoSiteDomain,
                 lang: this.content.seoLang,
                 uiLang: this.content.seoUiLang,

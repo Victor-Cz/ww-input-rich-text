@@ -38,7 +38,7 @@ export function analyzeSeo(doc, rawOptions = {}) {
  *
  * @param {Object} model - modèle d'analyse (extractors.extractModel)
  * @param {Object} rawOptions - { keyword, synonyms, secondaryKeywords, metaTitle,
- *   metaDescription, siteDomain, lang, uiLang, wordLists, geoWordLists, expectH1,
+ *   metaDescription, title, siteDomain, lang, uiLang, wordLists, geoWordLists, expectH1,
  *   keywordMatching, secondaryMatching, questions, evergreen, referenceYear }
  * @returns {{ seo: Object, geo: Object, rangesMap: Object }} - `seo` / `geo` sont
  *   les valeurs exposées ; `rangesMap` associe chaque check id (et chaque id de
@@ -185,6 +185,8 @@ function normalizeOptions(raw) {
         secondaryKeywords: cleanStringArray(raw.secondaryKeywords),
         metaTitle: cleanString(raw.metaTitle),
         metaDescription: cleanString(raw.metaDescription),
+        // Le titre de l'article quand il vit hors du texte (en-tête) : il tient lieu de H1
+        title: cleanString(raw.title),
         siteDomain: cleanString(raw.siteDomain),
         lang,
         // Langue des textes exposés (title / description / message) —

@@ -61,6 +61,7 @@ export default {
             warning: '{value} titre(s) sautent un niveau (ex. H2 → H4).',
             multipleH1: 'Le contenu contient {value} H1 : il ne doit y en avoir qu’un.',
             missingH1: 'Le contenu ne contient pas de H1 alors qu’un H1 est attendu : ajoutez un titre H1.',
+            h1WithTitle: 'Le titre de l’article est dans l’en-tête : retirez le H1 du texte.',
         },
     },
     subheadingDistribution: {

@@ -10,7 +10,7 @@ export function headingsChecks(context) {
     const { model, phrases, wordLists, matchOptions } = context;
     return [
         headingLength(model),
-        keywordInH1(model, phrases, wordLists.stopWords, matchOptions),
+        keywordInH1(model, phrases, wordLists.stopWords, matchOptions, context.options.title),
         keywordInSubheadings(model, phrases, matchOptions),
         secondaryInSubheadings(model, context.options.secondaryKeywords, context.secondaryMatchOptions),
         questionHeadings(model, wordLists),
@@ -71,10 +71,20 @@ function headingLength(model) {
 
 // Mot-clé dans le titre H1 : trouvé → 100 ; une partie de ses mots seulement →
 // proportionnel (max 60) ; absent → 0 (le H1 est surligné pour le localiser).
-// na sans mot-clé ou sans H1. value : 'full' | 'scattered' | 'missing'
-function keywordInH1(model, phrases, stopWords, matchOptions) {
+// Sans H1 dans le texte, le titre hors du texte (option title), sans surlignage.
+// na sans mot-clé ou sans H1 ni titre. value : 'full' | 'scattered' | 'missing'
+function keywordInH1(model, phrases, stopWords, matchOptions, title) {
     if (!phrases.length) return notApplicable('keywordInH1', 'headings');
     const h1 = model.headings.find(heading => heading.level === 1);
+    if (!h1 && title) {
+        if (phrases.some(phrase => findPhraseMatches(title, phrase, matchOptions).length > 0)) {
+            return makeCheck('keywordInH1', 'headings', 100, 'full');
+        }
+        const words = contentWords(phrases[0], stopWords);
+        const found = words.filter(word => findPhraseMatches(title, word, matchOptions).length > 0);
+        if (found.length) return makeCheck('keywordInH1', 'headings', (found.length / words.length) * 60, 'scattered');
+        return makeCheck('keywordInH1', 'headings', 0, 'missing');
+    }
     if (!h1) return notApplicable('keywordInH1', 'headings');
 
     const fullMatch = findKeywordInBlock(h1, phrases, matchOptions);
