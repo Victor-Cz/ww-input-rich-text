@@ -48,13 +48,7 @@ function keywordInImageAlt(model, phrases, stopWords, matchOptions) {
     if (matched.length) score = 100;
     else if (withAlt.length) score = 50;
     else score = 0;
-    return makeCheck(
-        'keywordInImageAlt',
-        'images',
-        score,
-        matched.length,
-        rangesOf(matched)
-    );
+    return makeCheck('keywordInImageAlt', 'images', score, matched.length, rangesOf(matched));
 }
 
 // Score = proportion d'images avec attribut alt. value : nb d'alt manquants.
@@ -62,13 +56,7 @@ function imageAlt(model) {
     if (!model.images.length) return notApplicable('imageAlt', 'images', 0);
     const missing = model.images.filter(image => !image.alt);
     const score = (1 - missing.length / model.images.length) * 100;
-    return makeCheck(
-        'imageAlt',
-        'images',
-        score,
-        missing.length,
-        rangesOf(missing)
-    );
+    return makeCheck('imageAlt', 'images', score, missing.length, rangesOf(missing));
 }
 
 // Les plages des images du texte (l'image à la une n'en a pas)
