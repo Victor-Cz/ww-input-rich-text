@@ -167,6 +167,11 @@ identique à celui du serveur (`src/extensions/Sections.js`) :
   Markdown), dans `seo` / `geo` (texte, mots, listes) ni dans `outline` /
   `currentHeading`. Entrée sur le paragraphe vide qui la termine en sort ;
   effacer dans une note vide la supprime.
+- **Bloc prévu** : une puce de note `[format] ce qu'il porte` (`[checklist]`,
+  `[faq]`…, les formats de bloc de Search) s'affiche avec un badge à la place du
+  préfixe (« Checklist », « FAQ », dans la langue de l'app). Décoration locale :
+  le texte du document ne change pas. Curseur dans la puce : le préfixe revient
+  en clair, pour changer le format ; un format inconnu reste du texte.
 - **Déplacer une section en bloc** : poignée à gauche d'un H2 / H3 au survol
   (glisser-déposer, `Échap` annule), ou `⌘⇧↑` / `⌘⇧↓` (`Ctrl` hors Mac) sur la
   section du curseur (sa sous-section H3 s'il y est). Un H2 se pose entre les
